@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
+  <defs>
+    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#16A34A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#22C55E;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon: Stylized V -->
+  <path d="M50 20 L75 80 L100 20 H85 L75 60 L65 20 Z" fill="url(#greenGradient)" stroke="url(#greenGradient)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M40 20 L55 20" stroke="url(#greenGradient)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M95 20 L110 20" stroke="url(#greenGradient)" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Text: VTPay -->
+  <text x="120" y="75" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="60" fill="#14532d">VT</text>
+  <text x="210" y="75" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="60" fill="url(#greenGradient)">Pay</text>
+</svg>
