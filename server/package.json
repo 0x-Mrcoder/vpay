@@ -1,7 +1,7 @@
 {
   "name": "vtpay-server",
   "version": "1.0.0",
-  "description": "Zainpay Payment Gateway Server - Virtual Account Provider and Wallet System",
+  "description": "VTStack Payment Gateway Server - Virtual Account Provider and Wallet System",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
@@ -12,7 +12,7 @@
     "test": "echo \"No tests configured\" && exit 0"
   },
   "keywords": [
-    "zainpay",
+    "vtstack",
     "payment-gateway",
     "virtual-account",
     "fintech"
