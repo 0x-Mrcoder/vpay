@@ -6,7 +6,6 @@ import {
     Zap,
     Globe,
     CreditCard,
-    Lock,
     CheckCircle,
     Menu,
     X,

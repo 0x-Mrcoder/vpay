@@ -1,25 +1,19 @@
 import React, { useState } from 'react';
 import api from '../../services/api';
 import {
-    CreditCard,
-    FileText,
     Upload,
     AlertCircle,
     Clock,
     CheckCircle2,
     ShieldCheck,
     Info,
-    ArrowRight,
     Lock,
-    Check,
     User,
-    Calendar,
     Zap,
     RefreshCw,
     MapPin,
     Building2,
     Briefcase,
-    Phone,
     Hash,
     ChevronRight,
     ChevronLeft

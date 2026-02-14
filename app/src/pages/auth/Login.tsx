@@ -37,7 +37,7 @@ export const Login: React.FC = () => {
             }, 1000);
         } catch (err: any) {
             console.error('Login error:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to login. Please try again.';
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to login. Please try again.';
             setError(errorMessage);
 
             // If error is related to unverified email, offer to verify

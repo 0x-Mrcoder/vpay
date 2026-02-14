@@ -8,11 +8,25 @@ interface User {
     phone: string;
     kycLevel: number;
     status: string;
+    role: 'user' | 'admin';
+    fullName?: string;
+
+    // KYC Fields
+    state?: string;
+    lga?: string;
+    address?: string;
+    identityType?: string;
     nin?: string;
     bvn?: string;
     idCardPath?: string;
+    selfiePath?: string;
+
+    // Business Fields
     businessName?: string;
-    role: 'user' | 'admin';
+    businessAddress?: string;
+    businessPhone?: string;
+    rcNumber?: string;
+    cacDocumentPath?: string;
 }
 
 interface AuthContextType {
