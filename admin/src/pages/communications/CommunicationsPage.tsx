@@ -149,7 +149,7 @@ const CommunicationsPage: React.FC = () => {
                                             value="all"
                                             checked={recipientType === 'all'}
                                             onChange={(e) => setRecipientType(e.target.value as any)}
-                                            className="w-4 h-4 text-green-600 focus:ring-green-500"
+                                            className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                                         />
                                         <span className="text-sm text-slate-700">All Tenants</span>
                                     </label>
@@ -160,7 +160,7 @@ const CommunicationsPage: React.FC = () => {
                                             value="active"
                                             checked={recipientType === 'active'}
                                             onChange={(e) => setRecipientType(e.target.value as any)}
-                                            className="w-4 h-4 text-green-600 focus:ring-green-500"
+                                            className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                                         />
                                         <span className="text-sm text-slate-700">Active Tenants Only</span>
                                     </label>
@@ -171,7 +171,7 @@ const CommunicationsPage: React.FC = () => {
                                             value="specific"
                                             checked={recipientType === 'specific'}
                                             onChange={(e) => setRecipientType(e.target.value as any)}
-                                            className="w-4 h-4 text-green-600 focus:ring-green-500"
+                                            className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                                         />
                                         <span className="text-sm text-slate-700">Specific Tenants</span>
                                     </label>
@@ -187,7 +187,7 @@ const CommunicationsPage: React.FC = () => {
                                             placeholder="Search users..."
                                             value={userSearchQuery}
                                             onChange={(e) => setUserSearchQuery(e.target.value)}
-                                            className="w-full sm:w-64 px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            className="w-full sm:w-64 px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         />
                                     </div>
 
@@ -201,7 +201,7 @@ const CommunicationsPage: React.FC = () => {
                                                                 type="checkbox"
                                                                 checked={selectedTenants.length > 0 && selectedTenants.length === filteredTenantsForSelection.length}
                                                                 onChange={toggleSelectAll}
-                                                                className="rounded text-green-600 focus:ring-green-500"
+                                                                className="rounded text-primary-600 focus:ring-primary-500"
                                                             />
                                                         </th>
                                                         <th className="px-4 py-2 font-medium text-slate-600">Name / Business</th>
@@ -214,7 +214,7 @@ const CommunicationsPage: React.FC = () => {
                                                         filteredTenantsForSelection.map(tenant => (
                                                             <tr
                                                                 key={tenant._id}
-                                                                className={`hover:bg-slate-50 cursor-pointer ${selectedTenants.includes(tenant._id) ? 'bg-green-50' : ''}`}
+                                                                className={`hover:bg-slate-50 cursor-pointer ${selectedTenants.includes(tenant._id) ? 'bg-primary-50' : ''}`}
                                                                 onClick={() => toggleTenantSelection(tenant._id)}
                                                             >
                                                                 <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
@@ -222,7 +222,7 @@ const CommunicationsPage: React.FC = () => {
                                                                         type="checkbox"
                                                                         checked={selectedTenants.includes(tenant._id)}
                                                                         onChange={() => toggleTenantSelection(tenant._id)}
-                                                                        className="rounded text-green-600 focus:ring-green-500"
+                                                                        className="rounded text-primary-600 focus:ring-primary-500"
                                                                     />
                                                                 </td>
                                                                 <td className="px-4 py-2">
@@ -261,7 +261,7 @@ const CommunicationsPage: React.FC = () => {
                                     required
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     placeholder="Enter email subject"
                                 />
                             </div>
@@ -272,7 +272,7 @@ const CommunicationsPage: React.FC = () => {
                                     required
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 h-64 resize-none"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 h-64 resize-none"
                                     placeholder="Type your message here..."
                                 />
                             </div>
@@ -281,7 +281,7 @@ const CommunicationsPage: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={sending}
-                                    className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                                    className="w-full sm:w-auto px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm active:scale-95"
                                 >
                                     {sending ? (
                                         <>
@@ -304,9 +304,9 @@ const CommunicationsPage: React.FC = () => {
 
                 {/* Sidebar / Info */}
                 <div className="space-y-6">
-                    <div className="bg-blue-50 p-4 md:p-6 rounded-xl border border-blue-100">
-                        <h3 className="text-base md:text-lg font-medium text-blue-900 mb-2">Email Guidelines</h3>
-                        <ul className="space-y-2 text-xs md:text-sm text-blue-800">
+                    <div className="bg-primary-50 p-4 md:p-6 rounded-xl border border-primary-100">
+                        <h3 className="text-base md:text-lg font-medium text-primary-900 mb-2">Email Guidelines</h3>
+                        <ul className="space-y-2 text-xs md:text-sm text-primary-800">
                             <li className="flex items-start gap-2">
                                 <span className="mt-1">•</span>
                                 Keep subject lines clear and concise.

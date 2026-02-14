@@ -73,7 +73,7 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
                         className="flex items-center gap-2 lg:gap-3 px-2 lg:px-3 py-2 hover:bg-slate-100 rounded-lg transition-all duration-200"
                     >
                         {/* Avatar */}
-                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs lg:text-sm shadow-lg ring-2 ring-green-400/30">
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-xs lg:text-sm shadow-lg ring-2 ring-primary-400/30">
                             {getInitials()}
                         </div>
                         <div className="text-left hidden md:block">

@@ -19,6 +19,7 @@ const CommunicationsPage = lazy(() => import('./pages/communications/Communicati
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
 const HelpMessages = lazy(() => import('./pages/help/HelpMessages'));
 const AdminsPage = lazy(() => import('./pages/admins/AdminsPage'));
+
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage'));
 const Login = lazy(() => import('./pages/auth/Login'));
 
@@ -40,7 +41,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
         <p className="text-gray-600 mb-4">You do not have permission to access the admin portal.</p>
         <button
           onClick={() => window.location.href = '/login'}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
         >
           Go to Login
         </button>
@@ -61,6 +62,7 @@ function AppRoutes() {
         <Route path="/communications" element={<ProtectedRoute><Layout><CommunicationsPage /></Layout></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
         <Route path="/tenants" element={<ProtectedRoute><Layout><TenantsPage /></Layout></ProtectedRoute>} />
+
         <Route path="/transactions" element={<ProtectedRoute><Layout><TransactionsPage /></Layout></ProtectedRoute>} />
         <Route path="/settlements" element={<ProtectedRoute><Layout><SettlementsPage /></Layout></ProtectedRoute>} />
         <Route path="/webhooks" element={<ProtectedRoute><Layout><WebhooksPage /></Layout></ProtectedRoute>} />

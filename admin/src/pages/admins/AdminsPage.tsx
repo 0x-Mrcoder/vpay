@@ -81,7 +81,7 @@ const AdminsPage: React.FC = () => {
                             reset();
                             setShowAddModal(true);
                         }}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                     >
                         <Plus size={18} />
                         Add Admin
@@ -100,13 +100,13 @@ const AdminsPage: React.FC = () => {
                         placeholder="Search admins by name or email..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                     />
                 </div>
             </div>
 
             {/* Data Table */}
-            <div className="bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -136,7 +136,7 @@ const AdminsPage: React.FC = () => {
                                     <tr key={admin._id} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs">
+                                                <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs">
                                                     {admin.firstName?.[0]}{admin.lastName?.[0]}
                                                 </div>
                                                 <span className="text-sm font-medium text-slate-900">{admin.firstName} {admin.lastName}</span>
@@ -154,7 +154,7 @@ const AdminsPage: React.FC = () => {
                                             {new Date(admin.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-slate-400 hover:text-green-600 transition-colors">
+                                            <button className="text-slate-400 hover:text-primary-600 transition-colors">
                                                 <Shield size={18} />
                                             </button>
                                         </td>
@@ -178,7 +178,7 @@ const AdminsPage: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-xl flex items-center justify-center">
+                                <div className="w-10 h-10 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center">
                                     <Shield size={20} />
                                 </div>
                                 <div>
@@ -199,7 +199,7 @@ const AdminsPage: React.FC = () => {
                                         <input
                                             {...register('firstName')}
                                             type="text"
-                                            className={`w-full pl-10 pr-4 py-2 border ${errors.firstName ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm`}
+                                            className={`w-full pl-10 pr-4 py-2 border ${errors.firstName ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm`}
                                             placeholder="John"
                                         />
                                     </div>
@@ -212,7 +212,7 @@ const AdminsPage: React.FC = () => {
                                         <input
                                             {...register('lastName')}
                                             type="text"
-                                            className={`w-full pl-10 pr-4 py-2 border ${errors.lastName ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm`}
+                                            className={`w-full pl-10 pr-4 py-2 border ${errors.lastName ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm`}
                                             placeholder="Doe"
                                         />
                                     </div>
@@ -227,7 +227,7 @@ const AdminsPage: React.FC = () => {
                                     <input
                                         {...register('email')}
                                         type="email"
-                                        className={`w-full pl-10 pr-4 py-2 border ${errors.email ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm`}
+                                        className={`w-full pl-10 pr-4 py-2 border ${errors.email ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm`}
                                         placeholder="admin@example.com"
                                     />
                                 </div>
@@ -241,7 +241,7 @@ const AdminsPage: React.FC = () => {
                                     <input
                                         {...register('phone')}
                                         type="tel"
-                                        className={`w-full pl-10 pr-4 py-2 border ${errors.phone ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm`}
+                                        className={`w-full pl-10 pr-4 py-2 border ${errors.phone ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm`}
                                         placeholder="+234..."
                                     />
                                 </div>
@@ -255,7 +255,7 @@ const AdminsPage: React.FC = () => {
                                     <input
                                         {...register('password')}
                                         type="password"
-                                        className={`w-full pl-10 pr-4 py-2 border ${errors.password ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm`}
+                                        className={`w-full pl-10 pr-4 py-2 border ${errors.password ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm`}
                                         placeholder="••••••••"
                                     />
                                 </div>
@@ -266,7 +266,7 @@ const AdminsPage: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-200 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <>
