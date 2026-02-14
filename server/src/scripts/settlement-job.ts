@@ -29,7 +29,7 @@ async function runSettlementJob() {
         lock.lockedAt = new Date();
         await lock.save();
 
-        await payoutService.processSettlements();
+        // await payoutService.processSettlements();
 
         // Unlock the job
         lock.isLocked = false;

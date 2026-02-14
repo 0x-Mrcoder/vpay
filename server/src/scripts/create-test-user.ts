@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
-import { User, Zainbox, Wallet } from '../models';
+import { User, Wallet } from '../models';
 import config from '../config';
 
 dotenv.config();
@@ -63,27 +63,27 @@ async function createTestUser() {
         }
 
         // 3. Link Zainbox
-        let zainbox = await Zainbox.findOne({ zainboxCode });
-        if (zainbox) {
-            console.log('Zainbox record already exists. Updating owner...');
-            zainbox.userId = user._id as any;
-            await zainbox.save();
-        } else {
-            console.log('Creating Zainbox record...');
-            zainbox = new Zainbox({
-                userId: user._id,
-                name: 'Aminu Amee Zainbox',
-                emailNotification: email,
-                tags: 'test,payout',
-                callbackUrl: 'https://example.com/webhook',
-                codeName: 'aminu_amee_test',
-                zainboxCode: zainboxCode,
-                isActive: true,
-                isLive: false
-            });
-            await zainbox.save();
-            console.log('Zainbox record created.');
-        }
+        // let zainbox = await Zainbox.findOne({ zainboxCode });
+        // if (zainbox) {
+        //     console.log('Zainbox record already exists. Updating owner...');
+        //     zainbox.userId = user._id as any;
+        //     await zainbox.save();
+        // } else {
+        //     console.log('Creating Zainbox record...');
+        //     zainbox = new Zainbox({
+        //         userId: user._id,
+        //         name: 'Aminu Amee Zainbox',
+        //         emailNotification: email,
+        //         tags: 'test,payout',
+        //         callbackUrl: 'https://example.com/webhook',
+        //         codeName: 'aminu_amee_test',
+        //         zainboxCode: zainboxCode,
+        //         isActive: true,
+        //         isLive: false
+        //     });
+        //     await zainbox.save();
+        //     console.log('Zainbox record created.');
+        // }
 
         console.log('\n--- Setup Complete ---');
         console.log(`Email: ${email}`);

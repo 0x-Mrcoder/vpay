@@ -29,7 +29,7 @@ async function runReconciliationJob() {
         lock.lockedAt = new Date();
         await lock.save();
 
-        await payoutService.reconcilePayouts();
+        // await payoutService.reconcilePayouts();
 
         // Unlock the job
         lock.isLocked = false;
