@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { User, Wallet, Zainbox } from '../models';
+import { User, Wallet } from '../models';
 import { generateToken, authenticate } from '../middleware/auth';
-import { walletService, emailService, zainpayService } from '../services';
+import { walletService, emailService } from '../services';
 import config from '../config';
 
 const router = Router();
@@ -70,69 +70,6 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
         // Create wallet for user
         await walletService.createWallet(user._id.toString());
 
-        // Create Zainbox for user - REMOVED per user request. 
-        // Zainbox will be created upon admin approval.
-        /*
-        try {
-            const zainboxName = user.businessName || `${user.fullName}'s Zainbox`;
-            const callbackUrl = config.webhookBaseUrl
-                ? `${config.webhookBaseUrl}/api/webhooks/zainpay`
-                : 'https://vtpayapi.vtfree.com.ng/api/webhooks/zainpay';
-
-            const zainboxPayload = {
-                name: zainboxName,
-                emailNotification: user.email,
-                tags: "vtpay_user",
-                callbackUrl: callbackUrl
-            };
-
-            console.log('Creating Zainbox for user:', zainboxPayload);
-            const zainboxResponse = await zainpayService.createZainbox(zainboxPayload);
-            console.log('Zainbox created response:', zainboxResponse);
-
-            if (zainboxResponse.code === '00' && zainboxResponse.data) {
-                // The response data might be an array or object depending on the API
-                const zainboxData = Array.isArray(zainboxResponse.data) ? zainboxResponse.data[0] : zainboxResponse.data;
-
-                if (zainboxData) {
-                    const zainboxCode = zainboxData.zainboxCode;
-
-                    // Check if this zainboxCode already exists in DB
-                    let existingZainbox = await Zainbox.findOne({ zainboxCode });
-
-                    if (existingZainbox) {
-                        // Update existing
-                        existingZainbox.userId = user._id;
-                        existingZainbox.name = zainboxData.name;
-                        existingZainbox.emailNotification = zainboxData.emailNotification;
-                        existingZainbox.tags = zainboxData.tags;
-                        existingZainbox.callbackUrl = zainboxData.callbackUrl;
-                        existingZainbox.codeName = zainboxData.codeName;
-                        existingZainbox.isLive = zainboxData.isLive;
-                        await existingZainbox.save();
-                        console.log('Existing Zainbox updated and assigned to user:', existingZainbox._id);
-                    } else {
-                        // Create new
-                        const newZainbox = new Zainbox({
-                            userId: user._id,
-                            name: zainboxData.name,
-                            emailNotification: zainboxData.emailNotification,
-                            tags: zainboxData.tags,
-                            callbackUrl: zainboxData.callbackUrl,
-                            codeName: zainboxData.codeName,
-                            zainboxCode: zainboxCode,
-                            isLive: zainboxData.isLive,
-                        });
-                        await newZainbox.save();
-                        console.log('New Zainbox created and saved to DB:', newZainbox._id);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Failed to create Zainbox:', error);
-            // Continue registration even if Zainbox creation fails
-        }
-        */
 
         // Send verification OTP
         await emailService.sendOtpEmail(user.email, verificationToken);

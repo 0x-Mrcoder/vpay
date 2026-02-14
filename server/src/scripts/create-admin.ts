@@ -8,8 +8,8 @@ const createAdmin = async () => {
         console.log('✅ Connected to database');
 
         // Admin credentials
-        const adminEmail = 'admin@vtpay.com';
-        const adminPassword = 'Admin@123';
+        const adminEmail = 'admin@vtstack.com.ng';
+        const adminPassword = 'Admin@VTStack123';
 
         // Check if admin already exists
         const existingAdmin = await User.findOne({ email: adminEmail });

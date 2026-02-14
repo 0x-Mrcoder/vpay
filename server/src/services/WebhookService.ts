@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import axios from 'axios';
 import { logger } from '../utils/logger';
 import { VirtualAccount, WebhookLog } from '../models';
 import { walletService } from './WalletService';
@@ -177,6 +178,84 @@ export class WebhookService {
         }
 
         return { success: true, message: 'Transfer update processed' };
+    }
+
+    /**
+     * Retry a webhook dispatch
+     */
+    async retryDispatch(webhookId: string): Promise<{ success: boolean; message?: string }> {
+        try {
+            const webhook = await WebhookLog.findById(webhookId).populate('userId');
+            if (!webhook) {
+                return { success: false, message: 'Webhook log not found' };
+            }
+
+            if (webhook.source !== 'vtpay') {
+                return { success: false, message: 'Only VTPay (outbound) webhooks can be retried' };
+            }
+
+            const user = webhook.userId as any;
+            if (!user || !user.webhookUrl) {
+                return { success: false, message: 'Tenant webhook URL not configured' };
+            }
+
+            // Simple retry logic: just log that we are retrying and maybe call axios 
+            // In a real system, we'd have a dispatch queue. 
+            // Here we'll simulate a dispatch or just create a new log entry/update old one.
+
+            // For now, let's just update the status to pending to simulate retry
+            // Ideally we should actually send the request.
+
+            webhook.dispatchStatus = 'pending';
+            webhook.dispatchAttempts = (webhook.dispatchAttempts || 0) + 1;
+            await webhook.save();
+
+            // Fire and forget dispatch (mock)
+            this.dispatchWebhook(user.webhookUrl, webhook.eventType, webhook.payload, webhookId).catch(console.error);
+
+            return { success: true, message: 'Webhook retry initiated' };
+        } catch (error: any) {
+            logger.error('Retry dispatch error', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Dispatch webhook to tenant
+     */
+    async dispatchWebhook(url: string, event: string, payload: any, logId?: string) {
+        try {
+            const axios = require('axios');
+            const signature = crypto
+                .createHmac('sha256', this.webhookSecret)
+                .update(JSON.stringify(payload))
+                .digest('hex');
+
+            await axios.post(url, payload, {
+                headers: {
+                    'X-VTPay-Signature': signature,
+                    'X-VTPay-Event': event,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000
+            });
+
+            if (logId) {
+                await WebhookLog.findByIdAndUpdate(logId, {
+                    dispatchStatus: 'success',
+                    lastAttemptAt: new Date()
+                });
+            }
+        } catch (error: any) {
+            logger.error(`Failed to dispatch webhook to ${url}`, error.message);
+            if (logId) {
+                await WebhookLog.findByIdAndUpdate(logId, {
+                    dispatchStatus: 'failed',
+                    lastAttemptAt: new Date(),
+                    processingResult: { error: error.message }
+                });
+            }
+        }
     }
 }
 

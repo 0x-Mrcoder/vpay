@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IWebhookLogDocument extends Document {
-    source: 'zainpay' | 'vtpay';
+    source: 'zainpay' | 'vtpay' | 'palmpay';
     eventType: string;
     userId?: mongoose.Types.ObjectId;
     zainboxCode?: string;
@@ -20,7 +20,7 @@ const WebhookLogSchema = new Schema<IWebhookLogDocument>(
     {
         source: {
             type: String,
-            enum: ['zainpay', 'vtpay'],
+            enum: ['zainpay', 'vtpay', 'palmpay'],
             required: true,
         },
         eventType: {
