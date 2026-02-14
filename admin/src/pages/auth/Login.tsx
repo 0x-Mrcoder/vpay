@@ -41,10 +41,8 @@ const Login: React.FC = () => {
             <div className="w-full max-w-md px-6">
                 {/* Logo/Brand Section */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-900 rounded-2xl mb-4 shadow-lg">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-4 shadow-lg p-3">
+                        <img src="/favicon.png" alt="VTStack" className="w-full h-full object-contain" />
                     </div>
                     <h1 className="text-3xl font-bold text-slate-800 mb-2">Welcome Back</h1>
                     <p className="text-slate-500">Sign in to your admin account</p>
@@ -74,8 +72,8 @@ const Login: React.FC = () => {
                             <input
                                 {...register('email')}
                                 type="email"
-                                className={`w-full px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-slate-300'} bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent transition-all`}
-                                placeholder="admin@vtuapp.com"
+                                className={`w-full px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-slate-300'} bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                                placeholder="admin@vtstack.com.ng"
                             />
                             {errors.email && (
                                 <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
@@ -88,7 +86,7 @@ const Login: React.FC = () => {
                             <input
                                 {...register('password')}
                                 type="password"
-                                className={`w-full px-4 py-3 border ${errors.password ? 'border-red-500' : 'border-slate-300'} bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent transition-all`}
+                                className={`w-full px-4 py-3 border ${errors.password ? 'border-red-500' : 'border-slate-300'} bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                                 placeholder="••••••••"
                             />
                             {errors.password && (
@@ -100,11 +98,11 @@ const Login: React.FC = () => {
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    className="w-4 h-4 text-green-900 border-slate-300 rounded focus:ring-green-900"
+                                    className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
                                 />
                                 <span className="ml-2 text-sm text-slate-600">Remember me</span>
                             </label>
-                            <a href="#" className="text-sm font-medium text-green-900 hover:text-green-700 transition-colors">
+                            <a href="#" className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
                                 Forgot password?
                             </a>
                         </div>
@@ -112,7 +110,7 @@ const Login: React.FC = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-green-900 text-white py-3 rounded-lg font-semibold hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-900 focus:ring-opacity-50 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg flex justify-center items-center"
+                            className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-500 focus:ring-opacity-50 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg flex justify-center items-center"
                         >
                             {isLoading ? (
                                 <>

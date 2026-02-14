@@ -931,8 +931,8 @@ const SettingsPage: React.FC = () => {
         <div className="p-6">
             <h1 className="text-2xl font-bold text-slate-900 mb-6">System Settings</h1>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="flex border-b border-slate-200 overflow-x-auto">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="flex border-b border-slate-100 overflow-x-auto bg-slate-50/50">
                     {[
                         { id: 'general', label: 'General' },
                         { id: 'notifications', label: 'Notifications' },
@@ -945,8 +945,8 @@ const SettingsPage: React.FC = () => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === tab.id
-                                ? 'text-green-600 border-b-2 border-green-600'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                ? 'text-primary-600 border-b-2 border-primary-600 bg-white'
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'
                                 }`}
                         >
                             {tab.label}
@@ -957,7 +957,7 @@ const SettingsPage: React.FC = () => {
                 <div className="p-6">
                     {fetching ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <div className="w-10 h-10 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mb-4"></div>
+                            <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4"></div>
                             <p className="text-slate-500">Loading settings...</p>
                         </div>
                     ) : (
@@ -973,7 +973,7 @@ const SettingsPage: React.FC = () => {
                                 <button
                                     onClick={handleSave}
                                     disabled={loading}
-                                    className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     {loading ? (
                                         <>

@@ -105,40 +105,40 @@ const RiskPage: React.FC = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Active Rules</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-slate-900 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-slate-900 mt-1 md:mt-2">
                         {rules.filter(r => r.status === 'active').length}
                     </h3>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Warnings</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-yellow-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-yellow-600 mt-1 md:mt-2">
                         {rules.filter(r => r.action === 'warn').reduce((sum, r) => sum + (r.hits || 0), 0)}
                     </h3>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Alerts</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-orange-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-orange-600 mt-1 md:mt-2">
                         {rules.filter(r => r.action === 'alert').reduce((sum, r) => sum + (r.hits || 0), 0)}
                     </h3>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Escalated</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-red-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-red-600 mt-1 md:mt-2">
                         {rules.filter(r => r.action === 'escalate').reduce((sum, r) => sum + (r.hits || 0), 0)}
                     </h3>
                 </div>
             </div>
 
             {/* Rules Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="p-4 border-b border-slate-200">
                     <h3 className="text-base md:text-lg font-semibold text-slate-900">System Warning Rules</h3>
                 </div>
                 {loading ? (
                     <div className="p-8 text-center">
-                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
                         <p className="mt-2 text-slate-500">Loading rules...</p>
                     </div>
                 ) : (
@@ -188,7 +188,7 @@ const RiskPage: React.FC = () => {
                                                         setFormData(rule);
                                                         setShowCreateModal(true);
                                                     }}
-                                                    className="text-green-600 hover:text-green-900"
+                                                    className="text-primary-600 hover:text-primary-900"
                                                 >
                                                     Edit
                                                 </button>

@@ -71,13 +71,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                     <button
                         onClick={() => toggleDropdown(filter.key)}
                         className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${activeFilters[filter.key] && activeFilters[filter.key] !== 'all'
-                                ? 'bg-green-50 border-green-200 text-green-700'
-                                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                            ? 'bg-primary-50 border-primary-200 text-primary-700'
+                            : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
                             }`}
                     >
                         {filter.label}
                         {activeFilters[filter.key] && activeFilters[filter.key] !== 'all' ? (
-                            <span className="ml-2 bg-green-200 text-green-800 px-1.5 py-0.5 rounded text-xs">
+                            <span className="ml-2 bg-primary-200 text-primary-800 px-1.5 py-0.5 rounded text-xs">
                                 {filter.options?.find((opt) => opt.value === activeFilters[filter.key])?.label ||
                                     activeFilters[filter.key]}
                             </span>
@@ -105,8 +105,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                                                 setOpenDropdown(null);
                                             }}
                                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-slate-50 flex items-center justify-between ${activeFilters[filter.key] === option.value
-                                                    ? 'text-green-600 font-medium bg-green-50'
-                                                    : 'text-slate-700'
+                                                ? 'text-primary-600 font-medium bg-primary-50'
+                                                : 'text-slate-700'
                                                 }`}
                                         >
                                             {option.label}

@@ -257,6 +257,11 @@ export const adminApi = {
         const response = await api.get<ApiResponse<any>>('/admin/system/cron-status');
         return response.data.data;
     },
+    verifyConnectivity: async (): Promise<any> => {
+        const response = await api.get<ApiResponse<any>>('/admin/verify-connectivity');
+        return response.data;
+    },
+
 
     // Admin Profile
     updateAdminProfile: (data: any) => api.put('/admin/profile', data),

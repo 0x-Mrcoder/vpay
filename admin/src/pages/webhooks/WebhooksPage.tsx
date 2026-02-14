@@ -151,7 +151,7 @@ const WebhooksPage: React.FC = () => {
                 </div>
                 <button
                     onClick={() => activeTab === 'logs' ? fetchWebhooks() : fetchTenants()}
-                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
+                    className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
                 >
                     Refresh
                 </button>
@@ -498,7 +498,7 @@ const WebhooksPage: React.FC = () => {
                                 )}
                                 <button
                                     onClick={handleCopyPayload}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium active:scale-95"
+                                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium active:scale-95"
                                 >
                                     Copy Payload
                                 </button>

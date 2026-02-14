@@ -129,7 +129,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
 
         // Show confirmation dialog
         const confirmed = window.confirm(
-            'This will configure settlement schedules for ALL zainboxes using the current global settings.\n\n' +
+            'This will configure settlement schedules for ALL virtual accounts using the current global settings.\n\n' +
             `Schedule Type: ${scheduleType}\n` +
             `Schedule Period: ${schedulePeriod}\n` +
             `Settlement Accounts: ${settlementAccounts.length}\n\n` +
@@ -163,7 +163,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
     if (loadingConfig) {
         return (
             <div className="flex items-center justify-center p-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
         );
     }
@@ -175,12 +175,12 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
     return (
         <div className="space-y-6">
             {/* Info Banner */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <div className="flex gap-2 text-blue-800">
+            <div className="p-4 bg-primary-50 border border-primary-200 rounded-md">
+                <div className="flex gap-2 text-primary-800">
                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                     <div className="text-sm">
                         <p className="font-medium mb-1">Auto-Settlement Configuration</p>
-                        <p>Configure settlement accounts here. When you sync zainboxes, they will automatically be configured with these settlement details.</p>
+                        <p>Configure settlement accounts here. When virtual accounts are created, they will automatically be configured with these settlement details.</p>
                     </div>
                 </div>
             </div>
@@ -189,7 +189,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
                     <h4 className="font-medium text-gray-900">Enable Auto-Settlement</h4>
-                    <p className="text-sm text-gray-500">Automatically configure settlement for all zainboxes</p>
+                    <p className="text-sm text-gray-500">Automatically configure settlement for all accounts</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -198,7 +198,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                         onChange={(e) => setEnabled(e.target.checked)}
                         className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                 </label>
             </div>
 
@@ -214,7 +214,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                                 value={type.value}
                                 checked={scheduleType === type.value}
                                 onChange={(e) => setScheduleType(e.target.value as any)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
                             />
                             <span className="ml-3 text-sm text-gray-700">{type.label}</span>
                         </label>
@@ -228,7 +228,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                 <select
                     value={schedulePeriod}
                     onChange={(e) => setSchedulePeriod(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                     {selectedType?.periods.map((period) => (
                         <option key={period} value={period}>{period}</option>
@@ -262,7 +262,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                                         value={account.accountName || ''}
                                         onChange={(e) => updateAccount(index, 'accountName', e.target.value)}
                                         placeholder="Account Name"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                                 <div>
@@ -273,7 +273,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                                         onChange={(e) => updateAccount(index, 'accountNumber', e.target.value)}
                                         placeholder="1234567890"
                                         maxLength={10}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                                 <div>
@@ -281,7 +281,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                                     <select
                                         value={account.bankCode}
                                         onChange={(e) => updateAccount(index, 'bankCode', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         {banks.map((bank) => (
                                             <option key={bank.code} value={bank.code}>
@@ -299,7 +299,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                                         min="0"
                                         max="100"
                                         step="0.01"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                             </div>
@@ -310,7 +310,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                 <button
                     type="button"
                     onClick={addAccount}
-                    className="mt-3 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-300 rounded-md hover:bg-blue-50"
+                    className="mt-3 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 border border-primary-300 rounded-md hover:bg-primary-50"
                 >
                     + Add Account
                 </button>
@@ -328,7 +328,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                 <button
                     onClick={handleSave}
                     disabled={loading || !isValidTotal}
-                    className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (
                         <>
@@ -349,9 +349,9 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                     title={
                         !enabled ? 'Please enable auto-settlement first' :
                             !isValidTotal ? 'Settlement percentages must equal 100%' :
-                                'Configure settlement schedules for all zainboxes'
+                                'Configure settlement schedules for all virtual accounts'
                     }
-                    className="flex-1 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {bulkConfiguring ? (
                         <>
@@ -359,7 +359,7 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
                             Configuring...
                         </>
                     ) : (
-                        'Configure All Zainboxes'
+                        'Configure All Virtual Accounts'
                     )}
                 </button>
             </div>

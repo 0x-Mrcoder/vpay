@@ -106,7 +106,7 @@ const FeesPage: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
+                    className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
                 >
                     + Add Fee Rule
                 </button>
@@ -114,21 +114,21 @@ const FeesPage: React.FC = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Active Rules</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-slate-900 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-slate-900 mt-1 md:mt-2">
                         {fees.filter(f => f.status === 'active').length}
                     </h3>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <p className="text-xs md:text-sm font-medium text-slate-500">VA Transaction Fees</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-green-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1 md:mt-2">
                         {fees.filter(f => f.category === 'deposit').length}
                     </h3>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Payout Fees</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-orange-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-orange-600 mt-1 md:mt-2">
                         {fees.filter(f => f.category === 'withdrawal').length}
                     </h3>
                 </div>
@@ -140,7 +140,7 @@ const FeesPage: React.FC = () => {
                     <select
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
-                        className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                     >
                         <option value="all">All Categories</option>
                         <option value="deposit">VA Transaction Fees</option>
@@ -152,10 +152,10 @@ const FeesPage: React.FC = () => {
             </div>
 
             {/* Fees Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                 {loading ? (
                     <div className="p-8 text-center">
-                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
                         <p className="mt-2 text-slate-500">Loading fees...</p>
                     </div>
                 ) : (
@@ -214,7 +214,7 @@ const FeesPage: React.FC = () => {
                                                         setFormData(fee);
                                                         setShowCreateModal(true);
                                                     }}
-                                                    className="text-green-600 hover:text-green-900"
+                                                    className="text-primary-600 hover:text-primary-900"
                                                 >
                                                     Edit
                                                 </button>
@@ -303,7 +303,7 @@ const FeesPage: React.FC = () => {
                                         required
                                         value={formData.value || ''}
                                         onChange={(e) => setFormData({ ...formData, value: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="0.00"
                                     />
                                 </div>
@@ -332,7 +332,7 @@ const FeesPage: React.FC = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                                     disabled={isSaving}
                                 >
                                     {isSaving ? 'Saving...' : (selectedFee ? 'Update Rule' : 'Create Rule')}

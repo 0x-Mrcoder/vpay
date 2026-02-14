@@ -156,7 +156,7 @@ const ApiKeysPage: React.FC = () => {
                     </button>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
+                        className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
                     >
                         + Generate New Key
                     </button>
@@ -454,7 +454,7 @@ const ApiKeysPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-200">
                                 <button
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
                                 >
                                     Manage Scopes
                                 </button>

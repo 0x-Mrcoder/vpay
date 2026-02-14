@@ -70,7 +70,7 @@ const AuditLogsPage: React.FC = () => {
                                 placeholder="e.g. LOGIN, UPDATE"
                                 value={actionFilter}
                                 onChange={(e) => setActionFilter(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                             />
                         </div>
                     </div>
@@ -83,7 +83,7 @@ const AuditLogsPage: React.FC = () => {
                                 placeholder="Search by email"
                                 value={actorEmailFilter}
                                 onChange={(e) => setActorEmailFilter(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                             />
                         </div>
                     </div>
@@ -102,10 +102,10 @@ const AuditLogsPage: React.FC = () => {
             )}
 
             {/* Data Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                 {isLoading ? (
                     <div className="p-12 text-center">
-                        <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
                         <p className="text-slate-500">Loading audit logs...</p>
                     </div>
                 ) : (data?.logs && data.logs.length > 0) ? (
