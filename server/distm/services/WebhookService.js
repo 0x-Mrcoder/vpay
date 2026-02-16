@@ -75,7 +75,25 @@ class WebhookService {
         }
         catch (error) {
             logger_1.logger.error('Signature verification error', error);
-            // Fallback for debugging if needed, but normally should be strict
+            return false;
+        }
+    }
+    /**
+     * Alternative verification for when signature is in the body
+     * Some providers sign the body payload excluding the signature field
+     */
+    verifyBodySignature(body, signature) {
+        try {
+            // Clone and remove signature
+            const cleanBody = { ...body };
+            delete cleanBody.sign;
+            delete cleanBody.signature;
+            // Start with simplest assumption: JSON stringify cleanly
+            // Note: This is brittle without exact ordering rules from provider
+            const payload = JSON.stringify(cleanBody);
+            return this.verifySignature(payload, signature);
+        }
+        catch (e) {
             return false;
         }
     }

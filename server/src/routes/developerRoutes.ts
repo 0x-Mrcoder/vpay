@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import crypto from 'crypto';
 import { User } from '../models';
 import { authenticate, AuthenticatedRequest } from '../middleware';
+import config from '../config';
 
 const router = Router();
 
@@ -128,6 +129,16 @@ router.put('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
 
         // Validate webhook URL if provided
         if (webhookUrl) {
+            // Prevent recursive webhooks (User setting VTPay server as their webhook)
+            if (webhookUrl.includes('vtpayapi.vtfree.com.ng') ||
+                (config.webhookBaseUrl && webhookUrl.includes(config.webhookBaseUrl))) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid Webhook URL: You cannot use the VTPay server URL as your notification endpoint. Please use your own server URL.',
+                });
+                return;
+            }
+
             // Basic URL validation
             try {
                 const url = new URL(webhookUrl);

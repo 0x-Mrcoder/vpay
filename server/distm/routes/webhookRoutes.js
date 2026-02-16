@@ -20,9 +20,13 @@ router.get('/health', (req, res) => {
  */
 router.post('/palmpay', async (req, res) => {
     try {
-        const signature = req.headers['signature'] || req.headers['x-palm-signature'];
+        const signature = (req.headers['signature'] || req.headers['x-palm-signature'] || req.headers['sign'] || req.body.sign);
         const payload = req.rawBody || JSON.stringify(req.body);
-        const isValid = services_1.webhookService.verifySignature(payload, signature);
+        let isValid = services_1.webhookService.verifySignature(payload, signature);
+        // If standard verification fails and signature was in body, try verifying the body minus signature
+        if (!isValid && req.body.sign) {
+            isValid = services_1.webhookService.verifyBodySignature(req.body, req.body.sign);
+        }
         // Log the webhook
         await services_1.webhookService.logWebhook('palmpay', req.body.type || 'unknown', req.body, isValid);
         if (!isValid && process.env.NODE_ENV === 'production') {

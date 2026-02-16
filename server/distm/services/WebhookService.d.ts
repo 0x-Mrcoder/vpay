@@ -7,6 +7,11 @@ export declare class WebhookService {
      */
     verifySignature(payload: string, signature: string): boolean;
     /**
+     * Alternative verification for when signature is in the body
+     * Some providers sign the body payload excluding the signature field
+     */
+    verifyBodySignature(body: any, signature: string): boolean;
+    /**
      * Log webhook for debugging and audit
      */
     logWebhook(source: string, event: string, payload: any, signatureValid: boolean, processingResult?: any): Promise<void>;
