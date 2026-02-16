@@ -41,6 +41,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const logger_1 = require("../utils/logger");
 const models_1 = require("../models");
 const WalletService_1 = require("./WalletService");
+const config_1 = __importDefault(require("../config"));
 class WebhookService {
     constructor() {
         this.webhookSecret = process.env.PALMPAY_WEBHOOK_SECRET || process.env.VTPAY_WEBHOOK_SECRET || 'default-webhook-secret';
@@ -58,7 +59,7 @@ class WebhookService {
             return false;
         }
         try {
-            const publicKey = process.env.PALMPAY_PUBLIC_KEY;
+            const publicKey = config_1.default.palmpay.publicKey;
             if (!publicKey) {
                 logger_1.logger.error('PalmPay public key not configured for webhook verification');
                 return false;
@@ -102,26 +103,32 @@ class WebhookService {
      */
     async logWebhook(source, event, payload, signatureValid, processingResult) {
         try {
-            await models_1.WebhookLog.create({
+            return await models_1.WebhookLog.create({
                 source,
-                event,
+                eventType: event,
                 payload,
                 signatureValid,
                 processingResult,
+                dispatchStatus: 'pending', // Default to pending
                 receivedAt: new Date(),
             });
         }
         catch (error) {
             logger_1.logger.error('Failed to log webhook', error);
+            return null;
         }
     }
     /**
-     * Placeholder for PalmPay webhook processing
-     * This will be implemented in Phase 2
+     * Update webhook log with processing result
      */
-    /**
-     * Process PalmPay webhook event
-     */
+    async updateWebhookLog(logId, updateData) {
+        try {
+            await models_1.WebhookLog.findByIdAndUpdate(logId, updateData);
+        }
+        catch (error) {
+            logger_1.logger.error('Failed to update webhook log', error);
+        }
+    }
     /**
      * Process PalmPay webhook event
      */
@@ -195,12 +202,20 @@ class WebhookService {
         clearanceDate.setHours(clearanceDate.getHours() + 24);
         clearanceDate.setMinutes(clearanceDate.getMinutes() + 5);
         logger_1.logger.info(`Deposit ${orderNo}: Amount=${amount}, Fee=${fee} (${feePercent}%), Net=${netAmount}, ClearedAt=${clearanceDate.toISOString()}`);
+        // 0. Idempotency Check: Ensure we haven't processed this OrderNo before
+        const existingTxn = await models_1.Transaction.findOne({ externalRef: orderNo });
+        if (existingTxn) {
+            logger_1.logger.info(`Transaction with orderNo ${orderNo} already processed. Skipping.`);
+            return { success: true, message: 'Already processed', userId: virtualAccount.userId.toString() };
+        }
         // Credit Wallet
         try {
             const transaction = await WalletService_1.walletService.creditWallet(virtualAccount.userId.toString(), netAmount, // Credit net amount
-            'deposit', orderNo, `Deposit from ${payerName || 'Unknown'} (${payerAccount || '****'})`, {
+            'deposit', `Deposit from ${payerName || 'Unknown'} (${payerAccount || '****'})`, // Narration
+            orderNo, // External Reference (OrderNo)
+            {
                 source: 'palmpay',
-                externalReference,
+                externalReference, // Keep original external ref from payload in metadata too
                 payerName,
                 payerAccount,
                 payerBankName,
@@ -224,13 +239,13 @@ class WebhookService {
                 virtualAccount: virtualAccount.accountNumber,
                 timestamp: transaction.createdAt
             });
-            return { success: true, message: 'Deposit processed and user notified' };
+            return { success: true, message: 'Deposit processed and user notified', userId: virtualAccount.userId.toString() };
         }
         catch (error) {
             logger_1.logger.error(`Failed to credit wallet: ${error.message}`);
             // If duplicate, it's fine
             if (error.message.includes('duplicate') || error.message.includes('already processed')) {
-                return { success: true, message: 'Already processed' };
+                return { success: true, message: 'Already processed', userId: virtualAccount.userId.toString() };
             }
             throw error; // Retry for actual errors
         }

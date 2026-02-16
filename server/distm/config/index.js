@@ -5,7 +5,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 dotenv_1.default.config();
+const loadKey = (envVar, fileName) => {
+    if (process.env[envVar])
+        return process.env[envVar];
+    try {
+        const filePath = path_1.default.join(__dirname, '../../', fileName);
+        if (fs_1.default.existsSync(filePath)) {
+            return fs_1.default.readFileSync(filePath, 'utf8');
+        }
+    }
+    catch (e) {
+        console.error(`Failed to load key ${fileName}`, e);
+    }
+    return '';
+};
 exports.config = {
     // Server
     port: parseInt(process.env.PORT || '3000', 10),
@@ -18,8 +34,8 @@ exports.config = {
         merchantId: process.env.PALMPAY_MERCHANT_ID || '',
         appId: process.env.PALMPAY_APP_ID || '',
         apiKey: process.env.PALMPAY_API_KEY || '',
-        publicKey: process.env.PALMPAY_PUBLIC_KEY || '',
-        privateKey: process.env.PALMPAY_PRIVATE_KEY || '',
+        publicKey: loadKey('PALMPAY_PUBLIC_KEY', 'palmpay_public_key.pem'),
+        privateKey: loadKey('PALMPAY_PRIVATE_KEY', 'palmpay_private_key.pem'),
         webhookSecret: process.env.PALMPAY_WEBHOOK_SECRET || '',
     },
     // JWT

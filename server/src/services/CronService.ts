@@ -49,10 +49,32 @@ export class CronService {
 
                     for (const txn of transactionsToClear) {
                         try {
-                            // 1. Mark Transaction as Cleared
-                            txn.isCleared = true;
-                            txn.clearedAt = new Date();
-                            await txn.save();
+                            // 1. Atomic Update: Try to mark as cleared ONLY if it is still NOT cleared
+                            // This prevents race conditions or double processing
+                            const updatedTxn = await Transaction.findOneAndUpdate(
+                                {
+                                    _id: txn._id,
+                                    isCleared: false
+                                },
+                                {
+                                    $set: {
+                                        isCleared: true,
+                                        // clearedAt: new Date() // Keep original clearedAt or update? Better to keep original if set, or set current if not.
+                                        // Actually, let's leave clearedAt as is if it exists, or set it if missing.
+                                        // But typically we want to know when it *actually* cleared.
+                                        // Let's just update the status primarily.
+                                    }
+                                    // Note: We don't change clearedAt here effectively if it was already set to the future.
+                                    // If we want to record the *actual* clearance time, we might need another field like `processedAt`.
+                                    // For now, satisfy the requirement: stop processing it again.
+                                },
+                                { new: true }
+                            );
+
+                            if (!updatedTxn) {
+                                logger.warn(`Transaction ${txn.reference} was already cleared or modified. Skipping.`);
+                                continue;
+                            }
 
                             // 2. Credit the Wallet's Cleared Balance
                             const result = await Wallet.findOneAndUpdate(
@@ -65,6 +87,8 @@ export class CronService {
                                 logger.info(`Cleared Deposit ${txn.reference}: ₦${txn.amount / 100} released to wallet.`);
                             } else {
                                 logger.error(`Critical: Wallet not found for transaction ${txn.reference}`);
+                                // Optional: Revert transaction status? Or Manual intervention needed.
+                                // For now, log critical error.
                             }
 
                         } catch (err: any) {

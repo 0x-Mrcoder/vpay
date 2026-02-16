@@ -29,12 +29,23 @@ router.post('/palmpay', async (req, res) => {
             isValid = services_1.webhookService.verifyBodySignature(req.body, req.body.sign);
         }
         // Log the webhook
-        await services_1.webhookService.logWebhook('palmpay', req.body.type || 'unknown', req.body, isValid);
+        const webhookLog = await services_1.webhookService.logWebhook('palmpay', req.body.type || 'unknown', req.body, isValid);
         if (!isValid && process.env.NODE_ENV === 'production') {
+            if (webhookLog) {
+                await services_1.webhookService.updateWebhookLog(webhookLog._id, { dispatchStatus: 'failed', processingResult: 'Invalid signature' });
+            }
             res.status(401).json({ success: false, message: 'Invalid signature' });
             return;
         }
         const result = await services_1.webhookService.processWebhook(req.body);
+        // Update log with result and user ID
+        if (webhookLog) {
+            await services_1.webhookService.updateWebhookLog(webhookLog._id, {
+                dispatchStatus: result.success ? 'success' : 'failed',
+                userId: result.userId,
+                processingResult: result.message
+            });
+        }
         res.status(200).json({
             success: result.success,
             message: result.message,

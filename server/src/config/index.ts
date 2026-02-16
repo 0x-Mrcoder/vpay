@@ -1,6 +1,21 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
+
+const loadKey = (envVar: string, fileName: string) => {
+    if (process.env[envVar]) return process.env[envVar];
+    try {
+        const filePath = path.join(__dirname, '../../', fileName);
+        if (fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, 'utf8');
+        }
+    } catch (e) {
+        console.error(`Failed to load key ${fileName}`, e);
+    }
+    return '';
+};
 
 export const config = {
     // Server
@@ -16,8 +31,8 @@ export const config = {
         merchantId: process.env.PALMPAY_MERCHANT_ID || '',
         appId: process.env.PALMPAY_APP_ID || '',
         apiKey: process.env.PALMPAY_API_KEY || '',
-        publicKey: process.env.PALMPAY_PUBLIC_KEY || '',
-        privateKey: process.env.PALMPAY_PRIVATE_KEY || '',
+        publicKey: loadKey('PALMPAY_PUBLIC_KEY', 'palmpay_public_key.pem'),
+        privateKey: loadKey('PALMPAY_PRIVATE_KEY', 'palmpay_private_key.pem'),
         webhookSecret: process.env.PALMPAY_WEBHOOK_SECRET || '',
     },
 

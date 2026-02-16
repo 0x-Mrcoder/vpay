@@ -14,20 +14,22 @@ export declare class WebhookService {
     /**
      * Log webhook for debugging and audit
      */
-    logWebhook(source: string, event: string, payload: any, signatureValid: boolean, processingResult?: any): Promise<void>;
+    logWebhook(source: string, event: string, payload: any, signatureValid: boolean, processingResult?: any): Promise<any>;
     /**
-     * Placeholder for PalmPay webhook processing
-     * This will be implemented in Phase 2
+     * Update webhook log with processing result
      */
-    /**
-     * Process PalmPay webhook event
-     */
+    updateWebhookLog(logId: string, updateData: {
+        dispatchStatus: string;
+        userId?: string;
+        processingResult?: any;
+    }): Promise<void>;
     /**
      * Process PalmPay webhook event
      */
     processWebhook(event: any): Promise<{
         success: boolean;
         message: string;
+        userId?: string;
     }>;
     private handleDeposit;
     private handleTransferUpdate;

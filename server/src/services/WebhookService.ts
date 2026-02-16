@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import { logger } from '../utils/logger';
-import { VirtualAccount, WebhookLog, SystemSetting } from '../models';
+import { VirtualAccount, WebhookLog, SystemSetting, Transaction } from '../models';
 import { walletService } from './WalletService';
+import config from '../config';
 
 export class WebhookService {
     private webhookSecret: string;
@@ -24,7 +25,7 @@ export class WebhookService {
         }
 
         try {
-            const publicKey = process.env.PALMPAY_PUBLIC_KEY;
+            const publicKey = config.palmpay.publicKey;
             if (!publicKey) {
                 logger.error('PalmPay public key not configured for webhook verification');
                 return false;
@@ -71,32 +72,38 @@ export class WebhookService {
     /**
      * Log webhook for debugging and audit
      */
-    async logWebhook(source: string, event: string, payload: any, signatureValid: boolean, processingResult?: any): Promise<void> {
+    async logWebhook(source: string, event: string, payload: any, signatureValid: boolean, processingResult?: any): Promise<any> {
         try {
-            await WebhookLog.create({
+            return await WebhookLog.create({
                 source,
-                event,
+                eventType: event,
                 payload,
                 signatureValid,
                 processingResult,
+                dispatchStatus: 'pending', // Default to pending
                 receivedAt: new Date(),
             });
         } catch (error) {
             logger.error('Failed to log webhook', error);
+            return null;
         }
     }
 
     /**
-     * Placeholder for PalmPay webhook processing
-     * This will be implemented in Phase 2
+     * Update webhook log with processing result
      */
+    async updateWebhookLog(logId: string, updateData: { dispatchStatus: string, userId?: string, processingResult?: any }): Promise<void> {
+        try {
+            await WebhookLog.findByIdAndUpdate(logId, updateData);
+        } catch (error) {
+            logger.error('Failed to update webhook log', error);
+        }
+    }
+
     /**
      * Process PalmPay webhook event
      */
-    /**
-     * Process PalmPay webhook event
-     */
-    async processWebhook(event: any): Promise<{ success: boolean; message: string }> {
+    async processWebhook(event: any): Promise<{ success: boolean; message: string; userId?: string }> {
         try {
             // PalmPay V2 might send data directly or wrapped in 'event'
             // We inspect the structure
@@ -137,7 +144,7 @@ export class WebhookService {
         }
     }
 
-    private async handleDeposit(data: any) {
+    private async handleDeposit(data: any): Promise<{ success: boolean; message: string; userId?: string }> {
         logger.info('Handling Deposit Event:', data);
 
         // Extract fields (flexible matching for debugging)
@@ -184,17 +191,24 @@ export class WebhookService {
 
         logger.info(`Deposit ${orderNo}: Amount=${amount}, Fee=${fee} (${feePercent}%), Net=${netAmount}, ClearedAt=${clearanceDate.toISOString()}`);
 
+        // 0. Idempotency Check: Ensure we haven't processed this OrderNo before
+        const existingTxn = await Transaction.findOne({ externalRef: orderNo });
+        if (existingTxn) {
+            logger.info(`Transaction with orderNo ${orderNo} already processed. Skipping.`);
+            return { success: true, message: 'Already processed', userId: virtualAccount.userId.toString() };
+        }
+
         // Credit Wallet
         try {
             const transaction = await walletService.creditWallet(
                 virtualAccount.userId.toString(),
                 netAmount, // Credit net amount
                 'deposit',
-                orderNo,
-                `Deposit from ${payerName || 'Unknown'} (${payerAccount || '****'})`,
+                `Deposit from ${payerName || 'Unknown'} (${payerAccount || '****'})`, // Narration
+                orderNo, // External Reference (OrderNo)
                 {
                     source: 'palmpay',
-                    externalReference,
+                    externalReference, // Keep original external ref from payload in metadata too
                     payerName,
                     payerAccount,
                     payerBankName,
@@ -222,12 +236,12 @@ export class WebhookService {
                 timestamp: transaction.createdAt
             });
 
-            return { success: true, message: 'Deposit processed and user notified' };
+            return { success: true, message: 'Deposit processed and user notified', userId: virtualAccount.userId.toString() };
         } catch (error: any) {
             logger.error(`Failed to credit wallet: ${error.message}`);
             // If duplicate, it's fine
             if (error.message.includes('duplicate') || error.message.includes('already processed')) {
-                return { success: true, message: 'Already processed' };
+                return { success: true, message: 'Already processed', userId: virtualAccount.userId.toString() };
             }
             throw error; // Retry for actual errors
         }
@@ -237,6 +251,7 @@ export class WebhookService {
     private async handleTransferUpdate(data: any) {
         return { success: true, message: 'Not implemented' };
     }
+
     /**
      * Send webhook notification to user
      */
