@@ -20,6 +20,7 @@ router.get('/health', (req, res) => {
  */
 router.post('/palmpay', async (req, res) => {
     try {
+        console.log('DEBUG WEBHOOK BODY:', JSON.stringify(req.body, null, 2));
         const signature = (req.headers['signature'] || req.headers['x-palm-signature'] || req.headers['sign'] || req.body.sign);
         const payload = req.rawBody || JSON.stringify(req.body);
         let isValid = services_1.webhookService.verifySignature(payload, signature);

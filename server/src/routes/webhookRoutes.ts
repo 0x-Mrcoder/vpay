@@ -21,6 +21,7 @@ router.get('/health', (req: Request, res: Response): void => {
  */
 router.post('/palmpay', async (req: Request, res: Response): Promise<void> => {
     try {
+        console.log('DEBUG WEBHOOK BODY:', JSON.stringify(req.body, null, 2));
         const signature = (req.headers['signature'] || req.headers['x-palm-signature'] || req.headers['sign'] || req.body.sign) as string;
         const payload = (req as any).rawBody || JSON.stringify(req.body);
 
