@@ -100,14 +100,14 @@ export class WebhookService {
         try {
             // PalmPay V2 might send data directly or wrapped in 'event'
             // We inspect the structure
-            const type = event.type || event.eventType || 'UNKNOWN';
+            const type = event.type || event.eventType || event.notifyType || 'UNKNOWN';
             const data = event.data || event;
 
             logger.info(`Processing PalmPay webhook event: ${type}`);
 
             // Detect "Pay In" (Virtual Account Funding)
             // Common types: 'pay_in_order', 'PAY_IN_SUCCESS', 'virtual_account_transaction'
-            if (type === 'pay_in_order' || type === 'PAY_IN_SUCCESS' || (data.orderNo && data.amount)) {
+            if (type === 'pay_in_order' || type === 'PAY_IN_SUCCESS' || type === 'vbas_virtual_bank_account' || (data.orderNo && data.amount)) {
                 return await this.handleDeposit(data);
             }
 

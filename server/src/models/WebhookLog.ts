@@ -24,7 +24,6 @@ const WebhookLogSchema = new Schema<IWebhookLogDocument>(
         },
         eventType: {
             type: String,
-            required: true,
         },
         userId: {
             type: Schema.Types.ObjectId,
@@ -36,7 +35,6 @@ const WebhookLogSchema = new Schema<IWebhookLogDocument>(
         },
         signature: {
             type: String,
-            required: true,
         },
         signatureValid: {
             type: Boolean,
