@@ -145,7 +145,8 @@ class WebhookService {
             logger_1.logger.info('Full Event Data:', JSON.stringify(event));
             // Detect "Pay In" (Virtual Account Funding)
             // Common types: 'pay_in_order', 'PAY_IN_SUCCESS', 'virtual_account_transaction'
-            if (type === 'pay_in_order' || type === 'PAY_IN_SUCCESS' || type === 'vbas_virtual_bank_account' || (data.orderNo && data.amount)) {
+            // Also match direct payload with orderAmount
+            if (type === 'pay_in_order' || type === 'PAY_IN_SUCCESS' || type === 'vbas_virtual_bank_account' || (data.orderNo && (data.amount || data.orderAmount))) {
                 return await this.handleDeposit(data);
             }
             logger_1.logger.warn(`Unknown or Unhandled webhook event type: ${type}`);
@@ -163,15 +164,17 @@ class WebhookService {
         logger_1.logger.info('Handling Deposit Event:', data);
         // Extract fields (flexible matching for debugging)
         const orderNo = data.orderNo || data.paymentReference || data.transId;
-        const amount = data.amount || data.transAmount; // Check limits (kobo vs naira)
-        const status = data.status || data.transStatus;
+        const amount = data.amount || data.transAmount || data.orderAmount; // Check limits (kobo vs naira)
+        const status = data.status || data.transStatus || data.orderStatus;
         const payerName = data.payerName || data.customerName;
-        const payerAccount = data.payerAccount || data.customerAccount;
+        const payerAccount = data.payerAccount || data.customerAccount || data.payerAccountNo;
         // Try to find target Virtual Account
         let virtualAccountNo = data.virtualAccount || data.virtualAccountNo || data.accountNumber;
         let externalReference = data.externalReference || data.orderId;
         logger_1.logger.info(`Extracted Data - OrderNo: ${orderNo}, Amount: ${amount}, Status: ${status}, VA: ${virtualAccountNo}`);
-        if (status !== 'SUCCESS') {
+        // Normalize status check (PalmPay might send "SUCCESS", "00", or 1)
+        const isSuccess = status === 'SUCCESS' || status === '00' || status === 1 || status === '1';
+        if (!isSuccess) {
             logger_1.logger.info(`Deposit ${orderNo} status is ${status}, ignoring.`);
             return { success: true, message: 'Ignored non-success deposit' };
         }
