@@ -54,7 +54,8 @@ export class WalletService {
         metadata?: Record<string, any>,
         customerReference?: string,
         fee: number = 0,
-        isCleared: boolean = true
+        isCleared: boolean = true,
+        clearedAt?: Date
     ): Promise<typeof Transaction.prototype> {
         try {
             const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
@@ -89,7 +90,7 @@ export class WalletService {
                 metadata,
                 customerReference,
                 isCleared,
-                clearedAt: isCleared ? new Date() : undefined
+                clearedAt: isCleared ? new Date() : clearedAt
             });
             await transaction.save();
 

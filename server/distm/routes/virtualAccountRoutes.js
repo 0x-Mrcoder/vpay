@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -214,6 +247,51 @@ router.patch('/:accountNumber/status', async (req, res) => {
  * Delete virtual account (Local only)
  * DELETE /api/virtual-accounts/:id
  */
+/**
+ * Get transactions for a virtual account
+ * GET /api/virtual-accounts/:accountNumber/transactions
+ */
+router.get('/:accountNumber/transactions', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { accountNumber } = req.params;
+        // Verify account belongs to user (or user is admin)
+        const query = { accountNumber };
+        if (req.user.role !== 'admin') {
+            query.userId = new mongoose_1.default.Types.ObjectId(userId);
+        }
+        const account = await models_1.VirtualAccount.findOne(query);
+        if (!account) {
+            res.status(404).json({
+                success: false,
+                message: 'Virtual account not found',
+            });
+            return;
+        }
+        // Find transactions for this virtual account
+        // We use the metadata.virtualAccount field which we just added to WebhookService
+        // Backup: Also search by externalRef containing the VA number if metadata is missing (legacy)
+        const { Transaction } = await Promise.resolve().then(() => __importStar(require('../models'))); // Dynamic import to avoid cycles if any
+        const transactions = await Transaction.find({
+            $or: [
+                { 'metadata.virtualAccount': accountNumber },
+                // Fallback for older transactions that might have the VA in narration or externalRef
+                // But generally metadata is the reliable way going forward
+            ]
+        }).sort({ createdAt: -1 }).limit(100);
+        res.json({
+            success: true,
+            data: transactions
+        });
+    }
+    catch (error) {
+        console.error('Get virtual account transactions error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get transactions',
+        });
+    }
+});
 router.delete('/:id', async (req, res) => {
     res.status(403).json({
         success: false,

@@ -125,6 +125,31 @@ class PayoutService {
                 retryCount: 0,
             });
             await payout.save();
+            // Create Transaction Record (Pending)
+            const transaction = new models_1.Transaction({
+                userId,
+                walletId: wallet._id,
+                type: 'debit',
+                category: 'withdrawal',
+                amount: totalDeducted,
+                fee: fees.fee + fees.gatewayFee,
+                balanceBefore: wallet.balance + totalDeducted,
+                balanceAfter: wallet.balance,
+                reference: payout.reference,
+                narration: `Withdrawal to ${details.accountNumber} - ${details.bankCode}`,
+                status: 'pending',
+                metadata: {
+                    payoutId: payout._id,
+                    beneficiary: {
+                        accountNumber: details.accountNumber,
+                        accountName: details.accountName,
+                        bankCode: details.bankCode
+                    }
+                },
+                isCleared: true, // Balance is already deducted
+                clearedAt: new Date()
+            });
+            await transaction.save();
             // Process with Payrant
             try {
                 const transferResponse = await PayrantService_1.payrantService.transfer({
@@ -137,14 +162,22 @@ class PayoutService {
                 });
                 logger_1.logger.info(`Payrant transfer initiated: ${JSON.stringify(transferResponse)}`);
                 // Update reference with Payrant's reference if available
-                payout.reference = transferResponse.reference || payout.reference;
-                await payout.save();
+                if (transferResponse.reference) {
+                    payout.reference = transferResponse.reference;
+                    await payout.save();
+                    // Update transaction reference too
+                    transaction.reference = transferResponse.reference;
+                    await transaction.save();
+                }
                 // Return success (status remains INITIATED until webhook)
                 return payout;
             }
             catch (gatewayError) {
                 // If gateway call fails, fail the payout immediately
                 logger_1.logger.error('Payrant transfer failed:', gatewayError);
+                // Mark transaction as failed
+                transaction.status = 'failed';
+                await transaction.save();
                 throw new Error(gatewayError.message || 'Payment gateway failed to process transfer');
             }
         }
@@ -164,35 +197,49 @@ class PayoutService {
             return;
         payout.status = 'COMPLETED';
         await payout.save();
-        // Create Transaction Record
+        // Update Transaction Record
         const wallet = await models_1.Wallet.findOne({ userId: payout.userId });
         if (wallet) {
-            await models_1.Transaction.create({
-                userId: payout.userId,
-                walletId: wallet._id,
-                type: 'debit',
-                category: 'withdrawal',
-                amount: payout.totalDebit,
-                reference: payout.reference,
-                narration: `Withdrawal of ₦${payout.amount / 100} (Fee: ₦${(payout.totalDebit - payout.amount) / 100})`,
-                status: 'success',
-                balanceBefore: wallet.balance + payout.totalDebit,
-                balanceAfter: wallet.balance,
-                payoutId: payout._id,
-                metadata: {
-                    fees: {
-                        fee: payout.fee,
-                        gatewayFee: payout.payrantFee,
-                        totalDebit: payout.totalDebit,
-                        netAmount: payout.amount
-                    },
-                    beneficiary: {
-                        accountNumber: payout.accountNumber,
-                        accountName: payout.accountName,
-                        bankCode: payout.bankCode
-                    }
-                }
+            // Try to find existing transaction
+            let transaction = await models_1.Transaction.findOne({
+                $or: [
+                    { reference: payout.reference },
+                    { 'metadata.payoutId': payout._id }
+                ]
             });
+            if (transaction) {
+                transaction.status = 'success';
+                await transaction.save();
+            }
+            else {
+                // Fallback: Create new if not found (for old payouts or race conditions)
+                await models_1.Transaction.create({
+                    userId: payout.userId,
+                    walletId: wallet._id,
+                    type: 'debit',
+                    category: 'withdrawal',
+                    amount: payout.totalDebit,
+                    reference: payout.reference,
+                    narration: `Withdrawal of ₦${payout.amount / 100} (Fee: ₦${(payout.totalDebit - payout.amount) / 100})`,
+                    status: 'success',
+                    balanceBefore: wallet.balance + payout.totalDebit,
+                    balanceAfter: wallet.balance,
+                    payoutId: payout._id,
+                    metadata: {
+                        fees: {
+                            fee: payout.fee,
+                            gatewayFee: payout.payrantFee,
+                            totalDebit: payout.totalDebit,
+                            netAmount: payout.amount
+                        },
+                        beneficiary: {
+                            accountNumber: payout.accountNumber,
+                            accountName: payout.accountName,
+                            bankCode: payout.bankCode
+                        }
+                    }
+                });
+            }
         }
         logger_1.logger.info(`Payout ${payout.reference} marked as COMPLETED`);
     }
@@ -217,6 +264,18 @@ class PayoutService {
             wallet.balance += refundAmount;
             await wallet.save();
             logger_1.logger.info(`Payout ${payout.reference} failed. Wallet refunded. Reason: ${reason}`);
+            // Mark transaction as failed
+            const transaction = await models_1.Transaction.findOne({
+                $or: [
+                    { reference: payout.reference },
+                    { 'metadata.payoutId': payout._id }
+                ]
+            });
+            if (transaction) {
+                transaction.status = 'failed';
+                transaction.narration += ` (Failed: ${reason})`;
+                await transaction.save();
+            }
         }
     }
     /**

@@ -21,7 +21,7 @@ export declare class WalletService {
     /**
      * Credit wallet (add funds)
      */
-    creditWallet(userId: string, amount: number, category: 'deposit' | 'refund', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string, fee?: number, isCleared?: boolean): Promise<typeof Transaction.prototype>;
+    creditWallet(userId: string, amount: number, category: 'deposit' | 'refund', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string, fee?: number, isCleared?: boolean, clearedAt?: Date): Promise<typeof Transaction.prototype>;
     /**
      * Debit wallet (remove funds)
      */

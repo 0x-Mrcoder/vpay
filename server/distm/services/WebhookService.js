@@ -168,6 +168,7 @@ class WebhookService {
         const status = data.status || data.transStatus || data.orderStatus;
         const payerName = data.payerName || data.customerName;
         const payerAccount = data.payerAccount || data.customerAccount || data.payerAccountNo;
+        const payerBankName = data.payerBankName || data.bankName;
         // Try to find target Virtual Account
         let virtualAccountNo = data.virtualAccount || data.virtualAccountNo || data.accountNumber;
         let externalReference = data.externalReference || data.orderId;
@@ -183,15 +184,33 @@ class WebhookService {
             logger_1.logger.error(`Virtual Account not found: ${virtualAccountNo}`);
             return { success: false, message: 'Virtual Account not found' };
         }
+        // Get System Settings for Fee
+        const settings = await models_1.SystemSetting.findOne();
+        const feePercent = settings?.deposit?.virtualAccountChargePercent || 1.0;
+        // Calculate Fee and Net Amount
+        const fee = (amount * feePercent) / 100;
+        const netAmount = amount - fee;
+        // Calculate Clearance Date (24 hours + 5 minutes)
+        const clearanceDate = new Date();
+        clearanceDate.setHours(clearanceDate.getHours() + 24);
+        clearanceDate.setMinutes(clearanceDate.getMinutes() + 5);
+        logger_1.logger.info(`Deposit ${orderNo}: Amount=${amount}, Fee=${fee} (${feePercent}%), Net=${netAmount}, ClearedAt=${clearanceDate.toISOString()}`);
         // Credit Wallet
         try {
-            const transaction = await WalletService_1.walletService.creditWallet(virtualAccount.userId.toString(), amount, // kobo
+            const transaction = await WalletService_1.walletService.creditWallet(virtualAccount.userId.toString(), netAmount, // Credit net amount
             'deposit', orderNo, `Deposit from ${payerName || 'Unknown'} (${payerAccount || '****'})`, {
                 source: 'palmpay',
                 externalReference,
                 payerName,
-                payerAccount
-            });
+                payerAccount,
+                payerBankName,
+                virtualAccount: virtualAccount.accountNumber, // Link transaction to VA
+                originalAmount: amount, // Store original amount in metadata
+                appliedFee: fee
+            }, undefined, // customerReference
+            fee, false, // isCleared = false (Pending Settlement)
+            clearanceDate // Custom clearance date
+            );
             // Notify User via Webhook
             await this.sendUserWebhook(virtualAccount.userId.toString(), 'transaction.deposit', {
                 reference: transaction.reference,

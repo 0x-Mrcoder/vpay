@@ -131,7 +131,7 @@ class PayrantService {
      */
     async transfer(data: PayrantTransferRequest): Promise<PayrantTransferResponse> {
         try {
-            const response = await this.client.post('/payout/transfer', data);
+            const response = await this.client.post('/payout/transfer/', data);
 
             if (response.data.status === 'success' && response.data.data) {
                 return response.data.data;

@@ -99,6 +99,7 @@ router.get('/', async (req: AuthenticatedRequest, res: Response): Promise<void> 
                     externalRef: txn.externalRef,
                     narration: txn.narration,
                     status: txn.status,
+                    metadata: txn.metadata,
                     createdAt: txn.createdAt,
                 })),
                 pagination: {

@@ -101,6 +101,7 @@ const SystemSettingSchema = new mongoose_1.Schema({
     },
     deposit: {
         vtpayFeePercent: { type: Number, default: 2.0 }, // Default 2% total fee
+        virtualAccountChargePercent: { type: Number, default: 1.0 }, // Default 1% for virtual account deposits
     },
 }, {
     timestamps: true,

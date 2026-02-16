@@ -61,6 +61,7 @@ export interface ISystemSettingDocument extends Document {
     };
     deposit: {
         vtpayFeePercent: number;
+        virtualAccountChargePercent: number;
     };
     updatedAt: Date;
 }

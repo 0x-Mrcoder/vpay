@@ -47,7 +47,7 @@ class WalletService {
     /**
      * Credit wallet (add funds)
      */
-    async creditWallet(userId, amount, category, narration, externalRef, metadata, customerReference, fee = 0, isCleared = true) {
+    async creditWallet(userId, amount, category, narration, externalRef, metadata, customerReference, fee = 0, isCleared = true, clearedAt) {
         try {
             const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
             if (!wallet) {
@@ -78,7 +78,7 @@ class WalletService {
                 metadata,
                 customerReference,
                 isCleared,
-                clearedAt: isCleared ? new Date() : undefined
+                clearedAt: isCleared ? new Date() : clearedAt
             });
             await transaction.save();
             return transaction;

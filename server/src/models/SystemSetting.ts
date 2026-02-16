@@ -64,6 +64,7 @@ export interface ISystemSettingDocument extends Document {
     };
     deposit: {
         vtpayFeePercent: number;
+        virtualAccountChargePercent: number;
     };
     updatedAt: Date;
 }
@@ -135,6 +136,7 @@ const SystemSettingSchema = new Schema<ISystemSettingDocument>(
         },
         deposit: {
             vtpayFeePercent: { type: Number, default: 2.0 }, // Default 2% total fee
+            virtualAccountChargePercent: { type: Number, default: 1.0 }, // Default 1% for virtual account deposits
         },
     },
     {

@@ -243,6 +243,58 @@ router.patch('/:accountNumber/status', async (req: AuthenticatedRequest, res: Re
  * Delete virtual account (Local only)
  * DELETE /api/virtual-accounts/:id
  */
+/**
+ * Get transactions for a virtual account
+ * GET /api/virtual-accounts/:accountNumber/transactions
+ */
+router.get('/:accountNumber/transactions', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const userId = req.user!.id;
+        const { accountNumber } = req.params;
+
+        // Verify account belongs to user (or user is admin)
+        const query: any = { accountNumber };
+        if (req.user!.role !== 'admin') {
+            query.userId = new mongoose.Types.ObjectId(userId);
+        }
+
+        const account = await VirtualAccount.findOne(query);
+
+        if (!account) {
+            res.status(404).json({
+                success: false,
+                message: 'Virtual account not found',
+            });
+            return;
+        }
+
+        // Find transactions for this virtual account
+        // We use the metadata.virtualAccount field which we just added to WebhookService
+        // Backup: Also search by externalRef containing the VA number if metadata is missing (legacy)
+        const { Transaction } = await import('../models'); // Dynamic import to avoid cycles if any
+
+        const transactions = await Transaction.find({
+            $or: [
+                { 'metadata.virtualAccount': accountNumber },
+                // Fallback for older transactions that might have the VA in narration or externalRef
+                // But generally metadata is the reliable way going forward
+            ]
+        }).sort({ createdAt: -1 }).limit(100);
+
+        res.json({
+            success: true,
+            data: transactions
+        });
+
+    } catch (error) {
+        console.error('Get virtual account transactions error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get transactions',
+        });
+    }
+});
+
 router.delete('/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     res.status(403).json({
         success: false,

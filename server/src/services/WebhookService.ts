@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { logger } from '../utils/logger';
-import { VirtualAccount, WebhookLog } from '../models';
+import { VirtualAccount, WebhookLog, SystemSetting } from '../models';
 import { walletService } from './WalletService';
 
 export class WebhookService {
@@ -147,6 +147,8 @@ export class WebhookService {
         const payerName = data.payerName || data.customerName;
         const payerAccount = data.payerAccount || data.customerAccount || data.payerAccountNo;
 
+        const payerBankName = data.payerBankName || data.bankName;
+
         // Try to find target Virtual Account
         let virtualAccountNo = data.virtualAccount || data.virtualAccountNo || data.accountNumber;
         let externalReference = data.externalReference || data.orderId;
@@ -167,11 +169,26 @@ export class WebhookService {
             return { success: false, message: 'Virtual Account not found' };
         }
 
+        // Get System Settings for Fee
+        const settings = await SystemSetting.findOne();
+        const feePercent = settings?.deposit?.virtualAccountChargePercent || 1.0;
+
+        // Calculate Fee and Net Amount
+        const fee = (amount * feePercent) / 100;
+        const netAmount = amount - fee;
+
+        // Calculate Clearance Date (24 hours + 5 minutes)
+        const clearanceDate = new Date();
+        clearanceDate.setHours(clearanceDate.getHours() + 24);
+        clearanceDate.setMinutes(clearanceDate.getMinutes() + 5);
+
+        logger.info(`Deposit ${orderNo}: Amount=${amount}, Fee=${fee} (${feePercent}%), Net=${netAmount}, ClearedAt=${clearanceDate.toISOString()}`);
+
         // Credit Wallet
         try {
             const transaction = await walletService.creditWallet(
                 virtualAccount.userId.toString(),
-                amount, // kobo
+                netAmount, // Credit net amount
                 'deposit',
                 orderNo,
                 `Deposit from ${payerName || 'Unknown'} (${payerAccount || '****'})`,
@@ -179,8 +196,16 @@ export class WebhookService {
                     source: 'palmpay',
                     externalReference,
                     payerName,
-                    payerAccount
-                }
+                    payerAccount,
+                    payerBankName,
+                    virtualAccount: virtualAccount.accountNumber, // Link transaction to VA
+                    originalAmount: amount, // Store original amount in metadata
+                    appliedFee: fee
+                },
+                undefined, // customerReference
+                fee,
+                false, // isCleared = false (Pending Settlement)
+                clearanceDate // Custom clearance date
             );
 
             // Notify User via Webhook

@@ -35,13 +35,16 @@ class CronService {
                 logger_1.logger.info('Running Deposit Clearance Job...');
                 // 24 Hours Ago (plus small buffer if needed, e.g. 1 minute to avoid race conditions with exact ms)
                 // User asked for "24 hour and 5 minute"
-                const clearanceThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000 - 5 * 60 * 1000);
+                const now = new Date();
                 const transactionsToClear = await Transaction_1.Transaction.find({
                     type: 'credit', // Deposits are credits
                     category: { $in: ['deposit', 'transfer'] }, // Only deposits (and pending transfers if applicable)
                     status: 'success', // Must be successful
                     isCleared: false, // Not yet cleared
-                    createdAt: { $lte: clearanceThreshold } // Older than 24h 5m
+                    $or: [
+                        { clearedAt: { $lte: now } }, // Explicit clearance date passed
+                        { clearedAt: { $exists: false }, createdAt: { $lte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } // Fallback for legacy data (24h default)
+                    ]
                 }).limit(50); // Process in batches of 50 to avoid locking
                 if (transactionsToClear.length > 0) {
                     logger_1.logger.info(`Found ${transactionsToClear.length} pending deposits to clear.`);

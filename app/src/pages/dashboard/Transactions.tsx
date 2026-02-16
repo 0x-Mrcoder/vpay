@@ -99,6 +99,12 @@ export const Transactions: React.FC = () => {
         }
     };
 
+    const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+
+    const handleTransactionClick = (txn: any) => {
+        setSelectedTransaction(txn);
+    };
+
     return (
         <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
             {/* Header */}
@@ -223,7 +229,11 @@ export const Transactions: React.FC = () => {
                                         transactions.map((txn) => {
                                             const status = getStatusStyles(txn.status);
                                             return (
-                                                <tr key={txn.id} className="hover:bg-gray-50/80 transition-colors group">
+                                                <tr
+                                                    key={txn.id}
+                                                    className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
+                                                    onClick={() => handleTransactionClick(txn)}
+                                                >
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
                                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${txn.type === 'credit'
@@ -310,7 +320,11 @@ export const Transactions: React.FC = () => {
                                 transactions.map((txn) => {
                                     const status = getStatusStyles(txn.status);
                                     return (
-                                        <div key={txn.id} className="p-4 active:bg-gray-50 transition-colors">
+                                        <div
+                                            key={txn.id}
+                                            className="p-4 active:bg-gray-50 transition-colors"
+                                            onClick={() => handleTransactionClick(txn)}
+                                        >
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.type === 'credit'
@@ -378,6 +392,108 @@ export const Transactions: React.FC = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Transaction Details Modal */}
+            {selectedTransaction && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedTransaction(null)}>
+                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 space-y-6" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setSelectedTransaction(null)}
+                            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <XCircle size={24} />
+                        </button>
+
+                        {/* Title */}
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-gray-900">Transaction Details</h3>
+                            <p className="text-sm text-gray-500">View complete summary of this transaction</p>
+                        </div>
+
+                        {/* Amount & Status Panel */}
+                        <div className="bg-gray-50 rounded-2xl p-6 flex flex-col items-center justify-center border border-gray-100">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${selectedTransaction.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                                }`}>
+                                {selectedTransaction.type === 'credit' ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
+                            </div>
+                            <h2 className={`text-3xl font-extrabold ${selectedTransaction.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
+                                {selectedTransaction.type === 'credit' ? '+' : '-'}{formatCurrency(selectedTransaction.amountNaira)}
+                            </h2>
+                            <div className={`mt-2 ${getStatusStyles(selectedTransaction.status).className}`}>
+                                {getStatusStyles(selectedTransaction.status).icon}
+                                <span className="uppercase tracking-wide">{selectedTransaction.status}</span>
+                            </div>
+                        </div>
+
+                        {/* Details Grid */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                                <span className="text-sm text-gray-500 font-medium">Reference</span>
+                                <span className="text-sm font-mono text-gray-900 bg-gray-50 px-2 py-1 rounded">{selectedTransaction.reference}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                                <span className="text-sm text-gray-500 font-medium">Date & Time</span>
+                                <span className="text-sm font-semibold text-gray-900">
+                                    {new Date(selectedTransaction.createdAt).toLocaleString('en-US', {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'short'
+                                    })}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                                <span className="text-sm text-gray-500 font-medium">Type</span>
+                                <span className="text-sm font-bold capitalize text-gray-900">{selectedTransaction.type}</span>
+                            </div>
+
+                            <div className="flex justify-between items-start py-3 border-b border-gray-100">
+                                <span className="text-sm text-gray-500 font-medium">Narration</span>
+                                <span className="text-sm font-medium text-gray-900 text-right max-w-[60%]">{selectedTransaction.narration}</span>
+                            </div>
+
+                            {/* Sender/Beneficiary Details from Metadata */}
+                            {selectedTransaction.metadata && (
+                                <>
+                                    <div className="pt-2 pb-1">
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                                            {selectedTransaction.type === 'credit' ? 'Sender Details' : 'Beneficiary Details'}
+                                        </h4>
+                                        <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
+                                            {(selectedTransaction.metadata.payerName || selectedTransaction.metadata.accountName) && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-xs text-gray-500">Name</span>
+                                                    <span className="text-sm font-bold text-gray-900">{selectedTransaction.metadata.payerName || selectedTransaction.metadata.accountName}</span>
+                                                </div>
+                                            )}
+                                            {(selectedTransaction.metadata.payerAccount || selectedTransaction.metadata.accountNumber) && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-xs text-gray-500">Account Number</span>
+                                                    <span className="text-sm font-mono text-gray-900">{selectedTransaction.metadata.payerAccount || selectedTransaction.metadata.accountNumber}</span>
+                                                </div>
+                                            )}
+                                            {(selectedTransaction.metadata.payerBankName || selectedTransaction.metadata.bankName) && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-xs text-gray-500">Bank</span>
+                                                    <span className="text-sm font-bold text-gray-900">{selectedTransaction.metadata.payerBankName || selectedTransaction.metadata.bankName}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="pt-2">
+                            <button className="w-full py-3.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
+                                <Download size={18} />
+                                Download Receipt
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
