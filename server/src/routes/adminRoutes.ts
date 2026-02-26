@@ -408,7 +408,7 @@ router.delete('/tenants/:id', async (req: AuthenticatedRequest, res: Response): 
         }
 
         // Prevent deleting admin
-        if (['admin@vtfree.com', 'admin@myconnecta.ng'].includes(user.email)) {
+        if (['admin@vtstack.com.ng', 'admin@myconnecta.ng'].includes(user.email)) {
             res.status(403).json({
                 success: false,
                 message: 'Cannot delete admin account',

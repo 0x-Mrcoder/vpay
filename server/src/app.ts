@@ -25,7 +25,14 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-    origin: '*',
+    origin: [
+        'https://vtstack.com.ng',
+        'https://admin.vtstack.com.ng',
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173',
+        'http://localhost:5174'
+    ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-palm-signature'],
 }));
