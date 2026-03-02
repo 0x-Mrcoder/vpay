@@ -249,29 +249,40 @@ class EmailService {
     /**
      * Send webhook failure notification email
      */
-    async sendWebhookFailureNotification(email: string, name: string, webhookUrl: string, error: string): Promise<void> {
-        const settingsLink = `${config.app.url || 'http://localhost:5173'}/dashboard/settings`;
+    /**
+     * Send notification to admins for KYC or Business Upgrade submission
+     */
+    async sendKycSubmissionAdminNotification(user: any, submissionType: 'KYC' | 'Business Upgrade'): Promise<void> {
+        const adminEmails = ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com'];
+        const settings = await SystemSetting.findOne();
+        const companyName = settings?.general?.companyName || 'VTStack';
 
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #dc2626;">Webhook Delivery Failed</h2>
-                <p>Hello ${name},</p>
-                <p>We attempted to send a webhook notification to your configured URL but it failed.</p>
+                <h2 style="color: #16a34a;">New Document Submission</h2>
+                <p>Hello Admin,</p>
+                <p>A user has submitted documents for <strong>${submissionType}</strong> verification on ${companyName}.</p>
                 
-                <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #fecaca;">
-                    <p style="margin: 5px 0; color: #991b1b;"><strong>URL:</strong> ${webhookUrl}</p>
-                    <p style="margin: 5px 0; color: #991b1b;"><strong>Error:</strong> ${error}</p>
+                <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>User Name:</strong> ${user.fullName || (user.firstName + ' ' + user.lastName)}</p>
+                    <p style="margin: 5px 0;"><strong>User Email:</strong> ${user.email}</p>
+                    <p style="margin: 5px 0;"><strong>Submission Type:</strong> ${submissionType}</p>
+                    <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date().toLocaleString()}</p>
                 </div>
 
-                <p>Please check your server logs and ensure your webhook endpoint is accessible.</p>
-                <div style="margin: 30px 0; text-align: center;">
-                    <a href="${settingsLink}" style="background-color: #4b5563; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Check Settings</a>
-                </div>
+                <p>Please log in to the admin dashboard to review and approve/reject this submission.</p>
+                
                 <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} VTStack. All rights reserved.</p>
+                <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
             </div>
         `;
-        return this.sendEmail(email, 'Action Required: Webhook Delivery Failed - VTStack', html);
+
+        const subject = `New ${submissionType} Submission - ${user.fullName || user.email}`;
+
+        // Send to each admin email
+        const sendPromises = adminEmails.map(email => this.sendEmail(email, subject, html));
+        await Promise.all(sendPromises);
+        console.log(`[EmailService] KYC submission notification sent to admins for user ${user.email}`);
     }
 }
 

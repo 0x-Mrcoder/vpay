@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { User } from '../models';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { emailService } from '../services';
 
 const router = Router();
 
@@ -78,6 +79,11 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
 
         await user.save();
 
+        // Notify admins
+        emailService.sendKycSubmissionAdminNotification(user, 'KYC').catch(err =>
+            console.error('[KYC] Failed to send admin notification:', err)
+        );
+
         res.json({
             success: true,
             message: 'KYC details submitted successfully. Your account is pending approval.',
@@ -128,6 +134,11 @@ router.post('/upgrade-business', authenticate, async (req: AuthenticatedRequest,
         // user.upgradeRequest = 'pending'; // If we had such a field
 
         await user.save();
+
+        // Notify admins
+        emailService.sendKycSubmissionAdminNotification(user, 'Business Upgrade').catch(err =>
+            console.error('[KYC] Failed to send admin notification for business upgrade:', err)
+        );
 
         res.json({
             success: true,
