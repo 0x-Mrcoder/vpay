@@ -15,7 +15,14 @@ const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 // CORS configuration
 app.use((0, cors_1.default)({
-    origin: '*',
+    origin: [
+        'https://vtstack.com.ng',
+        'https://admin.vtstack.com.ng',
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173',
+        'http://localhost:5174'
+    ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-palm-signature'],
 }));

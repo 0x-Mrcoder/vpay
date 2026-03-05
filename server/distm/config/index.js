@@ -44,10 +44,10 @@ exports.config = {
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     },
     // Webhook
-    webhookBaseUrl: process.env.WEBHOOK_BASE_URL || 'https://vtpayapi.vtfree.com.ng',
+    webhookBaseUrl: process.env.WEBHOOK_BASE_URL || 'https://api.vtstack.com.ng',
     // App
     app: {
-        url: process.env.APP_URL || 'https://vtpay.vtfree.com.ng',
+        url: process.env.APP_URL || 'https://vtstack.com.ng',
     },
 };
 exports.default = exports.config;

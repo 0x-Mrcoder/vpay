@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { User } from '../models';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { emailService } from '../services';
+import { uploadToCloudinary } from '../services/cloudinary';
 
 const router = Router();
 
@@ -64,14 +65,37 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
             return;
         }
 
+        // Upload documents to Cloudinary if they are provided as base64
+        // If they are already URLs (starts with http), skip upload
+        let idCardUrl = idCard;
+        let selfieUrl = selfie;
+
+        if (idCard && idCard.startsWith('data:image')) {
+            try {
+                idCardUrl = await uploadToCloudinary(idCard, `kyc/${user._id}/id_card`);
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to upload ID card image' });
+                return;
+            }
+        }
+
+        if (selfie && selfie.startsWith('data:image')) {
+            try {
+                selfieUrl = await uploadToCloudinary(selfie, `kyc/${user._id}/selfie`);
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to upload selfie image' });
+                return;
+            }
+        }
+
         // Update user KYC details
         user.state = state;
         user.lga = lga;
         user.address = address;
         user.bvn = bvn;
         user.identityType = identityType;
-        user.idCardPath = idCard;
-        user.selfiePath = selfie;
+        user.idCardPath = idCardUrl;
+        user.selfiePath = selfieUrl;
         if (nin) user.nin = nin;
 
         user.kycLevel = 2; // 2: KYC Submitted (Pending Approval)
@@ -125,11 +149,21 @@ router.post('/upgrade-business', authenticate, async (req: AuthenticatedRequest,
             return;
         }
 
+        let cacUrl = cacDocument;
+        if (cacDocument && cacDocument.startsWith('data:')) {
+            try {
+                cacUrl = await uploadToCloudinary(cacDocument, `business/${user._id}/cac`);
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to upload CAC document' });
+                return;
+            }
+        }
+
         user.businessName = businessName;
         user.businessAddress = businessAddress;
         user.businessPhone = businessPhone;
         user.rcNumber = rcNumber;
-        user.cacDocumentPath = cacDocument;
+        user.cacDocumentPath = cacUrl;
         // Maybe set a flag indicating business upgrade request?
         // user.upgradeRequest = 'pending'; // If we had such a field
 

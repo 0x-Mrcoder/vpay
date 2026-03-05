@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const models_1 = require("../models");
 const auth_1 = require("../middleware/auth");
+const services_1 = require("../services");
+const cloudinary_1 = require("../services/cloudinary");
 const router = (0, express_1.Router)();
 /**
  * Submit KYC details
@@ -60,19 +62,43 @@ router.post('/submit', auth_1.authenticate, async (req, res) => {
             });
             return;
         }
+        // Upload documents to Cloudinary if they are provided as base64
+        // If they are already URLs (starts with http), skip upload
+        let idCardUrl = idCard;
+        let selfieUrl = selfie;
+        if (idCard && idCard.startsWith('data:image')) {
+            try {
+                idCardUrl = await (0, cloudinary_1.uploadToCloudinary)(idCard, `kyc/${user._id}/id_card`);
+            }
+            catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to upload ID card image' });
+                return;
+            }
+        }
+        if (selfie && selfie.startsWith('data:image')) {
+            try {
+                selfieUrl = await (0, cloudinary_1.uploadToCloudinary)(selfie, `kyc/${user._id}/selfie`);
+            }
+            catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to upload selfie image' });
+                return;
+            }
+        }
         // Update user KYC details
         user.state = state;
         user.lga = lga;
         user.address = address;
         user.bvn = bvn;
         user.identityType = identityType;
-        user.idCardPath = idCard;
-        user.selfiePath = selfie;
+        user.idCardPath = idCardUrl;
+        user.selfiePath = selfieUrl;
         if (nin)
             user.nin = nin;
         user.kycLevel = 2; // 2: KYC Submitted (Pending Approval)
         user.kyc_status = 'pending';
         await user.save();
+        // Notify admins
+        services_1.emailService.sendKycSubmissionAdminNotification(user, 'KYC').catch(err => console.error('[KYC] Failed to send admin notification:', err));
         res.json({
             success: true,
             message: 'KYC details submitted successfully. Your account is pending approval.',
@@ -110,14 +136,26 @@ router.post('/upgrade-business', auth_1.authenticate, async (req, res) => {
             res.status(404).json({ message: 'User not found' });
             return;
         }
+        let cacUrl = cacDocument;
+        if (cacDocument && cacDocument.startsWith('data:')) {
+            try {
+                cacUrl = await (0, cloudinary_1.uploadToCloudinary)(cacDocument, `business/${user._id}/cac`);
+            }
+            catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to upload CAC document' });
+                return;
+            }
+        }
         user.businessName = businessName;
         user.businessAddress = businessAddress;
         user.businessPhone = businessPhone;
         user.rcNumber = rcNumber;
-        user.cacDocumentPath = cacDocument;
+        user.cacDocumentPath = cacUrl;
         // Maybe set a flag indicating business upgrade request?
         // user.upgradeRequest = 'pending'; // If we had such a field
         await user.save();
+        // Notify admins
+        services_1.emailService.sendKycSubmissionAdminNotification(user, 'Business Upgrade').catch(err => console.error('[KYC] Failed to send admin notification for business upgrade:', err));
         res.json({
             success: true,
             message: 'Business upgrade request submitted.',

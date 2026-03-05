@@ -47,6 +47,7 @@ const startServer = async () => {
         // Initialize Cron Jobs
         const { cronService } = await Promise.resolve().then(() => __importStar(require('./services/CronService')));
         cronService.startDepositClearanceJob();
+        cronService.startBackupJob();
         // Initialize PalmPay Service
         const { palmPayService } = await Promise.resolve().then(() => __importStar(require('./services/PalmPayService')));
         logger_1.logger.info('✅ PalmPay Service initialized');

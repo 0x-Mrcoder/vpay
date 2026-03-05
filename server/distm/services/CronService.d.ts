@@ -13,6 +13,10 @@ export declare class CronService {
      * Checks every minute for transactions that have matured (24h)
      */
     startDepositClearanceJob(): void;
+    /**
+     * Start the hourly database backup to Drive
+     */
+    startBackupJob(): void;
 }
 export declare const cronService: CronService;
 export default cronService;

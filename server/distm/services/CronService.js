@@ -8,6 +8,7 @@ const node_cron_1 = __importDefault(require("node-cron"));
 const Transaction_1 = require("../models/Transaction");
 const Wallet_1 = require("../models/Wallet");
 const logger_1 = require("../utils/logger");
+const BackupService_1 = require("./BackupService");
 class CronService {
     constructor() {
         this.isRunning = false;
@@ -95,6 +96,23 @@ class CronService {
             }
         });
         logger_1.logger.info('Cron Service: Deposit Clearance Job scheduled (Every Minute).Checking for deposits older than 24h 5m.');
+    }
+    /**
+     * Start the hourly database backup to Drive
+     */
+    startBackupJob() {
+        // Run every hour at the 0 minute mark
+        node_cron_1.default.schedule('0 * * * *', async () => {
+            try {
+                logger_1.logger.info('Running Hourly Database Backup to Drive...');
+                await BackupService_1.backupService.createAndUploadBackup();
+                logger_1.logger.info('Hourly Database Backup completed successfully.');
+            }
+            catch (error) {
+                logger_1.logger.error('Error in Hourly Database Backup Job', error);
+            }
+        });
+        logger_1.logger.info('Cron Service: Hourly Database Backup job scheduled.');
     }
 }
 exports.CronService = CronService;

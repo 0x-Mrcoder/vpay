@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { Transaction } from '../models/Transaction';
 import { Wallet } from '../models/Wallet';
 import { logger } from '../utils/logger';
+import { backupService } from './BackupService';
 
 export class CronService {
     private isRunning: boolean = false;
@@ -105,6 +106,24 @@ export class CronService {
         });
 
         logger.info('Cron Service: Deposit Clearance Job scheduled (Every Minute).Checking for deposits older than 24h 5m.');
+    }
+
+    /**
+     * Start the hourly database backup to Drive
+     */
+    public startBackupJob() {
+        // Run every hour at the 0 minute mark
+        cron.schedule('0 * * * *', async () => {
+            try {
+                logger.info('Running Hourly Database Backup to Drive...');
+                await backupService.createAndUploadBackup();
+                logger.info('Hourly Database Backup completed successfully.');
+            } catch (error: any) {
+                logger.error('Error in Hourly Database Backup Job', error);
+            }
+        });
+
+        logger.info('Cron Service: Hourly Database Backup job scheduled.');
     }
 }
 

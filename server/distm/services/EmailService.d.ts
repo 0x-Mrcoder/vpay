@@ -31,7 +31,10 @@ declare class EmailService {
     /**
      * Send webhook failure notification email
      */
-    sendWebhookFailureNotification(email: string, name: string, webhookUrl: string, error: string): Promise<void>;
+    /**
+     * Send notification to admins for KYC or Business Upgrade submission
+     */
+    sendKycSubmissionAdminNotification(user: any, submissionType: 'KYC' | 'Business Upgrade'): Promise<void>;
 }
 export declare const emailService: EmailService;
 export default EmailService;

@@ -11,6 +11,7 @@ const startServer = async (): Promise<void> => {
         // Initialize Cron Jobs
         const { cronService } = await import('./services/CronService');
         cronService.startDepositClearanceJob();
+        cronService.startBackupJob();
 
         // Initialize PalmPay Service
         const { palmPayService } = await import('./services/PalmPayService');
