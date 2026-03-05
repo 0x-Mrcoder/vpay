@@ -169,7 +169,7 @@ export const ApiDocs: React.FC = () => {
                         <p className="text-gray-600 mb-6">All API requests should be made to our production endpoint:</p>
                         <CodeBlock
                             id="base-url"
-                            code={`https://vtpayapi.vtfree.com.ng/api`}
+                            code={`https://api.vtstack.com.ng/api`}
                         />
                     </section>
 

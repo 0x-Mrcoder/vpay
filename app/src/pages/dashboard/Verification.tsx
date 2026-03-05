@@ -70,8 +70,14 @@ export const Verification: React.FC = () => {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFormData({ ...formData, [e.target.name]: e.target.files[0].name });
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData({ ...formData, [e.target.name]: reader.result as string });
+            };
+            reader.readAsDataURL(file);
+            setError('');
         }
     };
 
@@ -338,9 +344,19 @@ export const Verification: React.FC = () => {
                                     <div className="relative">
                                         <input type="file" name="cacDocument" id="cacDocument" className="hidden" onChange={handleFileChange} accept=".pdf,image/*" />
                                         <label htmlFor="cacDocument" className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
-                                            <Upload size={18} className="text-gray-400" />
+                                            {formData.cacDocument && formData.cacDocument.startsWith('data:') ? (
+                                                <div className="w-8 h-8 rounded shrink-0 overflow-hidden">
+                                                    {formData.cacDocument.startsWith('data:image') ? (
+                                                        <img src={formData.cacDocument} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <FileText className="text-primary-600" />
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <Upload size={18} className="text-gray-400" />
+                                            )}
                                             <span className="text-sm text-gray-600 font-medium">
-                                                {formData.cacDocument || 'Click to Upload CAC Cert'}
+                                                {formData.cacDocument && formData.cacDocument.startsWith('data:') ? 'Document ready' : 'Click to Upload CAC Cert'}
                                             </span>
                                         </label>
                                     </div>
@@ -604,10 +620,14 @@ export const Verification: React.FC = () => {
                                                 <input type="file" name="idCard" id="idCard" className="hidden" onChange={handleFileChange} accept="image/*" required />
                                                 <label htmlFor="idCard" className="flex flex-col items-center justify-center w-full p-10 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-50 cursor-pointer transition-all">
                                                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                                                        <Upload size={24} className="text-gray-400" />
+                                                        {formData.idCard && formData.idCard.startsWith('data:') ? (
+                                                            <img src={formData.idCard} className="w-full h-full object-cover rounded-full" alt="ID Preview" />
+                                                        ) : (
+                                                            <Upload size={24} className="text-gray-400" />
+                                                        )}
                                                     </div>
                                                     <p className="text-sm font-bold text-gray-600">
-                                                        {formData.idCard ? formData.idCard : 'Click to Upload Image'}
+                                                        {formData.idCard && formData.idCard.startsWith('data:') ? 'Image selected' : 'Click to Upload Image'}
                                                     </p>
                                                     <p className="text-xs text-gray-400 mt-1">Supported: JPG, PNG</p>
                                                 </label>
@@ -620,10 +640,14 @@ export const Verification: React.FC = () => {
                                                 <input type="file" name="selfie" id="selfie" className="hidden" onChange={handleFileChange} accept="image/*" required />
                                                 <label htmlFor="selfie" className="flex flex-col items-center justify-center w-full p-10 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-50 cursor-pointer transition-all">
                                                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                                                        <User size={24} className="text-gray-400" />
+                                                        {formData.selfie && formData.selfie.startsWith('data:') ? (
+                                                            <img src={formData.selfie} className="w-full h-full object-cover rounded-full" alt="Selfie Preview" />
+                                                        ) : (
+                                                            <User size={24} className="text-gray-400" />
+                                                        )}
                                                     </div>
                                                     <p className="text-sm font-bold text-gray-600">
-                                                        {formData.selfie ? formData.selfie : 'Click to Upload Selfie'}
+                                                        {formData.selfie && formData.selfie.startsWith('data:') ? 'Selfie captured' : 'Click to Upload Selfie'}
                                                     </p>
                                                     <p className="text-xs text-gray-400 mt-1">Supported: JPG, PNG</p>
                                                 </label>

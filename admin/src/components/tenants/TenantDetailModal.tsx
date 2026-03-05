@@ -237,24 +237,67 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
 
                             <div>
                                 <h3 className="text-sm font-bold text-slate-900 mb-3">Submitted Documents</h3>
-                                {tenant.idCardPath ? (
-                                    <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
-                                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center text-blue-600">
-                                            <FileText size={20} />
+                                <div className="space-y-3">
+                                    {/* ID Card */}
+                                    {tenant.idCardPath ? (
+                                        <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
+                                            <div className="w-12 h-12 bg-blue-50 rounded overflow-hidden flex items-center justify-center border border-blue-100">
+                                                {tenant.idCardPath.match(/\.(jpeg|jpg|gif|png)$/) || tenant.idCardPath.includes('cloudinary') ? (
+                                                    <img src={tenant.idCardPath} className="w-full h-full object-cover" alt="ID Card" />
+                                                ) : (
+                                                    <FileText size={20} className="text-blue-600" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-900 truncate">Identity Document</p>
+                                                <p className="text-xs text-slate-500">Provided identification card</p>
+                                            </div>
+                                            <a href={tenant.idCardPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                View Full
+                                            </a>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium text-slate-900">{tenant.idCardPath}</p>
-                                            <p className="text-xs text-slate-500">Identity Document</p>
+                                    ) : (
+                                        <div className="text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                            <p className="text-xs text-slate-500 italic">No identity document uploaded.</p>
                                         </div>
-                                        <button className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
-                                            View
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-                                        <p className="text-slate-500 italic">No identity document uploaded.</p>
-                                    </div>
-                                )}
+                                    )}
+
+                                    {/* Selfie */}
+                                    {tenant.selfiePath && (
+                                        <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
+                                            <div className="w-12 h-12 bg-purple-50 rounded overflow-hidden flex items-center justify-center border border-purple-100">
+                                                <img src={tenant.selfiePath} className="w-full h-full object-cover" alt="Selfie" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-900 truncate">Selfie Image</p>
+                                                <p className="text-xs text-slate-500">Live portrait for verification</p>
+                                            </div>
+                                            <a href={tenant.selfiePath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                View Full
+                                            </a>
+                                        </div>
+                                    )}
+
+                                    {/* CAC Document */}
+                                    {tenant.cacDocumentPath && (
+                                        <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
+                                            <div className="w-12 h-12 bg-green-50 rounded overflow-hidden flex items-center justify-center border border-green-100">
+                                                {tenant.cacDocumentPath.match(/\.(pdf)$/) ? (
+                                                    <FileText size={20} className="text-green-600" />
+                                                ) : (
+                                                    <img src={tenant.cacDocumentPath} className="w-full h-full object-cover" alt="CAC Cert" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-900 truncate">Business Document</p>
+                                                <p className="text-xs text-slate-500">CAC Registration Certificate</p>
+                                            </div>
+                                            <a href={tenant.cacDocumentPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                View Full
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
