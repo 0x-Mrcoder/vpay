@@ -37,11 +37,28 @@ export class WebhookService {
                 formattedKey = `-----BEGIN PUBLIC KEY-----\n${formattedKey}\n-----END PUBLIC KEY-----`;
             }
 
-            // Verify RSA signature
-            const verify = crypto.createVerify('RSA-SHA256'); // Or RSA-SHA1 depending on PalmPay version
-            verify.update(payload);
+            // Try RSA-SHA256 first
+            const verify256 = crypto.createVerify('RSA-SHA256');
+            verify256.update(payload);
+            const isValid256 = verify256.verify(formattedKey, signature, 'base64');
 
-            return verify.verify(formattedKey, signature, 'base64');
+            if (isValid256) {
+                logger.info('Signature verified successfully using RSA-SHA256');
+                return true;
+            }
+
+            // Try RSA-SHA1 as fallback
+            const verify1 = crypto.createVerify('RSA-SHA1');
+            verify1.update(payload);
+            const isValid1 = verify1.verify(formattedKey, signature, 'base64');
+
+            if (isValid1) {
+                logger.info('Signature verified successfully using RSA-SHA1');
+                return true;
+            }
+
+            logger.error('Signature verification failed with both RSA-SHA256 and RSA-SHA1');
+            return false;
         } catch (error) {
             logger.error('Signature verification error', error);
             return false;
