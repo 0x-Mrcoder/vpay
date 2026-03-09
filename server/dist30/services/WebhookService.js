@@ -77,7 +77,7 @@ class WebhookService {
                 logger_1.logger.info('Signature verified successfully using RSA-SHA256');
                 return true;
             }
-            // Try RSA-SHA1 as fallback
+            // 2. Try RSA-SHA1 as fallback
             const verify1 = crypto_1.default.createVerify('RSA-SHA1');
             verify1.update(payload);
             const isValid1 = verify1.verify(formattedKey, signature, 'base64');
@@ -85,7 +85,17 @@ class WebhookService {
                 logger_1.logger.info('Signature verified successfully using RSA-SHA1');
                 return true;
             }
-            logger_1.logger.error('Signature verification failed with both RSA-SHA256 and RSA-SHA1');
+            // 3. Try PalmPay V2 style: RSA-SHA1(MD5(payload).toUpperCase())
+            // (Based on PalmPayService.generateSignatureV2 implementation)
+            const md5Hash = crypto_1.default.createHash('md5').update(payload).digest('hex').toUpperCase();
+            const verifyMD5_1 = crypto_1.default.createVerify('RSA-SHA1');
+            verifyMD5_1.update(md5Hash);
+            const isValidMD5_1 = verifyMD5_1.verify(formattedKey, signature, 'base64');
+            if (isValidMD5_1) {
+                logger_1.logger.info('Signature verified successfully using RSA-SHA1 with MD5 hashed payload');
+                return true;
+            }
+            logger_1.logger.error('Signature verification failed with RSA-SHA256, RSA-SHA1, and RSA-MD5-SHA1');
             return false;
         }
         catch (error) {

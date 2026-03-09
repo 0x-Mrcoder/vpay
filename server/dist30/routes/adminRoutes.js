@@ -9,6 +9,7 @@ const middleware_1 = require("../middleware");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
 const EmailService_1 = require("../services/EmailService");
+const WebhookService_1 = require("../services/WebhookService");
 const AuditService_1 = require("../services/AuditService");
 const router = (0, express_1.Router)();
 // Moved sync route to top to avoid conflicts
@@ -934,7 +935,7 @@ router.post('/communications/send', async (req, res) => {
             selectedTenants: recipientType === 'specific' ? selectedTenants : [],
             subject,
             message,
-            sentBy: req.user._id,
+            sentBy: req.user.id,
             sentAt: new Date()
         });
         res.json({
@@ -1001,7 +1002,7 @@ router.post('/communications/send-single', async (req, res) => {
             selectedTenants: [userId],
             subject,
             message,
-            sentBy: req.user._id,
+            sentBy: req.user.id,
             sentAt: new Date()
         });
         res.json({
@@ -1299,7 +1300,7 @@ router.post('/settlements/manual-trigger', isAdmin, async (req, res) => {
             narration: reason,
             metadata: {
                 manualTrigger: true,
-                triggeredBy: req.user._id
+                triggeredBy: req.user.id
             }
         });
         res.json({
@@ -1452,6 +1453,73 @@ router.post('/settlements/:id/retry', async (req, res) => {
  * Get Revenue Statistics
  * GET /api/admin/revenue-stats
  */
+/**
+ * Retry Webhook (Dispatch to tenant)
+ * POST /api/admin/webhooks/:id/retry
+ */
+router.post('/webhooks/:id/retry', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const log = await models_1.WebhookLog.findById(id);
+        if (!log) {
+            res.status(404).json({ success: false, message: 'Webhook log not found' });
+            return;
+        }
+        if (log.source !== 'vtpay') {
+            res.status(400).json({ success: false, message: 'Only outbound (vtpay) webhooks can be retried for delivery' });
+            return;
+        }
+        // Trigger redelivery
+        await WebhookService_1.webhookService.sendUserWebhook(log.userId.toString(), log.eventType, log.payload.data);
+        log.dispatchStatus = 'success';
+        log.dispatchAttempts = (log.dispatchAttempts || 0) + 1;
+        await log.save();
+        res.json({ success: true, message: 'Webhook retry initiated' });
+    }
+    catch (error) {
+        console.error('Retry webhook error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+/**
+ * Reprocess Webhook (Inbound from provider)
+ * POST /api/admin/webhooks/:id/reprocess
+ */
+router.post('/webhooks/:id/reprocess', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const log = await models_1.WebhookLog.findById(id);
+        if (!log) {
+            res.status(404).json({ success: false, message: 'Webhook log not found' });
+            return;
+        }
+        // Re-verify signature if it was previously invalid (using new logic)
+        if (!log.signatureValid && log.source === 'palmpay') {
+            const signature = log.payload.sign || log.payload.signature || log.signature;
+            const isValid = WebhookService_1.webhookService.verifyBodySignature(log.payload, signature);
+            if (isValid) {
+                log.signatureValid = true;
+                await log.save();
+            }
+        }
+        // Process the event
+        const result = await WebhookService_1.webhookService.processWebhook(log.payload);
+        // Update log with result and user ID
+        await models_1.WebhookLog.findByIdAndUpdate(id, {
+            dispatchStatus: result.success ? 'success' : 'failed',
+            userId: result.userId,
+            processingResult: result.message
+        });
+        res.json({
+            success: result.success,
+            message: result.message || 'Webhook reprocessed'
+        });
+    }
+    catch (error) {
+        console.error('Reprocess webhook error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 router.get('/revenue-stats', async (req, res) => {
     try {
         const today = new Date();
