@@ -8,7 +8,7 @@ export declare class WebhookService {
     verifySignature(payload: string, signature: string): boolean;
     /**
      * Alternative verification for when signature is in the body
-     * Some providers sign the body payload excluding the signature field
+     * PalmPay V2 webhooks require parameters to be sorted alphabetically
      */
     verifyBodySignature(body: any, signature: string): boolean;
     /**

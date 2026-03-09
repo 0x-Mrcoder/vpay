@@ -95,20 +95,39 @@ class WebhookService {
     }
     /**
      * Alternative verification for when signature is in the body
-     * Some providers sign the body payload excluding the signature field
+     * PalmPay V2 webhooks require parameters to be sorted alphabetically
      */
     verifyBodySignature(body, signature) {
         try {
-            // Clone and remove signature
-            const cleanBody = { ...body };
-            delete cleanBody.sign;
-            delete cleanBody.signature;
-            // Start with simplest assumption: JSON stringify cleanly
-            // Note: This is brittle without exact ordering rules from provider
-            const payload = JSON.stringify(cleanBody);
-            return this.verifySignature(payload, signature);
+            // 1. Decode signature if it's URL encoded
+            let decodedSignature = signature;
+            if (signature.includes('%')) {
+                decodedSignature = decodeURIComponent(signature);
+            }
+            // 2. Filter and Sort parameters alphabetically
+            const filteredParams = {};
+            const keys = Object.keys(body).sort();
+            for (const key of keys) {
+                // Skip signature fields and empty/null/undefined values
+                if (key !== 'sign' &&
+                    key !== 'signature' &&
+                    body[key] !== undefined &&
+                    body[key] !== null &&
+                    body[key] !== '' &&
+                    typeof body[key] !== 'object') {
+                    filteredParams[key] = body[key];
+                }
+            }
+            // 3. Construct the payload string: key=value&key=value
+            const payload = Object.keys(filteredParams)
+                .map(key => `${key}=${filteredParams[key]}`)
+                .join('&');
+            logger_1.logger.info(`Constructed Signature Payload: ${payload}`);
+            // 4. Verify using RSA
+            return this.verifySignature(payload, decodedSignature);
         }
         catch (e) {
+            logger_1.logger.error('Error in verifyBodySignature', e);
             return false;
         }
     }
@@ -149,25 +168,20 @@ class WebhookService {
     async processWebhook(event) {
         try {
             // PalmPay V2 might send data directly or wrapped in 'event'
-            // We inspect the structure
             let type = event.type || event.eventType || event.notifyType || 'UNKNOWN';
-            // Handle array notifyType (e.g. ["vbas_virtual_bank_account"])
             if (Array.isArray(type)) {
                 type = type[0];
             }
             const data = event.data || event;
-            // Fallback: check nested type if root type is UNKNOWN
-            if (type === 'UNKNOWN' && data !== event) {
-                type = data.type || data.eventType || data.notifyType || 'UNKNOWN';
-                if (Array.isArray(type))
-                    type = type[0];
+            // Detection for PalmPay V2 without explicit type field
+            if (type === 'UNKNOWN') {
+                if (data.orderNo && (data.amount || data.orderAmount)) {
+                    type = 'pay_in_order';
+                }
             }
             logger_1.logger.info(`Processing PalmPay webhook event: ${type}`);
-            logger_1.logger.info('Full Event Data:', JSON.stringify(event));
-            // Detect "Pay In" (Virtual Account Funding)
-            // Common types: 'pay_in_order', 'PAY_IN_SUCCESS', 'virtual_account_transaction'
-            // Also match direct payload with orderAmount
-            if (type === 'pay_in_order' || type === 'PAY_IN_SUCCESS' || type === 'vbas_virtual_bank_account' || (data.orderNo && (data.amount || data.orderAmount))) {
+            // Handle Deposit
+            if (type === 'pay_in_order' || type === 'PAY_IN_SUCCESS' || type === 'vbas_virtual_bank_account') {
                 return await this.handleDeposit(data);
             }
             logger_1.logger.warn(`Unknown or Unhandled webhook event type: ${type}`);
@@ -185,16 +199,16 @@ class WebhookService {
         logger_1.logger.info('Handling Deposit Event:', data);
         // Extract fields (flexible matching for debugging)
         const orderNo = data.orderNo || data.paymentReference || data.transId;
-        const amount = data.amount || data.transAmount || data.orderAmount; // Check limits (kobo vs naira)
+        const amount = Number(data.amount || data.transAmount || data.orderAmount);
         const status = data.status || data.transStatus || data.orderStatus;
-        const payerName = data.payerName || data.customerName;
+        const payerName = data.payerName || data.customerName || data.payerAccountName;
         const payerAccount = data.payerAccount || data.customerAccount || data.payerAccountNo;
         const payerBankName = data.payerBankName || data.bankName;
         // Try to find target Virtual Account
         let virtualAccountNo = data.virtualAccount || data.virtualAccountNo || data.accountNumber;
-        let externalReference = data.externalReference || data.orderId;
+        let externalReference = data.externalReference || data.orderId || data.paymentReference;
         logger_1.logger.info(`Extracted Data - OrderNo: ${orderNo}, Amount: ${amount}, Status: ${status}, VA: ${virtualAccountNo}`);
-        // Normalize status check (PalmPay might send "SUCCESS", "00", or 1)
+        // Normalize status check (00 and 1 are success in some V2 versions)
         const isSuccess = status === 'SUCCESS' || status === '00' || status === 1 || status === '1';
         if (!isSuccess) {
             logger_1.logger.info(`Deposit ${orderNo} status is ${status}, ignoring.`);

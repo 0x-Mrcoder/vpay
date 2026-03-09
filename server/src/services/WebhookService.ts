@@ -163,7 +163,7 @@ export class WebhookService {
             }
 
             logger.info(`Processing PalmPay webhook event: ${type}`);
-            
+
             // Handle Deposit
             if (type === 'pay_in_order' || type === 'PAY_IN_SUCCESS' || type === 'vbas_virtual_bank_account') {
                 return await this.handleDeposit(data);
@@ -186,7 +186,7 @@ export class WebhookService {
 
         // Extract fields (flexible matching for debugging)
         const orderNo = data.orderNo || data.paymentReference || data.transId;
-        const amount = Number(data.amount || data.transAmount || data.orderAmount); 
+        const amount = Number(data.amount || data.transAmount || data.orderAmount);
         const status = data.status || data.transStatus || data.orderStatus;
         const payerName = data.payerName || data.customerName || data.payerAccountName;
         const payerAccount = data.payerAccount || data.customerAccount || data.payerAccountNo;
