@@ -7,7 +7,7 @@ dotenv.config();
 const loadKey = (envVar: string, fileName: string) => {
     if (process.env[envVar]) return process.env[envVar];
     try {
-        const filePath = path.join(__dirname, '../../', fileName);
+        const filePath = path.join(__dirname, fileName);
         if (fs.existsSync(filePath)) {
             return fs.readFileSync(filePath, 'utf8');
         }

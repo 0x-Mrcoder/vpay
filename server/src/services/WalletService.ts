@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { Wallet, Transaction, VirtualAccount } from '../models';
+import { Wallet, Transaction, VirtualAccount, IWalletDocument, ITransactionDocument } from '../models';
 
 export class WalletService {
     /**
      * Create a new wallet for a user
      */
-    async createWallet(userId: string): Promise<typeof Wallet.prototype> {
+    async createWallet(userId: string): Promise<IWalletDocument> {
         const wallet = new Wallet({
             userId: new mongoose.Types.ObjectId(userId),
             balance: 0,
@@ -21,7 +21,7 @@ export class WalletService {
     /**
      * Get wallet by user ID
      */
-    async getWalletByUserId(userId: string): Promise<typeof Wallet.prototype | null> {
+    async getWalletByUserId(userId: string): Promise<IWalletDocument | null> {
         return Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
     }
 
@@ -56,7 +56,7 @@ export class WalletService {
         fee: number = 0,
         isCleared: boolean = true,
         clearedAt?: Date
-    ): Promise<typeof Transaction.prototype> {
+    ): Promise<ITransactionDocument> {
         try {
             const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
             if (!wallet) {
@@ -112,7 +112,7 @@ export class WalletService {
         externalRef?: string,
         metadata?: Record<string, any>,
         customerReference?: string
-    ): Promise<typeof Transaction.prototype> {
+    ): Promise<ITransactionDocument> {
         try {
             const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
             if (!wallet) {
@@ -210,7 +210,7 @@ export class WalletService {
             startDate?: Date;
             endDate?: Date;
         } = {}
-    ): Promise<{ transactions: typeof Transaction.prototype[]; total: number }> {
+    ): Promise<{ transactions: ITransactionDocument[]; total: number }> {
         const { limit = 20, offset = 0, type, category, startDate, endDate } = options;
 
         const query: any = { userId: new mongoose.Types.ObjectId(userId) };
@@ -237,14 +237,14 @@ export class WalletService {
     /**
      * Get transaction by reference
      */
-    async getTransactionByReference(reference: string): Promise<typeof Transaction.prototype | null> {
+    async getTransactionByReference(reference: string): Promise<ITransactionDocument | null> {
         return Transaction.findOne({ reference });
     }
 
     /**
      * Get transaction by external reference
      */
-    async getTransactionByExternalRef(externalRef: string): Promise<typeof Transaction.prototype | null> {
+    async getTransactionByExternalRef(externalRef: string): Promise<ITransactionDocument | null> {
         return Transaction.findOne({ externalRef });
     }
 
@@ -259,7 +259,7 @@ export class WalletService {
         narration: string,
         externalRef?: string,
         metadata?: Record<string, any>
-    ): Promise<typeof Transaction.prototype> {
+    ): Promise<ITransactionDocument> {
         const wallet = await this.getWalletByUserId(userId);
         if (!wallet) {
             throw new Error('Wallet not found');
@@ -292,7 +292,7 @@ export class WalletService {
         reference: string,
         status: 'success' | 'failed',
         metadata?: Record<string, any>
-    ): Promise<typeof Transaction.prototype | null> {
+    ): Promise<ITransactionDocument | null> {
         return Transaction.findOneAndUpdate(
             { reference },
             {

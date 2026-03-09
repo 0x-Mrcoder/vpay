@@ -1,13 +1,13 @@
-import { Wallet, Transaction } from '../models';
+import { IWalletDocument, ITransactionDocument } from '../models';
 export declare class WalletService {
     /**
      * Create a new wallet for a user
      */
-    createWallet(userId: string): Promise<typeof Wallet.prototype>;
+    createWallet(userId: string): Promise<IWalletDocument>;
     /**
      * Get wallet by user ID
      */
-    getWalletByUserId(userId: string): Promise<typeof Wallet.prototype | null>;
+    getWalletByUserId(userId: string): Promise<IWalletDocument | null>;
     /**
      * Get wallet balance
      */
@@ -21,11 +21,11 @@ export declare class WalletService {
     /**
      * Credit wallet (add funds)
      */
-    creditWallet(userId: string, amount: number, category: 'deposit' | 'refund', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string, fee?: number, isCleared?: boolean, clearedAt?: Date): Promise<typeof Transaction.prototype>;
+    creditWallet(userId: string, amount: number, category: 'deposit' | 'refund', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string, fee?: number, isCleared?: boolean, clearedAt?: Date): Promise<ITransactionDocument>;
     /**
      * Debit wallet (remove funds)
      */
-    debitWallet(userId: string, amount: number, fee: number, category: 'transfer' | 'withdrawal', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string): Promise<typeof Transaction.prototype>;
+    debitWallet(userId: string, amount: number, fee: number, category: 'transfer' | 'withdrawal', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string): Promise<ITransactionDocument>;
     /**
      * Lock funds in wallet
      */
@@ -45,25 +45,25 @@ export declare class WalletService {
         startDate?: Date;
         endDate?: Date;
     }): Promise<{
-        transactions: typeof Transaction.prototype[];
+        transactions: ITransactionDocument[];
         total: number;
     }>;
     /**
      * Get transaction by reference
      */
-    getTransactionByReference(reference: string): Promise<typeof Transaction.prototype | null>;
+    getTransactionByReference(reference: string): Promise<ITransactionDocument | null>;
     /**
      * Get transaction by external reference
      */
-    getTransactionByExternalRef(externalRef: string): Promise<typeof Transaction.prototype | null>;
+    getTransactionByExternalRef(externalRef: string): Promise<ITransactionDocument | null>;
     /**
      * Create pending transaction (for transfers that need verification)
      */
-    createPendingTransaction(userId: string, amount: number, fee: number, category: 'transfer' | 'withdrawal', narration: string, externalRef?: string, metadata?: Record<string, any>): Promise<typeof Transaction.prototype>;
+    createPendingTransaction(userId: string, amount: number, fee: number, category: 'transfer' | 'withdrawal', narration: string, externalRef?: string, metadata?: Record<string, any>): Promise<ITransactionDocument>;
     /**
      * Update transaction status
      */
-    updateTransactionStatus(reference: string, status: 'success' | 'failed', metadata?: Record<string, any>): Promise<typeof Transaction.prototype | null>;
+    updateTransactionStatus(reference: string, status: 'success' | 'failed', metadata?: Record<string, any>): Promise<ITransactionDocument | null>;
     /**
      * Get balance by customer reference
      */

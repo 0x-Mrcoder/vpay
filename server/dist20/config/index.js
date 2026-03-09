@@ -12,7 +12,7 @@ const loadKey = (envVar, fileName) => {
     if (process.env[envVar])
         return process.env[envVar];
     try {
-        const filePath = path_1.default.join(__dirname, '../../', fileName);
+        const filePath = path_1.default.join(__dirname, fileName);
         if (fs_1.default.existsSync(filePath)) {
             return fs_1.default.readFileSync(filePath, 'utf8');
         }
