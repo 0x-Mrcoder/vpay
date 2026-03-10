@@ -3,13 +3,16 @@ export interface IWebhookLogDocument extends Document {
     source: 'palmpay' | 'payrant' | 'vtpay';
     eventType: string;
     userId?: mongoose.Types.ObjectId;
+    orderNo?: string;
     payload: any;
     signature: string;
     signatureValid: boolean;
+    processingResult?: string;
     dispatchStatus?: 'pending' | 'success' | 'failed';
     dispatchAttempts?: number;
     responseStatus?: number;
     responseBody?: string;
+    receivedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

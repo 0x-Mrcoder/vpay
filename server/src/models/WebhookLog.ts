@@ -4,13 +4,16 @@ export interface IWebhookLogDocument extends Document {
     source: 'palmpay' | 'payrant' | 'vtpay';
     eventType: string;
     userId?: mongoose.Types.ObjectId;
+    orderNo?: string;           // For replay protection (unique per orderNo)
     payload: any;
     signature: string;
     signatureValid: boolean;
+    processingResult?: string;  // Human-readable outcome
     dispatchStatus?: 'pending' | 'success' | 'failed';
     dispatchAttempts?: number;
     responseStatus?: number;
     responseBody?: string;
+    receivedAt?: Date;          // Precise arrival time
     createdAt: Date;
     updatedAt: Date;
 }
@@ -29,6 +32,10 @@ const WebhookLogSchema = new Schema<IWebhookLogDocument>(
             type: Schema.Types.ObjectId,
             ref: 'User',
         },
+        orderNo: {
+            type: String,
+            sparse: true, // Allow multiple docs without orderNo, but enforce unique where set
+        },
         payload: {
             type: Schema.Types.Mixed,
             required: true,
@@ -39,6 +46,9 @@ const WebhookLogSchema = new Schema<IWebhookLogDocument>(
         signatureValid: {
             type: Boolean,
             required: true,
+        },
+        processingResult: {
+            type: String,
         },
         dispatchStatus: {
             type: String,
@@ -54,6 +64,9 @@ const WebhookLogSchema = new Schema<IWebhookLogDocument>(
         responseBody: {
             type: String,
         },
+        receivedAt: {
+            type: Date,
+        },
     },
     {
         timestamps: true,
@@ -65,6 +78,7 @@ WebhookLogSchema.index({ source: 1 });
 WebhookLogSchema.index({ eventType: 1 });
 WebhookLogSchema.index({ userId: 1 });
 WebhookLogSchema.index({ createdAt: -1 });
+WebhookLogSchema.index({ orderNo: 1 }, { unique: true, sparse: true }); // Replay protection
 
 export const WebhookLog = mongoose.model<IWebhookLogDocument>('WebhookLog', WebhookLogSchema);
 export default WebhookLog;

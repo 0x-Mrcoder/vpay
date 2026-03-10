@@ -12,6 +12,7 @@ const startServer = async (): Promise<void> => {
         const { cronService } = await import('./services/CronService');
         cronService.startDepositClearanceJob();
         cronService.startBackupJob();
+        cronService.startReconciliationJob(); // 6️⃣ Auto-reconcile missed PalmPay deposits
 
         // Initialize PalmPay Service
         const { palmPayService } = await import('./services/PalmPayService');

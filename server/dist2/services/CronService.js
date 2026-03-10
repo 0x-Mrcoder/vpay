@@ -9,6 +9,7 @@ const Transaction_1 = require("../models/Transaction");
 const Wallet_1 = require("../models/Wallet");
 const logger_1 = require("../utils/logger");
 const BackupService_1 = require("./BackupService");
+const WebhookService_1 = require("./WebhookService");
 class CronService {
     constructor() {
         this.isRunning = false;
@@ -96,6 +97,22 @@ class CronService {
             }
         });
         logger_1.logger.info('Cron Service: Deposit Clearance Job scheduled (Every Minute).Checking for deposits older than 24h 5m.');
+    }
+    /**
+     * 6️⃣ AUTOMATIC DEPOSIT RECONCILIATION
+     * Runs every 5 minutes — recovers deposits that arrived but whose webhook
+     * never triggered (network failures, server restarts, PalmPay retry limits, etc.)
+     */
+    startReconciliationJob() {
+        node_cron_1.default.schedule('*/5 * * * *', async () => {
+            try {
+                await WebhookService_1.webhookService.reconcileMissedDeposits();
+            }
+            catch (error) {
+                logger_1.logger.error('[CRON] Reconciliation job failed', error);
+            }
+        });
+        logger_1.logger.info('Cron Service: 🔄 Deposit Reconciliation Job scheduled (Every 5 minutes).');
     }
     /**
      * Start the hourly database backup to Drive

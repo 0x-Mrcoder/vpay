@@ -48,6 +48,10 @@ const WebhookLogSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
     },
+    orderNo: {
+        type: String,
+        sparse: true, // Allow multiple docs without orderNo, but enforce unique where set
+    },
     payload: {
         type: mongoose_1.Schema.Types.Mixed,
         required: true,
@@ -58,6 +62,9 @@ const WebhookLogSchema = new mongoose_1.Schema({
     signatureValid: {
         type: Boolean,
         required: true,
+    },
+    processingResult: {
+        type: String,
     },
     dispatchStatus: {
         type: String,
@@ -73,6 +80,9 @@ const WebhookLogSchema = new mongoose_1.Schema({
     responseBody: {
         type: String,
     },
+    receivedAt: {
+        type: Date,
+    },
 }, {
     timestamps: true,
 });
@@ -81,6 +91,7 @@ WebhookLogSchema.index({ source: 1 });
 WebhookLogSchema.index({ eventType: 1 });
 WebhookLogSchema.index({ userId: 1 });
 WebhookLogSchema.index({ createdAt: -1 });
+WebhookLogSchema.index({ orderNo: 1 }, { unique: true, sparse: true }); // Replay protection
 exports.WebhookLog = mongoose_1.default.model('WebhookLog', WebhookLogSchema);
 exports.default = exports.WebhookLog;
 //# sourceMappingURL=WebhookLog.js.map

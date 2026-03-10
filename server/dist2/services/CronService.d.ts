@@ -14,6 +14,12 @@ export declare class CronService {
      */
     startDepositClearanceJob(): void;
     /**
+     * 6️⃣ AUTOMATIC DEPOSIT RECONCILIATION
+     * Runs every 5 minutes — recovers deposits that arrived but whose webhook
+     * never triggered (network failures, server restarts, PalmPay retry limits, etc.)
+     */
+    startReconciliationJob(): void;
+    /**
      * Start the hourly database backup to Drive
      */
     startBackupJob(): void;

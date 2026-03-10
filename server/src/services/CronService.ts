@@ -3,6 +3,7 @@ import { Transaction } from '../models/Transaction';
 import { Wallet } from '../models/Wallet';
 import { logger } from '../utils/logger';
 import { backupService } from './BackupService';
+import { webhookService } from './WebhookService';
 
 export class CronService {
     private isRunning: boolean = false;
@@ -106,6 +107,23 @@ export class CronService {
         });
 
         logger.info('Cron Service: Deposit Clearance Job scheduled (Every Minute).Checking for deposits older than 24h 5m.');
+    }
+
+    /**
+     * 6️⃣ AUTOMATIC DEPOSIT RECONCILIATION
+     * Runs every 5 minutes — recovers deposits that arrived but whose webhook
+     * never triggered (network failures, server restarts, PalmPay retry limits, etc.)
+     */
+    public startReconciliationJob() {
+        cron.schedule('*/5 * * * *', async () => {
+            try {
+                await webhookService.reconcileMissedDeposits();
+            } catch (error: any) {
+                logger.error('[CRON] Reconciliation job failed', error);
+            }
+        });
+
+        logger.info('Cron Service: 🔄 Deposit Reconciliation Job scheduled (Every 5 minutes).');
     }
 
     /**
