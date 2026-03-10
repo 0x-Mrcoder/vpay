@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
-import { HelpMessage } from '../models';
+import { HelpMessage, User } from '../models';
 import { authenticate, AuthenticatedRequest, requireAdmin } from '../middleware';
+import { emailService } from '../services';
 
 const router = Router();
 
@@ -29,6 +30,14 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
             subject,
             message,
         });
+
+        // Notify admins
+        const user = await User.findById(userId);
+        if (user) {
+            emailService.sendSupportTicketAdminNotification(user, helpMessage).catch(err =>
+                console.error('[Support] Failed to send admin notification:', err)
+            );
+        }
 
         res.status(201).json({
             success: true,

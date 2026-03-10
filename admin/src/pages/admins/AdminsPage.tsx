@@ -145,7 +145,7 @@ const AdminsPage: React.FC = () => {
                                         <td className="px-6 py-4 text-sm text-slate-600">{admin.email}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{admin.phone}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${admin.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${admin.status === 'active' ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'
                                                 }`}>
                                                 {admin.status.toUpperCase()}
                                             </span>

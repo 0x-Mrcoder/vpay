@@ -10,6 +10,8 @@ interface User {
     status: string;
     role: 'user' | 'admin';
     fullName?: string;
+    webhookActive?: boolean;
+    profilePicture?: string;
 
     // KYC Fields
     state?: string;

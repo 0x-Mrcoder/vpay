@@ -54,8 +54,7 @@ export const Contact: React.FC = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-gray-900">Email Us</h4>
-                                    <p className="text-gray-500">support@vtstack.com.ng</p>
-                                    <p className="text-gray-500">sales@vtstack.com.ng</p>
+                                    <a href="mailto:vtstackltd@gmail.com" className="text-gray-500 hover:text-primary-600 transition-colors">vtstackltd@gmail.com</a>
                                 </div>
                             </div>
 
@@ -64,8 +63,8 @@ export const Contact: React.FC = () => {
                                     <Phone size={24} />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-gray-900">Call Us</h4>
-                                    <p className="text-gray-500">+234 800 VTSTACK HELP</p>
+                                    <h4 className="font-bold text-gray-900">WhatsApp / Call</h4>
+                                    <p className="text-gray-500">+234 707 042 9434</p>
                                     <p className="text-gray-500">Mon - Fri, 9am - 6pm</p>
                                 </div>
                             </div>

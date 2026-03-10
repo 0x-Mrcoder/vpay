@@ -36,6 +36,8 @@ export interface Tenant {
     nin?: string;
     bvn?: string;
     idCardPath?: string;
+    selfiePath?: string;
+    cacDocumentPath?: string;
     kycLevel: number;
     kyc_status: 'pending' | 'verified' | 'rejected';
     status: 'active' | 'inactive' | 'suspended';
@@ -172,6 +174,11 @@ export const adminApi = {
 
     retryWebhook: async (id: string): Promise<any> => {
         const response = await api.post<ApiResponse<any>>(`/admin/webhooks/${id}/retry`);
+        return response.data;
+    },
+
+    reprocessWebhook: async (id: string): Promise<any> => {
+        const response = await api.post<ApiResponse<any>>(`/admin/webhooks/${id}/reprocess`);
         return response.data;
     },
 

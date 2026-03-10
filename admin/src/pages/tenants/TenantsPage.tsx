@@ -301,7 +301,7 @@ const TenantsPage: React.FC = () => {
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Active</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-green-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1">
                         {tenants.filter(t => t.status === 'active').length}
                     </h3>
                 </div>
@@ -342,19 +342,19 @@ const TenantsPage: React.FC = () => {
             {/* Bulk Action Bar */}
             {
                 selectedIds.size > 0 && (
-                    <div className="bg-green-50 px-6 py-4 rounded-xl shadow-sm border border-green-200 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in-down">
+                    <div className="bg-primary-50 px-6 py-4 rounded-xl shadow-sm border border-primary-200 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in-down">
                         <div className="flex items-center gap-3">
-                            <div className="bg-green-100 p-2 rounded-lg text-green-700">
+                            <div className="bg-primary-100 p-2 rounded-lg text-primary-700">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
-                            <span className="font-semibold text-green-900">
+                            <span className="font-semibold text-primary-900">
                                 {selectedIds.size} {selectedIds.size === 1 ? 'tenant' : 'tenants'} selected
                             </span>
                             <button
                                 onClick={() => setSelectedIds(new Set())}
-                                className="text-sm text-green-700 hover:text-green-800 underline ml-2"
+                                className="text-sm text-primary-700 hover:text-primary-800 underline ml-2"
                             >
                                 Clear Selection
                             </button>
@@ -363,7 +363,7 @@ const TenantsPage: React.FC = () => {
                             <button
                                 onClick={() => handleBulkStatusChange('active')}
                                 disabled={isBulkActionLoading}
-                                className="flex-1 sm:flex-none px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 font-medium text-sm transition-colors"
+                                className="flex-1 sm:flex-none px-4 py-2 bg-white border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 font-medium text-sm transition-colors"
                             >
                                 Mark Active
                             </button>
@@ -398,7 +398,7 @@ const TenantsPage: React.FC = () => {
                                     <th className="px-4 py-3 w-12">
                                         <input
                                             type="checkbox"
-                                            className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-4 h-4 cursor-pointer"
+                                            className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
                                             checked={filteredTenants.length > 0 && selectedIds.size === filteredTenants.length}
                                             onChange={handleSelectAll}
                                         />
@@ -427,12 +427,12 @@ const TenantsPage: React.FC = () => {
                                 {paginatedTenants.map((tenant) => (
                                     <tr
                                         key={tenant._id}
-                                        className={`hover:bg-slate-50 transition-colors ${selectedIds.has(tenant._id) ? 'bg-green-50/50' : ''}`}
+                                        className={`hover:bg-slate-50 transition-colors ${selectedIds.has(tenant._id) ? 'bg-primary-50/50' : ''}`}
                                     >
                                         <td className="px-4 py-4">
                                             <input
                                                 type="checkbox"
-                                                className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-4 h-4 cursor-pointer"
+                                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
                                                 checked={selectedIds.has(tenant._id)}
                                                 onChange={() => handleSelectRow(tenant._id)}
                                                 onClick={(e) => e.stopPropagation()}
@@ -463,7 +463,7 @@ const TenantsPage: React.FC = () => {
                                                         setSelectedTenant(tenant);
                                                         setShowDetails(true);
                                                     }}
-                                                    className="text-green-600 hover:text-green-900"
+                                                    className="text-primary-600 hover:text-primary-900"
                                                 >
                                                     View
                                                 </button>
@@ -571,7 +571,7 @@ const TenantsPage: React.FC = () => {
                                     <input
                                         type="text"
                                         required
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="Enter subject"
                                         value={messageData.subject}
                                         onChange={(e) => setMessageData({ ...messageData, subject: e.target.value })}
@@ -582,7 +582,7 @@ const TenantsPage: React.FC = () => {
                                     <textarea
                                         required
                                         rows={6}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="Type your message here..."
                                         value={messageData.message}
                                         onChange={(e) => setMessageData({ ...messageData, message: e.target.value })}

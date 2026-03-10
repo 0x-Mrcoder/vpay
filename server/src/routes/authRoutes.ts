@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { User, Wallet } from '../models';
 import { generateToken, authenticate } from '../middleware/auth';
 import { walletService, emailService } from '../services';
+import { uploadToCloudinary } from '../services/cloudinary';
+
 import config from '../config';
 
 const router = Router();
@@ -90,6 +92,8 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
                     kycLevel: user.kycLevel,
                     status: user.status,
                     role: user.role,
+                    webhookActive: user.webhookActive,
+                    profilePicture: user.profilePicture,
                 },
                 token,
             },
@@ -336,6 +340,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
                     kycLevel: user.kycLevel,
                     status: user.status,
                     role: user.role,
+                    webhookActive: user.webhookActive,
+                    profilePicture: user.profilePicture,
                 },
                 wallet: wallet ? {
                     id: wallet._id,
@@ -392,7 +398,9 @@ router.get('/profile', authenticate, async (req: Request, res: Response): Promis
                 phone: user.phone,
                 kycLevel: user.kycLevel,
                 status: user.status,
-                role: user.role
+                role: user.role,
+                webhookActive: user.webhookActive,
+                profilePicture: user.profilePicture
             },
         });
     } catch (error) {
@@ -460,7 +468,7 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
             return;
         }
 
-        const { firstName, lastName, businessName, phone } = req.body;
+        const { firstName, lastName, businessName, phone, webhookActive, profilePicture } = req.body;
 
         const user = await User.findById(userId);
         if (!user) {
@@ -476,6 +484,24 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
         if (lastName) user.lastName = lastName;
         if (businessName) user.businessName = businessName;
         if (phone) user.phone = phone;
+        if (webhookActive !== undefined) user.webhookActive = webhookActive;
+        if (profilePicture) {
+            if (profilePicture.startsWith('data:image')) {
+                try {
+                    const uploadedUrl = await uploadToCloudinary(profilePicture, `users/${user._id}/profile`);
+                    user.profilePicture = uploadedUrl;
+                } catch (error) {
+                    console.error('Failed to upload profile picture to cloudinary:', error);
+                    res.status(500).json({
+                        success: false,
+                        message: 'Failed to upload profile picture',
+                    });
+                    return;
+                }
+            } else {
+                user.profilePicture = profilePicture;
+            }
+        }
 
         // Update fullName if names changed
         if (firstName || lastName) {
@@ -497,7 +523,9 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
                 phone: user.phone,
                 kycLevel: user.kycLevel,
                 status: user.status,
-                role: user.role
+                role: user.role,
+                webhookActive: user.webhookActive,
+                profilePicture: user.profilePicture
             },
         });
     } catch (error) {

@@ -43,12 +43,12 @@ const StatusBadge = ({ status }: { status: string }) => {
     const styles: Record<string, string> = {
         pending: 'bg-blue-100 text-blue-800',
         processing: 'bg-blue-100 text-blue-800',
-        success: 'bg-green-100 text-green-800',
+        success: 'bg-primary-100 text-primary-800',
         failed: 'bg-red-100 text-red-800',
         // Dispute statuses
         OPEN: 'bg-red-100 text-red-800',
         IN_PROGRESS: 'bg-blue-100 text-blue-800',
-        RESOLVED: 'bg-green-100 text-green-800',
+        RESOLVED: 'bg-primary-100 text-primary-800',
         REJECTED: 'bg-gray-100 text-gray-800',
         // Priority
         LOW: 'bg-slate-100 text-slate-800',
@@ -259,8 +259,8 @@ const SettlementsPage: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900">Settlements & Payouts</h1>
                         {cronStatus && (
-                            <span className={`px-2 py-1 text-xs font-bold rounded-full flex items-center gap-1 ${cronStatus.isRunning ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                <span className={`w-2 h-2 rounded-full ${cronStatus.isRunning ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                            <span className={`px-2 py-1 text-xs font-bold rounded-full flex items-center gap-1 ${cronStatus.isRunning ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'}`}>
+                                <span className={`w-2 h-2 rounded-full ${cronStatus.isRunning ? 'bg-primary-500 animate-pulse' : 'bg-red-500'}`}></span>
                                 {cronStatus.isRunning ? 'SYSTEM RUNNING' : 'SYSTEM STOPPED'}
                             </span>
                         )}
@@ -276,7 +276,7 @@ const SettlementsPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Total Settled</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-green-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1">
                         {formatAmount(stats.totalSettled)}
                     </h3>
                 </div>
@@ -300,7 +300,7 @@ const SettlementsPage: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('settlements')}
                         className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'settlements'
-                            ? 'border-green-500 text-green-600'
+                            ? 'border-primary-500 text-primary-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                             }`}
                     >
@@ -310,7 +310,7 @@ const SettlementsPage: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('disputes')}
                         className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'disputes'
-                            ? 'border-green-500 text-green-600'
+                            ? 'border-primary-500 text-primary-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                             }`}
                     >
@@ -320,7 +320,7 @@ const SettlementsPage: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('settings')}
                         className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'settings'
-                            ? 'border-green-500 text-green-600'
+                            ? 'border-primary-500 text-primary-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                             }`}
                     >
@@ -341,7 +341,7 @@ const SettlementsPage: React.FC = () => {
                                 <select
                                     value={filterStatus}
                                     onChange={(e) => setFilterStatus(e.target.value)}
-                                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 >
                                     <option value="all">All Status</option>
                                     <option value="pending">Pending</option>
@@ -351,7 +351,7 @@ const SettlementsPage: React.FC = () => {
                                 </select>
                                 <button
                                     onClick={fetchSettlements}
-                                    className="text-slate-600 hover:text-green-600 p-2 rounded-full hover:bg-slate-100"
+                                    className="text-slate-600 hover:text-primary-600 p-2 rounded-full hover:bg-slate-100"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                 </button>
@@ -360,7 +360,7 @@ const SettlementsPage: React.FC = () => {
 
                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                             {settlementsLoading ? (
-                                <div className="p-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div></div>
+                                <div className="p-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
@@ -393,7 +393,7 @@ const SettlementsPage: React.FC = () => {
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                         <button
                                                             onClick={() => { setSelectedSettlement(s); setShowSettlementDetails(true); }}
-                                                            className="text-green-600 hover:text-green-900"
+                                                            className="text-primary-600 hover:text-primary-900"
                                                         >
                                                             View
                                                         </button>
@@ -476,7 +476,7 @@ const SettlementsPage: React.FC = () => {
                                                             {d.status === 'IN_PROGRESS' && (
                                                                 <button
                                                                     onClick={() => handleUpdateDisputeStatus(d._id, 'RESOLVED')}
-                                                                    className="text-green-600 hover:text-green-900"
+                                                                    className="text-primary-600 hover:text-primary-900"
                                                                 >
                                                                     Resolve
                                                                 </button>
@@ -524,7 +524,7 @@ const SettlementsPage: React.FC = () => {
                                                 checked={systemSettings?.globalSettlement?.weekendSettlementEnabled ?? true}
                                                 onChange={(e) => handleToggleWeekendSettlement(e.target.checked)}
                                             />
-                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                                         </label>
                                     </div>
                                     <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -561,7 +561,7 @@ const SettlementsPage: React.FC = () => {
                                     <button onClick={() => handleRetrySettlement(selectedSettlement._id)} className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">Retry</button>
                                 )}
                                 {selectedSettlement.status === 'pending' && (
-                                    <button onClick={() => handleProcessSettlement(selectedSettlement._id)} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Process</button>
+                                    <button onClick={() => handleProcessSettlement(selectedSettlement._id)} className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Process</button>
                                 )}
                             </div>
                         </div>

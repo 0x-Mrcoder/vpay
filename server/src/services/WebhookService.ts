@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import { logger } from '../utils/logger';
-import { VirtualAccount, WebhookLog, SystemSetting, Transaction } from '../models';
+import { VirtualAccount, WebhookLog, SystemSetting, Transaction, User } from '../models';
 import { walletService } from './WalletService';
+import { emailService } from './EmailService';
 import config from '../config';
 
 export class WebhookService {
@@ -306,10 +307,17 @@ export class WebhookService {
      */
     async sendUserWebhook(userId: string, event: string, data: any): Promise<void> {
         try {
-            const { User } = await import('../models'); // Dynamic import
             const user = await User.findById(userId);
 
-            if (!user || !user.webhookUrl) {
+            if (!user) return;
+
+            if (!user.webhookUrl) {
+                logger.debug(`User ${userId} does not have a webhook URL configured. Skipping webhook for ${event}.`);
+                return;
+            }
+
+            if (!user.webhookActive) {
+                logger.debug(`User ${userId} has webhook notifications disabled. Skipping webhook for ${event}.`);
                 return;
             }
 
@@ -329,18 +337,42 @@ export class WebhookService {
                 .digest('hex');
 
             const axios = require('axios');
-            await axios.post(user.webhookUrl, payload, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-VTStack-Signature': signature,
-                },
-                timeout: 10000,
-            });
+            try {
+                await axios.post(user.webhookUrl, payload, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-VTStack-Signature': signature,
+                    },
+                    timeout: 10000,
+                });
+                logger.info(`Webhook sent successfully to ${user.webhookUrl}`);
+            } catch (webhookError: any) {
+                logger.error(`Failed to send user webhook to ${user.webhookUrl}: ${webhookError.message}`);
+                
+                // Notify user about webhook failure
+                const companyName = (await SystemSetting.findOne())?.general?.companyName || 'VTStack';
+                const emailHtml = `
+                    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #ef4444;">Webhook Delivery Failed</h2>
+                        <p>Hello ${user.firstName},</p>
+                        <p>We attempted to send a webhook notification for the event <strong>${event}</strong> to your configured URL, but it failed.</p>
+                        
+                        <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
+                            <p style="margin: 5px 0;"><strong>Webhook URL:</strong> ${user.webhookUrl}</p>
+                            <p style="margin: 5px 0;"><strong>Error:</strong> ${webhookError.message}</p>
+                            <p style="margin: 5px 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                        </div>
 
-            logger.info(`Webhook sent successfully to ${user.webhookUrl}`);
+                        <p>Please check your server completely or update your webhook URL in the ${companyName} dashboard.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
+                    </div>
+                `;
+                
+                await emailService.sendEmail(user.email, 'Action Required: Webhook Delivery Failed', emailHtml);
+            }
         } catch (error: any) {
-            logger.error(`Failed to send user webhook: ${error.message}`);
-            // Don't throw, just log. We don't want to fail the transaction processing
+            logger.error(`Critical error in sendUserWebhook: ${error.message}`);
         }
     }
 }

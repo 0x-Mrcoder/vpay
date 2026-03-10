@@ -242,7 +242,7 @@ export const LandingPage: React.FC = () => {
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
                             <p className="text-gray-500 text-sm mb-6">Perfect for new businesses.</p>
                             <div className="flex items-baseline mb-6">
-                                <span className="text-4xl font-black text-gray-900">1.5%</span>
+                                <span className="text-4xl font-black text-gray-900">1%</span>
                                 <span className="text-gray-500 ml-2">/ transaction</span>
                             </div>
                             <ul className="space-y-4 mb-8">
@@ -259,7 +259,7 @@ export const LandingPage: React.FC = () => {
                             <h3 className="text-xl font-bold mb-2">Growth</h3>
                             <p className="text-gray-400 text-sm mb-6">For scaling platforms.</p>
                             <div className="flex items-baseline mb-6">
-                                <span className="text-4xl font-black text-primary-400">1.2%</span>
+                                <span className="text-4xl font-black text-primary-400">1%</span>
                                 <span className="text-gray-400 ml-2">/ transaction</span>
                             </div>
                             <ul className="space-y-4 mb-8">
@@ -356,7 +356,7 @@ export const LandingPage: React.FC = () => {
                             </div>
                             <h3 className="font-bold text-gray-900 mb-2">Email Support</h3>
                             <p className="text-gray-500 text-sm mb-4">Get help via email.</p>
-                            <a href="mailto:support@vtstack.com" className="text-primary-600 font-bold text-sm hover:underline">support@vtstack.com</a>
+                            <a href="mailto:vtstackltd@gmail.com" className="text-primary-600 font-bold text-sm hover:underline">vtstackltd@gmail.com</a>
                         </div>
                         <div className="bg-white p-8 rounded-2xl shadow-sm">
                             <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 mx-auto mb-4">

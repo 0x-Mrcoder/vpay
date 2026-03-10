@@ -214,7 +214,7 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="flex justify-between items-center px-2">
                             <span className="text-sm text-slate-500">Active</span>
-                            <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{stats?.tenants?.active || 0}</span>
+                            <span className="text-sm font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">{stats?.tenants?.active || 0}</span>
                         </div>
                         <div className="flex justify-between items-center px-2">
                             <span className="text-sm text-slate-500">Suspended</span>

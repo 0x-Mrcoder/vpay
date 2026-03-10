@@ -68,7 +68,7 @@ const HelpMessages: React.FC = () => {
         const badges = {
             pending: { text: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
             in_progress: { text: 'In Progress', color: 'bg-blue-100 text-blue-800' },
-            resolved: { text: 'Resolved', color: 'bg-green-100 text-green-800' },
+            resolved: { text: 'Resolved', color: 'bg-primary-100 text-primary-800' },
         };
         const badge = badges[status as keyof typeof badges] || { text: status, color: 'bg-gray-100 text-gray-800' };
         return <span className={`px-2 py-1 text-xs font-medium rounded-full ${badge.color}`}>{badge.text}</span>;
@@ -109,7 +109,7 @@ const HelpMessages: React.FC = () => {
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Resolved</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-green-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1">
                         {messages.filter(m => m.status === 'resolved').length}
                     </h3>
                 </div>
@@ -122,7 +122,7 @@ const HelpMessages: React.FC = () => {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full sm:w-auto px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        className="w-full sm:w-auto px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                     >
                         <option value="all">All Status</option>
                         <option value="pending">Pending</option>
@@ -136,7 +136,7 @@ const HelpMessages: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {loading ? (
                     <div className="p-8 text-center">
-                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
                         <p className="mt-2 text-slate-500">Loading messages...</p>
                     </div>
                 ) : (
@@ -189,7 +189,7 @@ const HelpMessages: React.FC = () => {
                                                     setSelectedMessage(msg);
                                                     setShowDetails(true);
                                                 }}
-                                                className="text-green-600 hover:text-green-900"
+                                                className="text-primary-600 hover:text-primary-900"
                                             >
                                                 <span className="hidden sm:inline">View Details</span>
                                                 <span className="sm:hidden">View</span>
@@ -267,7 +267,7 @@ const HelpMessages: React.FC = () => {
                                         onClick={() => handleStatusChange(selectedMessage._id, 'resolved')}
                                         disabled={isUpdating || selectedMessage.status === 'resolved'}
                                         className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${selectedMessage.status === 'resolved'
-                                            ? 'bg-green-100 text-green-800 border border-green-200 cursor-default'
+                                            ? 'bg-primary-100 text-primary-800 border border-primary-200 cursor-default'
                                             : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
                                             }`}
                                     >

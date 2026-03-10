@@ -72,7 +72,7 @@ const WebhooksPage: React.FC = () => {
         if (source === 'palmpay') {
             return <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">PalmPay → VTStack</span>;
         } else if (source === 'vtpay') {
-            return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">VTStack → Tenant</span>;
+            return <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800">VTStack → Tenant</span>;
         } else {
             return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{source.toUpperCase()} → VTStack</span>;
         }
@@ -81,7 +81,7 @@ const WebhooksPage: React.FC = () => {
     const getStatusBadge = (status?: string) => {
         if (!status) return null;
         const badges = {
-            success: 'bg-green-100 text-green-800',
+            success: 'bg-primary-100 text-primary-800',
             pending: 'bg-yellow-100 text-yellow-800',
             failed: 'bg-red-100 text-red-800',
         };
@@ -141,6 +141,25 @@ const WebhooksPage: React.FC = () => {
         }
     };
 
+    const handleReprocess = async (id: string) => {
+        if (!window.confirm('Are you sure you want to re-verify and re-process this webhook? This may credit the user wallet if successful.')) return;
+        try {
+            setIsRetrying(true);
+            const result = await adminApi.reprocessWebhook(id);
+            if (result.success) {
+                toast.success('Webhook reprocessed successfully! ' + (result.message || ''));
+                fetchWebhooks();
+                setShowDetails(false);
+            } else {
+                toast.error(result.message || 'Failed to reprocess webhook');
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to reprocess webhook');
+        } finally {
+            setIsRetrying(false);
+        }
+    };
+
     return (
         <div className="p-4 md:p-6 space-y-6">
             {/* Header */}
@@ -162,7 +181,7 @@ const WebhooksPage: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('logs')}
                     className={`px-4 md:px-6 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'logs'
-                        ? 'border-green-600 text-green-600'
+                        ? 'border-primary-600 text-primary-600'
                         : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
@@ -171,7 +190,7 @@ const WebhooksPage: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('configs')}
                     className={`px-4 md:px-6 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'configs'
-                        ? 'border-green-600 text-green-600'
+                        ? 'border-primary-600 text-primary-600'
                         : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
@@ -189,7 +208,7 @@ const WebhooksPage: React.FC = () => {
                         </div>
                         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                             <p className="text-xs md:text-sm font-medium text-slate-500">Success Rate</p>
-                            <h3 className="text-lg md:text-2xl font-bold text-green-600 mt-1">
+                            <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1">
                                 {webhooks.length > 0
                                     ? ((webhooks.filter((w) => w.dispatchStatus === 'success').length / webhooks.length) * 100).toFixed(1)
                                     : 0}
@@ -218,12 +237,12 @@ const WebhooksPage: React.FC = () => {
                                 placeholder="Filter by Event Type..."
                                 value={filterEventType}
                                 onChange={(e) => setFilterEventType(e.target.value)}
-                                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                             />
                             <select
                                 value={filterSource}
                                 onChange={(e) => setFilterSource(e.target.value)}
-                                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                             >
                                 <option value="all">All Sources</option>
                                 <option value="palmpay">PalmPay → VTStack</option>
@@ -232,7 +251,7 @@ const WebhooksPage: React.FC = () => {
                             <select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
-                                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                             >
                                 <option value="all">All Status</option>
                                 <option value="success">Success</option>
@@ -257,7 +276,7 @@ const WebhooksPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {loading ? (
                     <div className="p-8 text-center">
-                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
                         <p className="mt-2 text-slate-500">Loading...</p>
                     </div>
                 ) : activeTab === 'logs' ? (
@@ -304,7 +323,7 @@ const WebhooksPage: React.FC = () => {
                                             </td>
                                             <td className="hidden md:table-cell px-4 md:px-6 py-4 whitespace-nowrap">
                                                 {webhook.signatureValid ? (
-                                                    <span className="flex items-center gap-1 text-green-600 text-xs">
+                                                    <span className="flex items-center gap-1 text-primary-600 text-xs">
                                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                             <path
                                                                 fillRule="evenodd"
@@ -341,12 +360,25 @@ const WebhooksPage: React.FC = () => {
                                                             setSelectedWebhook(webhook);
                                                             setShowDetails(true);
                                                         }}
-                                                        className="text-green-600 hover:text-green-900"
+                                                        className="text-primary-600 hover:text-primary-900"
                                                     >
                                                         View
                                                     </button>
-                                                    {webhook.dispatchStatus === 'failed' && (
-                                                        <button className="text-yellow-600 hover:text-yellow-900 hidden sm:inline">Retry</button>
+                                                    {webhook.dispatchStatus === 'failed' && webhook.source === 'vtpay' && (
+                                                        <button
+                                                            onClick={() => handleRetry(webhook._id)}
+                                                            className="text-yellow-600 hover:text-yellow-900 hidden sm:inline"
+                                                        >
+                                                            Retry
+                                                        </button>
+                                                    )}
+                                                    {webhook.source === 'palmpay' && (webhook.dispatchStatus !== 'success' || !webhook.signatureValid) && (
+                                                        <button
+                                                            onClick={() => handleReprocess(webhook._id)}
+                                                            className="text-orange-600 hover:text-orange-900 hidden sm:inline"
+                                                        >
+                                                            Process
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>
@@ -401,7 +433,7 @@ const WebhooksPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="hidden sm:table-cell px-4 md:px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${tenant.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${tenant.status === 'active' ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'
                                                     }`}>
                                                     {tenant.status.toUpperCase()}
                                                 </span>
@@ -409,7 +441,7 @@ const WebhooksPage: React.FC = () => {
                                             <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <button
                                                     onClick={() => window.location.href = `/tenants?id=${tenant._id}`}
-                                                    className="text-green-600 hover:text-green-900"
+                                                    className="text-primary-600 hover:text-primary-900"
                                                 >
                                                     <span className="hidden sm:inline">Manage Tenant</span>
                                                     <span className="sm:hidden">Manage</span>
@@ -480,7 +512,7 @@ const WebhooksPage: React.FC = () => {
                             {/* Payload */}
                             <div>
                                 <h3 className="text-sm font-semibold text-slate-900 mb-2">Payload</h3>
-                                <div className="bg-slate-900 text-green-400 p-4 rounded-lg font-mono text-xs overflow-x-auto">
+                                <div className="bg-slate-900 text-primary-400 p-4 rounded-lg font-mono text-xs overflow-x-auto">
                                     <pre>{JSON.stringify(selectedWebhook.payload, null, 2)}</pre>
                                 </div>
                             </div>
@@ -494,6 +526,15 @@ const WebhooksPage: React.FC = () => {
                                         className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:opacity-50"
                                     >
                                         {isRetrying ? 'Retrying...' : 'Retry Dispatch'}
+                                    </button>
+                                )}
+                                {selectedWebhook.source === 'palmpay' && (selectedWebhook.dispatchStatus !== 'success' || !selectedWebhook.signatureValid) && (
+                                    <button
+                                        onClick={() => handleReprocess(selectedWebhook._id)}
+                                        disabled={isRetrying}
+                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium disabled:opacity-50"
+                                    >
+                                        {isRetrying ? 'Processing...' : 'Verify & Process'}
                                     </button>
                                 )}
                                 <button

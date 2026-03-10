@@ -181,7 +181,7 @@ const SettingsPage: React.FC = () => {
                             ...settings,
                             general: { ...settings.general, companyName: e.target.value }
                         })}
-                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                 </div>
                 <div>
@@ -193,7 +193,7 @@ const SettingsPage: React.FC = () => {
                             ...settings,
                             general: { ...settings.general, supportEmail: e.target.value }
                         })}
-                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                 </div>
                 <div>
@@ -204,7 +204,7 @@ const SettingsPage: React.FC = () => {
                             ...settings,
                             general: { ...settings.general, timezone: e.target.value }
                         })}
-                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                         <option value="Africa/Lagos">West Africa Time (Lagos)</option>
                         <option value="UTC">UTC</option>
@@ -219,7 +219,7 @@ const SettingsPage: React.FC = () => {
                             ...settings,
                             general: { ...settings.general, currency: e.target.value }
                         })}
-                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                         <option value="NGN">Nigerian Naira (NGN)</option>
                         <option value="USD">US Dollar (USD)</option>
@@ -262,7 +262,7 @@ const SettingsPage: React.FC = () => {
                             })}
                             className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                     </label>
                 </div>
 
@@ -281,7 +281,7 @@ const SettingsPage: React.FC = () => {
                             })}
                             className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                     </label>
                 </div>
 
@@ -300,7 +300,7 @@ const SettingsPage: React.FC = () => {
                             })}
                             className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                     </label>
                 </div>
             </div>
@@ -314,7 +314,7 @@ const SettingsPage: React.FC = () => {
                         ...settings,
                         notifications: { ...settings.notifications, webhookRetries: parseInt(e.target.value) }
                     })}
-                    className="w-full md:w-1/3 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full md:w-1/3 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
             </div>
         </div>
@@ -337,7 +337,7 @@ const SettingsPage: React.FC = () => {
                         })}
                         className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                 </label>
             </div>
 
@@ -351,7 +351,7 @@ const SettingsPage: React.FC = () => {
                             ...settings,
                             security: { ...settings.security, sessionTimeout: parseInt(e.target.value) }
                         })}
-                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                 </div>
                 <div>
@@ -363,7 +363,7 @@ const SettingsPage: React.FC = () => {
                             ...settings,
                             security: { ...settings.security, passwordExpiry: parseInt(e.target.value) }
                         })}
-                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                 </div>
             </div>
@@ -376,7 +376,7 @@ const SettingsPage: React.FC = () => {
                         ...settings,
                         security: { ...settings.security, ipWhitelist: e.target.value }
                     })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 h-24"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 h-24"
                     placeholder="Enter IP addresses separated by commas"
                 />
                 <p className="text-xs text-slate-500 mt-1">Leave empty to allow access from any IP</p>
@@ -428,7 +428,7 @@ const SettingsPage: React.FC = () => {
                                     palmpay: { ...settings.integrations.palmpay, baseUrl: e.target.value }
                                 }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                             placeholder="https://sandbox.palmpay.com/v2"
                         />
                     </div>
@@ -445,7 +445,7 @@ const SettingsPage: React.FC = () => {
                                         palmpay: { ...settings.integrations.palmpay, apiKey: e.target.value }
                                     }
                                 })}
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm pr-10"
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm pr-10"
                             />
                             <button
                                 type="button"
@@ -493,7 +493,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 parentAccount: { ...settings.parentAccount, bankCode: e.target.value }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                             <option value="">Select a bank</option>
                             {banks.map((bank: any) => (
@@ -513,7 +513,7 @@ const SettingsPage: React.FC = () => {
                                     ...settings,
                                     parentAccount: { ...settings.parentAccount, accountNumber: e.target.value }
                                 })}
-                                className="flex-1 px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                className="flex-1 px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 placeholder="10-digit account number"
                                 maxLength={10}
                             />
@@ -549,7 +549,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 parentAccount: { ...settings.parentAccount, status: e.target.value as 'ACTIVE' | 'INACTIVE' }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                             <option value="ACTIVE">Active</option>
                             <option value="INACTIVE">Inactive</option>
@@ -579,7 +579,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 globalSettlement: { ...settings.globalSettlement, scheduleType: e.target.value as 'T1' | 'T7' | 'T30' }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                             <option value="T1">T+1 (Next Day)</option>
                             <option value="T7">T+7 (Weekly)</option>
@@ -596,7 +596,7 @@ const SettingsPage: React.FC = () => {
                                     ...settings,
                                     globalSettlement: { ...settings.globalSettlement, status: e.target.checked }
                                 })}
-                                className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                                className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
                             />
                             <span className="text-sm text-slate-600">Enable Automatic Settlement</span>
                         </div>
@@ -619,7 +619,7 @@ const SettingsPage: React.FC = () => {
                                             globalSettlement: { ...settings.globalSettlement, settlementAccounts: newAccounts }
                                         });
                                     }}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 >
                                     <option value="">Select a bank</option>
                                     {banks.map((bank: any) => (
@@ -644,7 +644,7 @@ const SettingsPage: React.FC = () => {
                                                 globalSettlement: { ...settings.globalSettlement, settlementAccounts: newAccounts }
                                             });
                                         }}
-                                        className="flex-1 px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="flex-1 px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="10-digit account number"
                                         maxLength={10}
                                     />
@@ -677,8 +677,8 @@ const SettingsPage: React.FC = () => {
                                     </button>
                                 </div>
                                 {settings.globalSettlement?.settlementAccounts?.[0]?.accountName && (
-                                    <div className="mt-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                                    <div className="mt-2 text-sm text-primary-600 bg-primary-50 px-3 py-2 rounded-lg flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-primary-600"></div>
                                         {settings.globalSettlement.settlementAccounts[0].accountName}
                                     </div>
                                 )}
@@ -691,7 +691,7 @@ const SettingsPage: React.FC = () => {
             {/* Deposit Fee Configuration */}
             <div className="bg-white p-6 rounded-lg border border-slate-200">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex-shrink-0 flex items-center justify-center text-green-600 font-bold">
+                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex-shrink-0 flex items-center justify-center text-primary-600 font-bold">
                         DF
                     </div>
                     <div>
@@ -711,7 +711,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 deposit: { ...settings.deposit, vtpayFeePercent: parseFloat(e.target.value) }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                         <p className="text-xs text-slate-500 mt-1">
                             This is the total fee percentage deducted from the user's deposit.
@@ -743,7 +743,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 payout: { ...settings.payout, vtpayFeePercent: parseFloat(e.target.value) }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                     </div>
                     <div>
@@ -755,7 +755,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 payout: { ...settings.payout, bankSettlementFee: parseInt(e.target.value) }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                     </div>
                     <div>
@@ -767,7 +767,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 payout: { ...settings.payout, minAmount: parseInt(e.target.value) }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                     </div>
                 </div>
@@ -797,7 +797,7 @@ const SettingsPage: React.FC = () => {
                                 ...settings,
                                 emailConfig: { ...settings.emailConfig, provider: e.target.value as 'gmail' | 'other' }
                             })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                             <option value="gmail">Gmail</option>
                             <option value="other">SMTP</option>
@@ -814,7 +814,7 @@ const SettingsPage: React.FC = () => {
                                         ...settings,
                                         emailConfig: { ...settings.emailConfig, gmail: { ...settings.emailConfig.gmail, user: e.target.value } }
                                     })}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 />
                             </div>
                             <div>
@@ -827,7 +827,7 @@ const SettingsPage: React.FC = () => {
                                             ...settings,
                                             emailConfig: { ...settings.emailConfig, gmail: { ...settings.emailConfig.gmail, pass: e.target.value } }
                                         })}
-                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm pr-10"
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm pr-10"
                                     />
                                     <button
                                         type="button"
@@ -860,7 +860,7 @@ const SettingsPage: React.FC = () => {
                                             ...settings,
                                             emailConfig: { ...settings.emailConfig, smtp: { ...settings.emailConfig.smtp, host: e.target.value } }
                                         })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                                 <div>
@@ -872,7 +872,7 @@ const SettingsPage: React.FC = () => {
                                             ...settings,
                                             emailConfig: { ...settings.emailConfig, smtp: { ...settings.emailConfig.smtp, port: parseInt(e.target.value) } }
                                         })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                             </div>
@@ -886,7 +886,7 @@ const SettingsPage: React.FC = () => {
                                             ...settings,
                                             emailConfig: { ...settings.emailConfig, smtp: { ...settings.emailConfig.smtp, user: e.target.value } }
                                         })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                                 <div>
@@ -899,7 +899,7 @@ const SettingsPage: React.FC = () => {
                                                 ...settings,
                                                 emailConfig: { ...settings.emailConfig, smtp: { ...settings.emailConfig.smtp, pass: e.target.value } }
                                             })}
-                                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm pr-10"
+                                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm pr-10"
                                         />
                                         <button
                                             type="button"

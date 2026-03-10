@@ -16,7 +16,8 @@ import {
     Briefcase,
     Hash,
     ChevronRight,
-    ChevronLeft
+    ChevronLeft,
+    FileText
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';

@@ -123,7 +123,7 @@ const ApiKeysPage: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         const badges = {
-            active: 'bg-green-100 text-green-800',
+            active: 'bg-primary-100 text-primary-800',
             revoked: 'bg-red-100 text-red-800',
             expired: 'bg-gray-100 text-gray-800',
         };
@@ -136,7 +136,7 @@ const ApiKeysPage: React.FC = () => {
 
     const getUsagePercentage = (current: number, limit: number) => {
         const percentage = (current / limit) * 100;
-        let color = 'bg-green-500';
+        let color = 'bg-primary-500';
         if (percentage > 80) color = 'bg-red-500';
         else if (percentage > 60) color = 'bg-yellow-500';
         return { percentage, color };
@@ -171,7 +171,7 @@ const ApiKeysPage: React.FC = () => {
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Active Keys</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-green-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1">
                         {apiKeys.filter((k) => k.status === 'active').length}
                     </h3>
                 </div>
@@ -193,7 +193,7 @@ const ApiKeysPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {loading ? (
                     <div className="p-8 text-center">
-                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
                         <p className="mt-2 text-slate-500">Loading API keys...</p>
                     </div>
                 ) : (
@@ -261,7 +261,7 @@ const ApiKeysPage: React.FC = () => {
                                                             setSelectedKey(key);
                                                             setShowDetails(true);
                                                         }}
-                                                        className="text-green-600 hover:text-green-900"
+                                                        className="text-primary-600 hover:text-primary-900"
                                                     >
                                                         View
                                                     </button>
@@ -308,7 +308,7 @@ const ApiKeysPage: React.FC = () => {
                                     required
                                     value={newKeyData.userId}
                                     onChange={(e) => setNewKeyData({ ...newKeyData, userId: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 >
                                     <option value="">Select a tenant...</option>
                                     {tenants.map(tenant => (
@@ -325,7 +325,7 @@ const ApiKeysPage: React.FC = () => {
                                     required
                                     value={newKeyData.name}
                                     onChange={(e) => setNewKeyData({ ...newKeyData, name: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     placeholder="e.g., Mobile App Backend"
                                 />
                             </div>
@@ -334,7 +334,7 @@ const ApiKeysPage: React.FC = () => {
                                 <select
                                     value={newKeyData.environment}
                                     onChange={(e) => setNewKeyData({ ...newKeyData, environment: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 >
                                     <option value="test">Test Mode</option>
                                     <option value="live">Live Mode</option>
@@ -349,7 +349,7 @@ const ApiKeysPage: React.FC = () => {
                                                 type="checkbox"
                                                 checked={newKeyData.scopes.includes(scope)}
                                                 onChange={() => toggleScope(scope)}
-                                                className="rounded text-green-600 focus:ring-green-500"
+                                                className="rounded text-primary-600 focus:ring-primary-500"
                                             />
                                             <span className="text-sm text-slate-700">{scope}</span>
                                         </label>
@@ -367,7 +367,7 @@ const ApiKeysPage: React.FC = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                                     disabled={isGenerating}
                                 >
                                     {isGenerating ? 'Generating...' : 'Generate Key'}

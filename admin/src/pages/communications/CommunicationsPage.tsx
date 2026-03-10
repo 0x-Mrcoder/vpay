@@ -232,7 +232,7 @@ const CommunicationsPage: React.FC = () => {
                                                                 </td>
                                                                 <td className="px-4 py-2 text-slate-600">{tenant.email}</td>
                                                                 <td className="px-4 py-2">
-                                                                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${tenant.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                                                                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${tenant.status === 'active' ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-600'
                                                                         }`}>
                                                                         {tenant.status}
                                                                     </span>
@@ -347,7 +347,7 @@ const CommunicationsPage: React.FC = () => {
                                             <span className="px-2 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 rounded-full">
                                                 {getRecipientLabel(comm.recipientType)}
                                             </span>
-                                            <span className="px-2 py-0.5 text-[10px] font-medium bg-green-100 text-green-600 rounded-full">
+                                            <span className="px-2 py-0.5 text-[10px] font-medium bg-primary-100 text-primary-600 rounded-full">
                                                 {comm.recipientCount} Recipients
                                             </span>
                                         </div>
@@ -375,7 +375,7 @@ const CommunicationsPage: React.FC = () => {
                                         <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
                                             {getRecipientLabel(selectedCommunication.recipientType)}
                                         </span>
-                                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-600 rounded-full">
+                                        <span className="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-600 rounded-full">
                                             {selectedCommunication.recipientCount} Recipients
                                         </span>
                                         <span className="text-xs text-slate-500">• {new Date(selectedCommunication.sentAt).toLocaleString()}</span>

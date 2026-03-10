@@ -80,7 +80,7 @@ const FeesPage: React.FC = () => {
 
     const getCategoryBadge = (category: string) => {
         const badges = {
-            deposit: 'bg-green-100 text-green-800',
+            deposit: 'bg-primary-100 text-primary-800',
             transfer: 'bg-blue-100 text-blue-800',
             withdrawal: 'bg-orange-100 text-orange-800',
             utility: 'bg-purple-100 text-purple-800',
@@ -201,7 +201,7 @@ const FeesPage: React.FC = () => {
                                             {fee.maxAmount ? `Max: ₦${fee.maxAmount}` : 'No max'}
                                         </td>
                                         <td className="hidden sm:table-cell px-4 md:px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${fee.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${fee.status === 'active' ? 'bg-primary-100 text-primary-800' : 'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {fee.status.toUpperCase()}
                                             </span>
@@ -264,7 +264,7 @@ const FeesPage: React.FC = () => {
                                     required
                                     value={formData.name || ''}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     placeholder="e.g., Standard Transfer Fee"
                                 />
                             </div>
@@ -274,7 +274,7 @@ const FeesPage: React.FC = () => {
                                     <select
                                         value={formData.category || 'transfer'}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="deposit">VA Transaction Fee</option>
                                         <option value="withdrawal">Payout Fee</option>
@@ -287,7 +287,7 @@ const FeesPage: React.FC = () => {
                                     <select
                                         value={formData.type || 'flat'}
                                         onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="flat">Flat Amount</option>
                                         <option value="percentage">Percentage</option>
@@ -313,7 +313,7 @@ const FeesPage: React.FC = () => {
                                         type="number"
                                         value={formData.cap || ''}
                                         onChange={(e) => setFormData({ ...formData, cap: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                         placeholder="Max fee amount"
                                     />
                                 </div>

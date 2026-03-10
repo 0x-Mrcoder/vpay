@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Send, MessageSquare, CheckCircle2, AlertCircle, History, Clock, CheckCircle, HelpCircle, Mail } from 'lucide-react';
+import { Send, MessageSquare, CheckCircle2, AlertCircle, History, Clock, CheckCircle, HelpCircle, Mail, Phone } from 'lucide-react';
 
 interface HelpMessage {
     _id: string;
@@ -230,6 +230,22 @@ export const Help: React.FC = () => {
                         </div>
                     </div>
 
+                    <div className="bg-green-600 p-8 rounded-3xl shadow-xl text-white relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                            <Phone size={100} />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center mb-6 border border-white/10">
+                                <Phone size={24} />
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">WhatsApp / Call</h3>
+                            <p className="text-green-100 text-sm mb-6 font-medium">+234 707 042 9434</p>
+                            <a href="https://wa.me/2347070429434" target="_blank" rel="noopener noreferrer" className="w-full py-3.5 bg-white text-green-700 font-bold rounded-xl hover:bg-green-50 transition-all shadow-lg transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                                Message on WhatsApp
+                            </a>
+                        </div>
+                    </div>
+
                     <div className="bg-primary-600 p-8 rounded-3xl shadow-xl text-white relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                             <Mail size={100} />
@@ -239,8 +255,8 @@ export const Help: React.FC = () => {
                                 <Mail size={24} />
                             </div>
                             <h3 className="text-xl font-bold mb-2">Email Support</h3>
-                            <p className="text-primary-100 text-sm mb-6 font-medium">support@vtpay.com</p>
-                            <a href="mailto:support@vtpay.com" className="w-full py-3.5 bg-white text-primary-700 font-bold rounded-xl hover:bg-primary-50 transition-all shadow-lg transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                            <p className="text-primary-100 text-sm mb-6 font-medium">vtstackltd@gmail.com</p>
+                            <a href="mailto:vtstackltd@gmail.com" className="w-full py-3.5 bg-white text-primary-700 font-bold rounded-xl hover:bg-primary-50 transition-all shadow-lg transform active:scale-95 text-sm flex items-center justify-center gap-2">
                                 Send Email
                                 <Send size={16} />
                             </a>

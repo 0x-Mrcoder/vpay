@@ -317,8 +317,8 @@ export const GlobalSettlementConfig: React.FC<GlobalSettlementConfigProps> = ({ 
             </div>
 
             {/* Total Percentage */}
-            <div className={`p-4 rounded-md ${isValidTotal ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                <p className={`text-sm font-medium ${isValidTotal ? 'text-green-800' : 'text-red-800'}`}>
+            <div className={`p-4 rounded-md ${isValidTotal ? 'bg-primary-50 border border-primary-200' : 'bg-red-50 border border-red-200'}`}>
+                <p className={`text-sm font-medium ${isValidTotal ? 'text-primary-800' : 'text-red-800'}`}>
                     Total Allocation: {totalPercentage.toFixed(2)}% {isValidTotal ? '✓' : '✗ Must equal 100%'}
                 </p>
             </div>

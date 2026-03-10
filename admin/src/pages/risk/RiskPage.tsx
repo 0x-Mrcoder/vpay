@@ -175,7 +175,7 @@ const RiskPage: React.FC = () => {
                                             {rule.hits}
                                         </td>
                                         <td className="hidden sm:table-cell px-4 md:px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${rule.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${rule.status === 'active' ? 'bg-primary-100 text-primary-800' : 'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {rule.status.toUpperCase()}
                                             </span>
@@ -238,7 +238,7 @@ const RiskPage: React.FC = () => {
                                     required
                                     value={formData.name || ''}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     placeholder="e.g., High Velocity Check"
                                 />
                             </div>
@@ -248,7 +248,7 @@ const RiskPage: React.FC = () => {
                                     <select
                                         value={formData.type || 'overload'}
                                         onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="overload">System Overload</option>
                                         <option value="network_issue">Network Issue</option>
@@ -263,7 +263,7 @@ const RiskPage: React.FC = () => {
                                     <select
                                         value={formData.action || 'warn'}
                                         onChange={(e) => setFormData({ ...formData, action: e.target.value as any })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="warn">Warn</option>
                                         <option value="alert">Alert</option>
@@ -278,7 +278,7 @@ const RiskPage: React.FC = () => {
                                     required
                                     value={formData.condition || ''}
                                     onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     placeholder="e.g., CPU > 80% for 5 minutes"
                                 />
                             </div>
@@ -289,7 +289,7 @@ const RiskPage: React.FC = () => {
                                         type="number"
                                         value={formData.priority || 1}
                                         onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     />
                                 </div>
                                 <div>
@@ -297,7 +297,7 @@ const RiskPage: React.FC = () => {
                                     <select
                                         value={formData.status || 'active'}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
@@ -318,7 +318,7 @@ const RiskPage: React.FC = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                                     disabled={isSaving}
                                 >
                                     {isSaving ? 'Saving...' : (selectedRule ? 'Update Rule' : 'Create Rule')}

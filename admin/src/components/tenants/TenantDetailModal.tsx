@@ -3,7 +3,8 @@ import { type Tenant, adminApi } from '../../api/client';
 import Modal from '../common/Modal';
 import Badge from '../common/Badge';
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, FileText, User, CreditCard, Shield } from 'lucide-react';
+import { RefreshCw, FileText, User, CreditCard, Shield, Download } from 'lucide-react';
+import { downloadFile } from '../../utils/exportUtils';
 
 interface TenantDetailModalProps {
     isOpen: boolean;
@@ -53,14 +54,14 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === tab.id
-                                ? 'text-green-600'
+                                ? 'text-primary-600'
                                 : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             <tab.icon size={16} />
                             {tab.label}
                             {activeTab === tab.id && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 rounded-t-full" />
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 rounded-t-full" />
                             )}
                         </button>
                     ))}
@@ -73,7 +74,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                             {/* Business Information */}
                             <div>
                                 <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-green-500 rounded-full"></div>
+                                    <div className="w-1 h-4 bg-primary-500 rounded-full"></div>
                                     Business Information
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -135,7 +136,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 {tenant.status !== 'active' && (
                                     <button
                                         onClick={() => onStatusChange(tenant._id, 'active')}
-                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
                                     >
                                         Activate Account
                                     </button>
@@ -170,7 +171,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                         <div className="space-y-4 animate-fade-in">
                             {loadingTxns ? (
                                 <div className="flex items-center justify-center py-12">
-                                    <RefreshCw className="animate-spin text-green-600" size={24} />
+                                    <RefreshCw className="animate-spin text-primary-600" size={24} />
                                 </div>
                             ) : transactions && transactions.length > 0 ? (
                                 <div className="overflow-hidden rounded-xl border border-slate-200">
@@ -203,7 +204,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                             <tfoot className="bg-slate-50 border-t border-slate-200">
                                                 <tr>
                                                     <td colSpan={4} className="px-4 py-3 text-center text-xs text-slate-500">
-                                                        Showing recent 10 transactions. <a href="/transactions" className="text-green-600 hover:underline">View all</a>
+                                                        Showing recent 10 transactions. <a href="/transactions" className="text-primary-600 hover:underline">View all</a>
                                                     </td>
                                                 </tr>
                                             </tfoot>
@@ -252,9 +253,18 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                                 <p className="text-sm font-medium text-slate-900 truncate">Identity Document</p>
                                                 <p className="text-xs text-slate-500">Provided identification card</p>
                                             </div>
-                                            <a href={tenant.idCardPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
-                                                View Full
-                                            </a>
+                                            <div className="flex gap-2">
+                                                <a href={tenant.idCardPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                    View Full
+                                                </a>
+                                                <button 
+                                                    onClick={() => downloadFile(tenant.idCardPath!, `ID_${tenant.firstName}_${tenant.lastName}`)}
+                                                    className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                                                    title="Download"
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">
@@ -272,18 +282,27 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                                 <p className="text-sm font-medium text-slate-900 truncate">Selfie Image</p>
                                                 <p className="text-xs text-slate-500">Live portrait for verification</p>
                                             </div>
-                                            <a href={tenant.selfiePath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
-                                                View Full
-                                            </a>
+                                            <div className="flex gap-2">
+                                                <a href={tenant.selfiePath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                    View Full
+                                                </a>
+                                                <button 
+                                                    onClick={() => downloadFile(tenant.selfiePath!, `Selfie_${tenant.firstName}_${tenant.lastName}`)}
+                                                    className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                                                    title="Download"
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
                                     {/* CAC Document */}
                                     {tenant.cacDocumentPath && (
                                         <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
-                                            <div className="w-12 h-12 bg-green-50 rounded overflow-hidden flex items-center justify-center border border-green-100">
+                                            <div className="w-12 h-12 bg-primary-50 rounded overflow-hidden flex items-center justify-center border border-primary-100">
                                                 {tenant.cacDocumentPath.match(/\.(pdf)$/) ? (
-                                                    <FileText size={20} className="text-green-600" />
+                                                    <FileText size={20} className="text-primary-600" />
                                                 ) : (
                                                     <img src={tenant.cacDocumentPath} className="w-full h-full object-cover" alt="CAC Cert" />
                                                 )}
@@ -292,9 +311,18 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                                 <p className="text-sm font-medium text-slate-900 truncate">Business Document</p>
                                                 <p className="text-xs text-slate-500">CAC Registration Certificate</p>
                                             </div>
-                                            <a href={tenant.cacDocumentPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
-                                                View Full
-                                            </a>
+                                            <div className="flex gap-2">
+                                                <a href={tenant.cacDocumentPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                    View Full
+                                                </a>
+                                                <button 
+                                                    onClick={() => downloadFile(tenant.cacDocumentPath!, `CAC_${tenant.businessName || tenant.firstName}`)}
+                                                    className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                                                    title="Download"
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -304,7 +332,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 {tenant.kyc_status !== 'verified' && (
                                     <button
                                         onClick={() => onKycStatusChange(tenant._id, 'verified')}
-                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
                                     >
                                         Approve KYC
                                     </button>

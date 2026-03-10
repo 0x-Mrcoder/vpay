@@ -33,9 +33,11 @@ const AuditLogsPage: React.FC = () => {
         if (!details) return '-';
         if (typeof details === 'string') return details;
         return (
-            <pre className="text-[10px] font-mono bg-slate-50 p-1 rounded max-w-xs overflow-x-auto">
-                {JSON.stringify(details, null, 2)}
-            </pre>
+            <div className="max-w-xs md:max-w-sm lg:max-w-md overflow-x-auto">
+                <pre className="text-[10px] font-mono bg-slate-50 p-2 text-slate-700 rounded whitespace-pre-wrap break-all">
+                    {JSON.stringify(details, null, 2)}
+                </pre>
+            </div>
         );
     };
 
@@ -60,43 +62,45 @@ const AuditLogsPage: React.FC = () => {
 
             {/* Filters Panel */}
             {showFilters && (
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm animate-fade-in grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Action Type</label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                            <input
-                                type="text"
-                                placeholder="e.g. LOGIN, UPDATE"
-                                value={actionFilter}
-                                onChange={(e) => setActionFilter(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                            />
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1.5">Action Type</label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="e.g. LOGIN, UPDATE"
+                                    value={actionFilter}
+                                    onChange={(e) => setActionFilter(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:bg-white outline-none transition-all"
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Actor Email</label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                            <input
-                                type="text"
-                                placeholder="Search by email"
-                                value={actorEmailFilter}
-                                onChange={(e) => setActorEmailFilter(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                            />
+                        <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1.5">Actor Email</label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="Search by email"
+                                    value={actorEmailFilter}
+                                    onChange={(e) => setActorEmailFilter(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:bg-white outline-none transition-all"
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-end">
-                        <button
-                            onClick={() => {
-                                setActionFilter('');
-                                setActorEmailFilter('');
-                            }}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium px-2 py-2"
-                        >
-                            Reset Filters
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    setActionFilter('');
+                                    setActorEmailFilter('');
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 font-medium rounded-lg transition-colors border border-slate-200"
+                            >
+                                Reset Filters
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -113,12 +117,12 @@ const AuditLogsPage: React.FC = () => {
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
-                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm">Action</th>
-                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm">Actor</th>
-                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm">Target</th>
+                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap">Action</th>
+                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap">Actor</th>
+                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap">Target</th>
                                     <th className="px-6 py-4 font-medium text-slate-600 text-sm">Details</th>
-                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm">Context</th>
-                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm text-right">Time</th>
+                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap">Context</th>
+                                    <th className="px-6 py-4 font-medium text-slate-600 text-sm text-right whitespace-nowrap">Time</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">

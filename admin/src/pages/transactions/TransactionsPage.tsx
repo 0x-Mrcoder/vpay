@@ -65,7 +65,7 @@ const CountdownTimer = ({ createdAt, isCleared }: { createdAt: string; isCleared
     }, [createdAt, isCleared]);
 
     if (isCleared) {
-        return <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">Settled</span>;
+        return <span className="text-xs font-bold text-primary-600 bg-primary-50 px-2 py-1 rounded-full">Settled</span>;
     }
 
     if (timeLeft === 'Processing...') {
@@ -246,7 +246,7 @@ const TransactionsPage: React.FC = () => {
                     </button>
                     <button
                         onClick={() => refetch()}
-                        className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
+                        className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
                     >
                         Refresh
                     </button>
@@ -261,7 +261,7 @@ const TransactionsPage: React.FC = () => {
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Success Rate</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-green-600 mt-1">
+                    <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1">
                         {transactions.length > 0
                             ? ((transactions.filter((t) => t.status === 'success').length / transactions.length) * 100).toFixed(1)
                             : '0.0'}%
@@ -306,7 +306,7 @@ const TransactionsPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {loading ? (
                     <div className="p-8 text-center">
-                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
                         <p className="mt-2 text-slate-500">Loading transactions...</p>
                     </div>
                 ) : (
@@ -388,7 +388,7 @@ const TransactionsPage: React.FC = () => {
                                                     setSelectedTransaction(txn);
                                                     setShowDetails(true);
                                                 }}
-                                                className="text-green-600 hover:text-green-900"
+                                                className="text-primary-600 hover:text-primary-900"
                                             >
                                                 <span className="hidden sm:inline">View Details</span>
                                                 <span className="sm:hidden">View</span>
@@ -449,7 +449,7 @@ const TransactionsPage: React.FC = () => {
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-slate-500">Flagged</span>
-                                            <span className={`text-sm font-medium ${selectedTransaction.flagged ? 'text-red-600' : 'text-green-600'}`}>
+                                            <span className={`text-sm font-medium ${selectedTransaction.flagged ? 'text-red-600' : 'text-primary-600'}`}>
                                                 {selectedTransaction.flagged ? 'Yes' : 'No'}
                                             </span>
                                         </div>
@@ -471,7 +471,7 @@ const TransactionsPage: React.FC = () => {
                             <div>
                                 <h3 className="text-sm font-semibold text-slate-900 mb-3">Technical Details</h3>
                                 <div className="bg-slate-900 p-4 rounded-lg overflow-x-auto h-full max-h-[300px]">
-                                    <pre className="text-xs text-green-400 font-mono">
+                                    <pre className="text-xs text-primary-400 font-mono">
                                         {JSON.stringify(selectedTransaction, null, 2)}
                                     </pre>
                                 </div>
@@ -493,7 +493,7 @@ const TransactionsPage: React.FC = () => {
                             <button
                                 onClick={() => handleVerify(selectedTransaction._id)}
                                 disabled={isActionLoading || selectedTransaction.status === 'success'}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
+                                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50"
                             >
                                 Verify Manually
                             </button>

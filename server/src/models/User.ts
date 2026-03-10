@@ -26,6 +26,8 @@ export interface IUserDocument extends Document {
     verificationToken?: string; // Added for email verification
     apiKey?: string;
     webhookUrl?: string; // Webhook URL for payment notifications
+    webhookActive: boolean;
+    profilePicture?: string;
     kycLevel: number; // 0: Registered, 1: Verified, 2: Submitted, 3: Approved
     kyc_status: 'pending' | 'verified' | 'rejected';
     role: 'user' | 'admin';
@@ -138,6 +140,13 @@ const UserSchema = new Schema<IUserDocument>(
             type: String,
             unique: true,
             sparse: true,
+        },
+        webhookActive: {
+            type: Boolean,
+            default: true,
+        },
+        profilePicture: {
+            type: String,
         },
         webhookUrl: {
             type: String,

@@ -142,6 +142,11 @@ export class PayoutService {
             });
             await payout.save();
 
+            // Notify admins
+            emailService.sendPayoutRequestAdminNotification(user, payout).catch(err => 
+                logger.error('[PayoutService] Failed to send admin notification:', err)
+            );
+
             // Create Transaction Record (Pending)
             const transaction = new Transaction({
                 userId,

@@ -16,8 +16,12 @@ export const Profile: React.FC = () => {
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
         businessName: user?.businessName || '',
-        phone: user?.phone || ''
+        phone: user?.phone || '',
+        webhookActive: user?.webhookActive ?? true,
+        profilePicture: user?.profilePicture || ''
     });
+
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
 
     const [passwords, setPasswords] = useState({
         current: '',
@@ -32,13 +36,19 @@ export const Profile: React.FC = () => {
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
                 businessName: user.businessName || '',
-                phone: user.phone || ''
+                phone: user.phone || '',
+                webhookActive: user.webhookActive ?? true,
+                profilePicture: user.profilePicture || ''
             });
         }
     }, [user]);
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setProfileData({ ...profileData, [e.target.name]: e.target.value });
+    };
+
+    const handleToggleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setProfileData({ ...profileData, [e.target.name]: e.target.checked });
     };
 
     const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,6 +77,25 @@ export const Profile: React.FC = () => {
             setIsLoading(false);
             setTimeout(() => setMessage(null), 5000);
         }
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            setMessage({ type: 'error', text: 'Image must be less than 2MB' });
+            return;
+        }
+
+        setIsUploadingImage(true);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            setProfileData({ ...profileData, profilePicture: base64String });
+            setIsUploadingImage(false);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -140,12 +169,23 @@ export const Profile: React.FC = () => {
                         <div className="h-24 bg-gradient-to-r from-primary-400 to-primary-600"></div>
                         <div className="px-6 pb-8 text-center relative">
                             <div className="w-24 h-24 bg-white rounded-full p-1 mx-auto -mt-12 mb-4 shadow-xl">
-                                <div className="w-full h-full bg-primary-50 rounded-full flex items-center justify-center text-3xl font-black text-primary-600 uppercase">
-                                    {user?.firstName?.charAt(0)}
+                                <div className="w-full h-full bg-primary-50 rounded-full flex items-center justify-center text-3xl font-black text-primary-600 uppercase overflow-hidden">
+                                    {profileData.profilePicture ? (
+                                        <img src={profileData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        user?.firstName?.charAt(0)
+                                    )}
                                 </div>
-                                <button className="absolute bottom-1 right-1 bg-white p-2 rounded-full shadow-lg border border-gray-100 text-gray-500 hover:text-primary-600 transition-all transform hover:scale-110">
-                                    <Camera size={14} />
-                                </button>
+                                {isUploadingImage ? (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+                                        <Loader2 size={24} className="animate-spin text-white" />
+                                    </div>
+                                ) : isEditing && (
+                                    <label className="absolute bottom-1 right-1 bg-white p-2 rounded-full shadow-lg border border-gray-100 text-gray-500 hover:text-primary-600 transition-all transform hover:scale-110 cursor-pointer">
+                                        <Camera size={14} />
+                                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                                    </label>
+                                )}
                             </div>
                             <h2 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">{user?.firstName} {user?.lastName}</h2>
                             <p className="text-sm text-gray-500 mb-6 font-medium">{user?.email}</p>
@@ -347,6 +387,26 @@ export const Profile: React.FC = () => {
                                                     className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-xl md:rounded-2xl text-sm md:text-base font-bold text-gray-900 focus:outline-none focus:border-primary-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                                                 />
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-xl md:rounded-2xl">
+                                            <div>
+                                                <h4 className="text-sm font-bold text-gray-900">Webhook Notifications</h4>
+                                                <p className="text-[10px] md:text-xs text-gray-500 mt-1">Receive webhook notifications when a transaction is successful.</p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="webhookActive" 
+                                                    checked={profileData.webhookActive} 
+                                                    onChange={handleToggleChange} 
+                                                    disabled={!isEditing}
+                                                    className="sr-only peer" 
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                                            </label>
                                         </div>
                                     </div>
 
