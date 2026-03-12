@@ -29,8 +29,9 @@ declare class EmailService {
      */
     sendPayoutSuccessEmail(email: string, name: string, payout: any): Promise<void>;
     /**
-     * Send webhook failure notification email
+     * Get all admin emails from database
      */
+    private getAdminEmails;
     /**
      * Send notification to admins for KYC or Business Upgrade submission
      */

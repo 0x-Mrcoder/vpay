@@ -1013,8 +1013,18 @@ router.post('/communications/send', async (req: AuthenticatedRequest, res: Respo
         let query: any = {};
         if (recipientType === 'active') {
             query.status = 'active';
+        } else if (recipientType === 'inactive') {
+            query.status = { $ne: 'active' };
+        } else if (recipientType === 'unverified') {
+            query.kycLevel = { $lt: 3 };
         } else if (recipientType === 'specific') {
             query._id = { $in: selectedTenants };
+        }
+
+        // Always exclude admins unless explicitly choosing 'specific' or a special flag.
+        // For general announcements, we probably only want tenants.
+        if (recipientType !== 'specific') {
+            query.role = { $ne: 'admin' };
         }
 
         const tenants = await User.find(query).select('email');
@@ -1295,6 +1305,7 @@ router.get('/profile', async (req: AuthenticatedRequest, res: Response): Promise
                 phone: user.phone,
                 kycLevel: user.kycLevel,
                 status: user.status,
+                role: user.role,
             },
         });
     } catch (error) {
@@ -1345,6 +1356,7 @@ router.put('/profile', async (req: AuthenticatedRequest, res: Response): Promise
                 phone: user.phone,
                 kycLevel: user.kycLevel,
                 status: user.status,
+                role: user.role,
             },
         });
     } catch (error) {

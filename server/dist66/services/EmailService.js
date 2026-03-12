@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.emailService = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const SystemSetting_1 = require("../models/SystemSetting");
+const User_1 = require("../models/User");
 const config_1 = __importDefault(require("../config"));
 class EmailService {
     async getTransporter() {
@@ -235,13 +236,29 @@ class EmailService {
         return this.sendEmail(email, 'Payout Successful - VTStack', html);
     }
     /**
-     * Send webhook failure notification email
+     * Get all admin emails from database
      */
+    async getAdminEmails() {
+        try {
+            const admins = await User_1.User.find({ role: 'admin' }).select('email');
+            const emails = admins.map(a => a.email);
+            // Hardcoded fallback/main admins
+            const fallbackEmails = ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com', 'vtstackltd@gmail.com'];
+            // Merge and deduplicate
+            const allEmails = Array.from(new Set([...emails, ...fallbackEmails]));
+            console.log(`[EmailService] Found ${allEmails.length} admin recipients`);
+            return allEmails;
+        }
+        catch (error) {
+            console.error('[EmailService] Failed to fetch admin emails:', error);
+            return ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com', 'vtstackltd@gmail.com'];
+        }
+    }
     /**
      * Send notification to admins for KYC or Business Upgrade submission
      */
     async sendKycSubmissionAdminNotification(user, submissionType) {
-        const adminEmails = ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com', 'vtstackltd@gmail.com'];
+        const adminEmails = await this.getAdminEmails();
         const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
         const html = `
@@ -273,7 +290,7 @@ class EmailService {
      * Send notification to admins for NEW Payout Request
      */
     async sendPayoutRequestAdminNotification(user, payout) {
-        const adminEmails = ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com', 'vtstackltd@gmail.com'];
+        const adminEmails = await this.getAdminEmails();
         const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
         const amount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(payout.totalDebit / 100);
@@ -307,7 +324,7 @@ class EmailService {
      * Send notification to admins for NEW Support Ticket
      */
     async sendSupportTicketAdminNotification(user, ticket) {
-        const adminEmails = ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com', 'vtstackltd@gmail.com'];
+        const adminEmails = await this.getAdminEmails();
         const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
         const html = `
