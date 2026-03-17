@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 interface Communication {
     _id: string;
-    recipientType: 'all' | 'active' | 'specific';
+    recipientType: 'all' | 'active' | 'inactive' | 'unverified' | 'specific';
     recipientCount: number;
     subject: string;
     message: string;
@@ -12,7 +12,7 @@ interface Communication {
 }
 
 const CommunicationsPage: React.FC = () => {
-    const [recipientType, setRecipientType] = useState<'all' | 'active' | 'specific'>('all');
+    const [recipientType, setRecipientType] = useState<'all' | 'active' | 'inactive' | 'unverified' | 'specific'>('all');
     const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
@@ -110,6 +110,8 @@ const CommunicationsPage: React.FC = () => {
         const labels = {
             all: 'All Tenants',
             active: 'Active Tenants',
+            inactive: 'Inactive Tenants',
+            unverified: 'Unverified Tenants',
             specific: 'Selected Tenants'
         };
         return labels[type as keyof typeof labels] || type;
@@ -168,6 +170,28 @@ const CommunicationsPage: React.FC = () => {
                                         <input
                                             type="radio"
                                             name="recipientType"
+                                            value="inactive"
+                                            checked={recipientType === 'inactive'}
+                                            onChange={(e) => setRecipientType(e.target.value as any)}
+                                            className="w-4 h-4 text-primary-600 focus:ring-primary-500"
+                                        />
+                                        <span className="text-sm text-slate-700">Inactive Only</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="recipientType"
+                                            value="unverified"
+                                            checked={recipientType === 'unverified'}
+                                            onChange={(e) => setRecipientType(e.target.value as any)}
+                                            className="w-4 h-4 text-primary-600 focus:ring-primary-500"
+                                        />
+                                        <span className="text-sm text-slate-700">Unverified Only</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="recipientType"
                                             value="specific"
                                             checked={recipientType === 'specific'}
                                             onChange={(e) => setRecipientType(e.target.value as any)}
@@ -206,6 +230,7 @@ const CommunicationsPage: React.FC = () => {
                                                         </th>
                                                         <th className="px-4 py-2 font-medium text-slate-600">Name / Business</th>
                                                         <th className="px-4 py-2 font-medium text-slate-600">Email</th>
+                                                        <th className="px-4 py-2 font-medium text-slate-600">KYC</th>
                                                         <th className="px-4 py-2 font-medium text-slate-600">Status</th>
                                                     </tr>
                                                 </thead>
@@ -231,6 +256,12 @@ const CommunicationsPage: React.FC = () => {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-4 py-2 text-slate-600">{tenant.email}</td>
+                                                                <td className="px-4 py-2">
+                                                                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${tenant.kycLevel >= 3 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                                                        }`}>
+                                                                        {tenant.kycLevel >= 3 ? 'Verified' : 'Pending'}
+                                                                    </span>
+                                                                </td>
                                                                 <td className="px-4 py-2">
                                                                     <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${tenant.status === 'active' ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-600'
                                                                         }`}>

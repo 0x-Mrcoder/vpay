@@ -64,7 +64,7 @@ export const Contact: React.FC = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-gray-900">WhatsApp / Call</h4>
-                                    <p className="text-gray-500">+234 707 042 9434</p>
+                                    <p className="text-gray-500">+234 707 024 9434</p>
                                     <p className="text-gray-500">Mon - Fri, 9am - 6pm</p>
                                 </div>
                             </div>

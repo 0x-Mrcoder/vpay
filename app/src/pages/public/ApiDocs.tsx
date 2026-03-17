@@ -315,23 +315,77 @@ export const ApiDocs: React.FC = () => {
                     <section id="webhooks" className="scroll-mt-28 mb-16">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">Webhooks</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            VTStack uses webhooks to notify your application when an event happens in your account (e.g., incoming payments).
-                            Configure your webhook URL in the developer dashboard.
+                            Webhooks allow VTStack to notify your application when events occur, such as when a customer pays into a virtual account.
+                            To receive webhooks, you must provide a URL in your dashboard and implement a listener that can handle POST requests.
                         </p>
+
+                        <div className="bg-primary-50 border border-primary-100 rounded-2xl p-6 mb-8">
+                            <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <Shield size={18} className="text-primary-600" />
+                                Security & Verification
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Every webhook request from VTStack includes two security headers to ensure the notification is authentic and hasn't been tampered with:
+                            </p>
+                            <ul className="space-y-4">
+                                <li className="flex gap-3">
+                                    <div className="h-5 w-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">1</div>
+                                    <div>
+                                        <code className="text-xs font-bold text-primary-700 bg-white px-2 py-1 rounded border border-primary-100">X-VTStack-Signature</code>
+                                        <p className="text-xs text-gray-500 mt-1">An HMAC-SHA256 hex digest of the raw JSON request body, signed with your webhook secret. Use this to verify payload integrity.</p>
+                                    </div>
+                                </li>
+                                <li className="flex gap-3">
+                                    <div className="h-5 w-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">2</div>
+                                    <div>
+                                        <code className="text-xs font-bold text-primary-700 bg-white px-2 py-1 rounded border border-primary-100">X-VTStack-Secret</code>
+                                        <p className="text-xs text-gray-500 mt-1">A static shared secret string unique to your account. This provides a simple secondary layer of authentication.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-gray-900 mb-3">Event: <code className="text-primary-600">transaction.deposit</code></h4>
+                        <p className="text-sm text-gray-600 mb-4">Sent when a virtual account is successfully credited via bank transfer.</p>
+
                         <div className="code-block-container border border-primary-100/50 shadow-sm">
-                            <h4 className="text-primary-400 font-bold px-5 pt-4 text-xs uppercase tracking-widest bg-gray-900 rounded-t-xl mb-0 pb-2">Sample Payload</h4>
+                            <h4 className="text-primary-400 font-bold px-5 pt-4 text-xs uppercase tracking-widest bg-gray-900 rounded-t-xl mb-0 pb-2">Sample Webhook Payload</h4>
                             <pre className="code-block-pre rounded-t-none mt-0">
                                 <code>{`{
-  "event": "payment.success",
+  "event": "transaction.deposit",
   "data": {
-    "amount": 5000,
-    "reference": "unique_ref_001",
-    "accountNumber": "1234567890",
-    "customer": "John Doe",
-    "timestamp": "2024-01-15T12:00:00.000Z"
-  }
+    "reference": "TXN-c8172422-7c64-4a06-81e8-bfaceda84021",
+    "amount": 10000,
+    "currency": "NGN",
+    "status": "success",
+    "customer": {
+      "name": "AMINU MUHAMMAD",
+      "accountNumber": "8100015498"
+    },
+    "virtualAccount": "6654762099",
+    "timestamp": "2026-03-17T12:37:59.997Z"
+  },
+  "timestamp": "2026-03-17T12:38:00.001Z"
 }`}</code>
                             </pre>
+                        </div>
+
+                        <div className="mt-8 bg-gray-50 rounded-xl p-5 border border-gray-200">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Rules & Best Practices</h4>
+                            <ul className="space-y-2 text-sm text-gray-600">
+                                <li className="flex items-start gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary-400 mt-1.5 shrink-0"></div>
+                                    <span><strong>Acknowledge with 200 OK:</strong> Your server must return a 200 HTTP status code within 10 seconds to acknowledge receipt.</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary-400 mt-1.5 shrink-0"></div>
+                                    <span><strong>Handle Duplicates:</strong> Webhooks may occasionally be sent more than once. Always use the <code>reference</code> to check for duplicate transactions in your system.</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary-400 mt-1.5 shrink-0"></div>
+                                    <span><strong>Verify Signatures:</strong> For maximum security, always verify the <code>X-VTStack-Signature</code> header before processing the data.</span>
+                                </li>
+                            </ul>
                         </div>
                     </section>
                 </main>

@@ -239,8 +239,8 @@ export const Help: React.FC = () => {
                                 <Phone size={24} />
                             </div>
                             <h3 className="text-xl font-bold mb-2">WhatsApp / Call</h3>
-                            <p className="text-green-100 text-sm mb-6 font-medium">+234 707 042 9434</p>
-                            <a href="https://wa.me/2347070429434" target="_blank" rel="noopener noreferrer" className="w-full py-3.5 bg-white text-green-700 font-bold rounded-xl hover:bg-green-50 transition-all shadow-lg transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                            <p className="text-green-100 text-sm mb-6 font-medium">+234 707 024 9434</p>
+                            <a href="https://wa.me/2347070249434" target="_blank" rel="noopener noreferrer" className="w-full py-3.5 bg-white text-green-700 font-bold rounded-xl hover:bg-green-50 transition-all shadow-lg transform active:scale-95 text-sm flex items-center justify-center gap-2">
                                 Message on WhatsApp
                             </a>
                         </div>
