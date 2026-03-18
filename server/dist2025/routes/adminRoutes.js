@@ -1,37 +1,30 @@
-import { Router, Response, Request } from 'express';
-import { User, VirtualAccount, Wallet, Transaction, WebhookLog, FeeRule, RiskRule, SystemSetting, Communication, Dispute } from '../models';
-import { authenticate, AuthenticatedRequest, generateToken, requireAdmin, auditMiddleware } from '../middleware';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import { emailService } from '../services/EmailService';
-import { cronService } from '../services/CronService';
-
-import { webhookService } from '../services/WebhookService';
-import { auditService } from '../services/AuditService';
-import config from '../config';
-
-const router = Router();
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const models_1 = require("../models");
+const middleware_1 = require("../middleware");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = __importDefault(require("crypto"));
+const EmailService_1 = require("../services/EmailService");
+const CronService_1 = require("../services/CronService");
+const WebhookService_1 = require("../services/WebhookService");
+const AuditService_1 = require("../services/AuditService");
+const router = (0, express_1.Router)();
 // Moved sync route to top to avoid conflicts
-
-
 // Public Debug Routes (No Auth for easy debugging)
-
-
-router.get('/debug/ping', (req: Request, res: Response) => {
+router.get('/debug/ping', (req, res) => {
     res.json({ success: true, message: 'Admin router reachable' });
 });
-
-
-
 /**
  * Admin Login
  * POST /api/admin/login
  */
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
+router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
         if (!email || !password) {
             res.status(400).json({
                 success: false,
@@ -39,9 +32,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Find user
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await models_1.User.findOne({ email: email.toLowerCase() });
         if (!user) {
             res.status(401).json({
                 success: false,
@@ -49,9 +41,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Check password
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
+        const isMatch = await bcryptjs_1.default.compare(password, user.passwordHash);
         if (!isMatch) {
             res.status(401).json({
                 success: false,
@@ -59,7 +50,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Check if user is active
         if (user.status !== 'active') {
             res.status(403).json({
@@ -68,13 +58,10 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Generate token
-        const token = generateToken(user._id.toString(), user.email);
-
+        const token = (0, middleware_1.generateToken)(user._id.toString(), user.email);
         // Get wallet
-        const wallet = await Wallet.findOne({ userId: user._id });
-
+        const wallet = await models_1.Wallet.findOne({ userId: user._id });
         res.json({
             success: true,
             message: 'Login successful',
@@ -98,7 +85,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
                 token,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Login error:', error);
         res.status(500).json({
             success: false,
@@ -106,84 +94,76 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         });
     }
 });
-
 // Middleware to check if user is admin
-const isAdmin = (req: AuthenticatedRequest, res: Response, next: any) => {
-    if ((req as any).user && (req as any).user.role === 'admin') {
+const isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
         next();
-    } else {
+    }
+    else {
         res.status(403).json({
             success: false,
             message: 'Access denied. Admin privileges required.',
         });
     }
 };
-
 // Helper function to activate user account (Zainbox, API Key, Email)
-const activateUserAccount = async (user: any) => {
+const activateUserAccount = async (user) => {
     console.log(`Activating account for user: ${user.email}`);
-
     // 1. Ensure PalmPay Virtual Account exists if needed
     // (Virtual account creation is handled by the user themselves in the app)
-
-
     // 2. Ensure user is fully verified and has API key
     try {
-        const updateData: any = {
+        const updateData = {
             kycLevel: 3,
             kyc_status: 'verified',
             status: 'active'
         };
-
         if (!user.apiKey) {
-            const randomPart = crypto.randomBytes(24).toString('hex');
+            const randomPart = crypto_1.default.randomBytes(24).toString('hex');
             updateData.apiKey = `sk_live_${randomPart}`;
             console.log(`Auto-generating Live API Key for ${user.email}`);
         }
-
         console.log(`Updating user ${user.email} with data:`, updateData);
-        const result = await User.findByIdAndUpdate(user._id, updateData, { new: true });
+        const result = await models_1.User.findByIdAndUpdate(user._id, updateData, { new: true });
         console.log(`User ${user.email} update result:`, {
             id: result?._id,
             status: result?.status,
             kycLevel: result?.kycLevel,
             kyc_status: result?.kyc_status
         });
-    } catch (updateError) {
+    }
+    catch (updateError) {
         console.error(`Error updating user verification status for ${user.email}:`, updateError);
     }
-
     // 3. Send approval email
     try {
-        await emailService.sendApprovalEmail(user.email, user.firstName);
+        await EmailService_1.emailService.sendApprovalEmail(user.email, user.firstName);
         console.log(`Approval email sent to ${user.email}`);
-    } catch (emailError) {
+    }
+    catch (emailError) {
         console.error(`Failed to send approval email to ${user.email}:`, emailError);
     }
 };
-
 // All admin routes require authentication and admin role
-router.use(authenticate, requireAdmin);
-
+router.use(middleware_1.authenticate, middleware_1.requireAdmin);
 // Apply audit middleware to log all admin actions
-router.use(auditMiddleware());
-
+router.use((0, middleware_1.auditMiddleware)());
 /**
  * Get audit logs
  * GET /api/admin/audit-logs
  */
-router.get('/audit-logs', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/audit-logs', async (req, res) => {
     try {
         const { page = 1, limit = 20, action, actorEmail, startDate, endDate } = req.query;
-        const result = await auditService.getLogs({
+        const result = await AuditService_1.auditService.getLogs({
             action, actorEmail, startDate, endDate
         }, Number(page), Number(limit));
-
         res.json({
             success: true,
             data: result
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get audit logs error:', error);
         res.status(500).json({
             success: false,
@@ -191,56 +171,45 @@ router.get('/audit-logs', async (req: AuthenticatedRequest, res: Response): Prom
         });
     }
 });
-
 /**
  * Get admin dashboard statistics
  * GET /api/admin/stats
  */
-router.get('/stats', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/stats', async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
         // 1. Transaction Stats (This Month)
-        const monthlyTransactions = await Transaction.find({
+        const monthlyTransactions = await models_1.Transaction.find({
             createdAt: { $gte: startOfMonth },
             status: 'success'
         });
-
         const totalInflow = monthlyTransactions
             .filter(t => t.type === 'credit')
             .reduce((sum, t) => sum + t.amount, 0);
-
         const totalOutflow = monthlyTransactions
             .filter(t => t.type === 'debit')
             .reduce((sum, t) => sum + t.amount, 0);
-
         // 2. Pending/Failed/Success Transactions
-        const pendingTransactionsCount = await Transaction.countDocuments({ status: 'pending' });
-        const failedTransactionsCount = await Transaction.countDocuments({ status: 'failed' });
-        const successTransactionsCount = await Transaction.countDocuments({ status: 'success' });
-
+        const pendingTransactionsCount = await models_1.Transaction.countDocuments({ status: 'pending' });
+        const failedTransactionsCount = await models_1.Transaction.countDocuments({ status: 'failed' });
+        const successTransactionsCount = await models_1.Transaction.countDocuments({ status: 'success' });
         // 3. Tenant Stats
-        const totalTenants = await User.countDocuments({ role: { $ne: 'admin' } });
-        const activeTenants = await User.countDocuments({ role: { $ne: 'admin' }, status: 'active' });
-        const suspendedTenants = await User.countDocuments({ role: { $ne: 'admin' }, status: 'suspended' });
-        const pendingTenants = await User.countDocuments({ role: { $ne: 'admin' }, status: 'pending' });
-
-        const totalAdmins = await User.countDocuments({ role: 'admin' });
-
+        const totalTenants = await models_1.User.countDocuments({ role: { $ne: 'admin' } });
+        const activeTenants = await models_1.User.countDocuments({ role: { $ne: 'admin' }, status: 'active' });
+        const suspendedTenants = await models_1.User.countDocuments({ role: { $ne: 'admin' }, status: 'suspended' });
+        const pendingTenants = await models_1.User.countDocuments({ role: { $ne: 'admin' }, status: 'pending' });
+        const totalAdmins = await models_1.User.countDocuments({ role: 'admin' });
         // 4. Webhook Stats (Last 24h)
-        const totalWebhooks = await WebhookLog.countDocuments({ createdAt: { $gte: today } });
-        const successWebhooks = await WebhookLog.countDocuments({ createdAt: { $gte: today }, dispatchStatus: 'success' });
-        const failedWebhooks = await WebhookLog.countDocuments({ createdAt: { $gte: today }, dispatchStatus: 'failed' });
-        const pendingWebhooks = await WebhookLog.countDocuments({ createdAt: { $gte: today }, dispatchStatus: 'pending' });
-
+        const totalWebhooks = await models_1.WebhookLog.countDocuments({ createdAt: { $gte: today } });
+        const successWebhooks = await models_1.WebhookLog.countDocuments({ createdAt: { $gte: today }, dispatchStatus: 'success' });
+        const failedWebhooks = await models_1.WebhookLog.countDocuments({ createdAt: { $gte: today }, dispatchStatus: 'failed' });
+        const pendingWebhooks = await models_1.WebhookLog.countDocuments({ createdAt: { $gte: today }, dispatchStatus: 'pending' });
         // 6. Recent Transactions
-        const recentTransactions = await Transaction.find()
+        const recentTransactions = await models_1.Transaction.find()
             .sort({ createdAt: -1 })
             .limit(10);
-
         res.json({
             success: true,
             data: {
@@ -267,7 +236,8 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response): Promise<v
                 recentTransactions
             }
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get stats error:', error);
         res.status(500).json({
             success: false,
@@ -275,19 +245,19 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response): Promise<v
         });
     }
 });
-
 /**
  * Get all admins
  * GET /api/admin/admins
  */
-router.get('/admins', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/admins', async (req, res) => {
     try {
-        const admins = await User.find({ role: 'admin' }).select('-passwordHash').sort({ createdAt: -1 });
+        const admins = await models_1.User.find({ role: 'admin' }).select('-passwordHash').sort({ createdAt: -1 });
         res.json({
             success: true,
             data: admins,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get admins error:', error);
         res.status(500).json({
             success: false,
@@ -295,15 +265,13 @@ router.get('/admins', async (req: AuthenticatedRequest, res: Response): Promise<
         });
     }
 });
-
 /**
  * Create new admin
  * POST /api/admin/admins
  */
-router.post('/admins', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/admins', async (req, res) => {
     try {
         const { email, password, firstName, lastName, phone } = req.body;
-
         if (!email || !password || !firstName || !lastName || !phone) {
             res.status(400).json({
                 success: false,
@@ -311,9 +279,8 @@ router.post('/admins', async (req: AuthenticatedRequest, res: Response): Promise
             });
             return;
         }
-
         // Check if user already exists
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        const existingUser = await models_1.User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             res.status(400).json({
                 success: false,
@@ -321,13 +288,11 @@ router.post('/admins', async (req: AuthenticatedRequest, res: Response): Promise
             });
             return;
         }
-
         // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
-
+        const salt = await bcryptjs_1.default.genSalt(10);
+        const passwordHash = await bcryptjs_1.default.hash(password, salt);
         // Create admin user
-        const admin = new User({
+        const admin = new models_1.User({
             email: email.toLowerCase(),
             passwordHash,
             firstName,
@@ -338,16 +303,13 @@ router.post('/admins', async (req: AuthenticatedRequest, res: Response): Promise
             status: 'active',
             kycLevel: 3, // Admins are auto-verified
         });
-
         await admin.save();
-
         // Create wallet for admin
-        await Wallet.create({
+        await models_1.Wallet.create({
             userId: admin._id,
             balance: 0,
             currency: 'NGN',
         });
-
         res.status(201).json({
             success: true,
             message: 'Admin user created successfully',
@@ -360,7 +322,8 @@ router.post('/admins', async (req: AuthenticatedRequest, res: Response): Promise
                 status: admin.status,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Create admin error:', error);
         res.status(500).json({
             success: false,
@@ -368,23 +331,22 @@ router.post('/admins', async (req: AuthenticatedRequest, res: Response): Promise
         });
     }
 });
-
 /**
  * Get all tenants (users)
  * GET /api/admin/tenants
  */
-router.get('/tenants', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/tenants', async (req, res) => {
     try {
         // Exclude admin users
-        const users = await User.find({
+        const users = await models_1.User.find({
             role: { $ne: 'admin' }
         }).select('-passwordHash').sort({ createdAt: -1 });
-
         res.json({
             success: true,
             data: users,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get tenants error:', error);
         res.status(500).json({
             success: false,
@@ -392,17 +354,15 @@ router.get('/tenants', async (req: AuthenticatedRequest, res: Response): Promise
         });
     }
 });
-
 /**
  * Delete tenant
  * DELETE /api/admin/tenants/:id
  */
-router.delete('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/tenants/:id', async (req, res) => {
     try {
         const { id } = req.params;
-
         // Check if user exists
-        const user = await User.findById(id);
+        const user = await models_1.User.findById(id);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -410,7 +370,6 @@ router.delete('/tenants/:id', async (req: AuthenticatedRequest, res: Response): 
             });
             return;
         }
-
         // Prevent deleting admin
         if (['admin@vtstack.com.ng', 'admin@myconnecta.ng'].includes(user.email)) {
             res.status(403).json({
@@ -419,20 +378,19 @@ router.delete('/tenants/:id', async (req: AuthenticatedRequest, res: Response): 
             });
             return;
         }
-
         // Delete associated data
         await Promise.all([
-            Wallet.deleteMany({ userId: id }),
-            VirtualAccount.deleteMany({ userId: id }),
-            Transaction.deleteMany({ userId: id }),
-            User.findByIdAndDelete(id)
+            models_1.Wallet.deleteMany({ userId: id }),
+            models_1.VirtualAccount.deleteMany({ userId: id }),
+            models_1.Transaction.deleteMany({ userId: id }),
+            models_1.User.findByIdAndDelete(id)
         ]);
-
         res.json({
             success: true,
             message: 'Tenant and all associated data deleted successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Delete tenant error:', error);
         res.status(500).json({
             success: false,
@@ -440,16 +398,14 @@ router.delete('/tenants/:id', async (req: AuthenticatedRequest, res: Response): 
         });
     }
 });
-
 /**
  * Get tenant by ID
  * GET /api/admin/tenants/:id
  */
-router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/tenants/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await User.findById(id).select('-passwordHash');
-
+        const user = await models_1.User.findById(id).select('-passwordHash');
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -457,12 +413,9 @@ router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Pro
             });
             return;
         }
-
         // Get associated data
-        const wallet = await Wallet.findOne({ userId: id });
-
-        const virtualAccounts = await VirtualAccount.find({ userId: id });
-
+        const wallet = await models_1.Wallet.findOne({ userId: id });
+        const virtualAccounts = await models_1.VirtualAccount.find({ userId: id });
         res.json({
             success: true,
             data: {
@@ -471,7 +424,8 @@ router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Pro
                 virtualAccounts,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get tenant by ID error:', error);
         res.status(500).json({
             success: false,
@@ -479,16 +433,14 @@ router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Pro
         });
     }
 });
-
 /**
  * Update tenant status
  * PATCH /api/admin/tenants/:id/status
  */
-router.patch('/tenants/:id/status', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/tenants/:id/status', async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-
         if (!['active', 'suspended', 'pending'].includes(status)) {
             res.status(400).json({
                 success: false,
@@ -496,13 +448,7 @@ router.patch('/tenants/:id/status', async (req: AuthenticatedRequest, res: Respo
             });
             return;
         }
-
-        const user = await User.findByIdAndUpdate(
-            id,
-            { status },
-            { new: true }
-        ).select('-passwordHash');
-
+        const user = await models_1.User.findByIdAndUpdate(id, { status }, { new: true }).select('-passwordHash');
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -510,20 +456,18 @@ router.patch('/tenants/:id/status', async (req: AuthenticatedRequest, res: Respo
             });
             return;
         }
-
         if (status === 'active') {
             await activateUserAccount(user);
         }
-
         // Fetch the latest user data to ensure kycLevel and other updates are included
-        const updatedUser = await User.findById(id).select('-passwordHash');
-
+        const updatedUser = await models_1.User.findById(id).select('-passwordHash');
         res.json({
             success: true,
             message: `Tenant status updated to ${status}`,
             data: updatedUser,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update tenant status error:', error);
         res.status(500).json({
             success: false,
@@ -531,16 +475,14 @@ router.patch('/tenants/:id/status', async (req: AuthenticatedRequest, res: Respo
         });
     }
 });
-
 /**
  * Update tenant KYC status
  * PATCH /api/admin/tenants/:id/kyc
  */
-router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/tenants/:id/kyc', async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-
         if (!['pending', 'verified', 'rejected'].includes(status)) {
             res.status(400).json({
                 success: false,
@@ -548,15 +490,8 @@ router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response
             });
             return;
         }
-
         const kycLevel = status === 'verified' ? 3 : (status === 'rejected' ? 0 : 2);
-
-        const user = await User.findByIdAndUpdate(
-            id,
-            { kyc_status: status, kycLevel },
-            { new: true }
-        ).select('-passwordHash');
-
+        const user = await models_1.User.findByIdAndUpdate(id, { kyc_status: status, kycLevel }, { new: true }).select('-passwordHash');
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -564,7 +499,6 @@ router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response
             });
             return;
         }
-
         // If KYC is verified, also activate the account if it's not already active
         if (status === 'verified') {
             if (user.status !== 'active') {
@@ -573,16 +507,15 @@ router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response
             }
             await activateUserAccount(user);
         }
-
         // Fetch the latest user data
-        const updatedUser = await User.findById(id).select('-passwordHash');
-
+        const updatedUser = await models_1.User.findById(id).select('-passwordHash');
         res.json({
             success: true,
             message: `Tenant KYC status updated to ${status}`,
             data: updatedUser,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update tenant KYC status error:', error);
         res.status(500).json({
             success: false,
@@ -590,22 +523,21 @@ router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response
         });
     }
 });
-
 /**
  * Get all virtual accounts (admin view)
  * GET /api/admin/virtual-accounts
  */
-router.get('/virtual-accounts', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/virtual-accounts', async (req, res) => {
     try {
-        const virtualAccounts = await VirtualAccount.find()
+        const virtualAccounts = await models_1.VirtualAccount.find()
             .populate('userId', 'email firstName lastName businessName role')
             .sort({ createdAt: -1 });
-
         res.json({
             success: true,
             data: virtualAccounts,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get all virtual accounts error:', error);
         res.status(500).json({
             success: false,
@@ -617,31 +549,30 @@ router.get('/virtual-accounts', async (req: AuthenticatedRequest, res: Response)
  * Get all transactions (admin view)
  * GET /api/admin/transactions
  */
-router.get('/transactions', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/transactions', async (req, res) => {
     try {
         const { limit = '50', offset = '0', type, status, category, tenantId } = req.query;
         console.log('GET /transactions query:', { type, status, category, tenantId });
-
         // Fetch admin IDs to exclude
-        const admins = await User.find({ role: 'admin' }).select('_id');
+        const admins = await models_1.User.find({ role: 'admin' }).select('_id');
         const adminIds = admins.map(a => a._id);
-
-        const query: any = {
+        const query = {
             userId: { $nin: adminIds }
         };
-        if (type && type !== 'all') query.type = type;
-        if (status && status !== 'all') query.status = status;
-        if (category && category !== 'all') query.category = category;
-        if (tenantId) query.userId = tenantId;
-
-        const transactions = await Transaction.find(query)
+        if (type && type !== 'all')
+            query.type = type;
+        if (status && status !== 'all')
+            query.status = status;
+        if (category && category !== 'all')
+            query.category = category;
+        if (tenantId)
+            query.userId = tenantId;
+        const transactions = await models_1.Transaction.find(query)
             .populate('userId', 'email firstName lastName businessName')
             .sort({ createdAt: -1 })
-            .limit(parseInt(limit as string))
-            .skip(parseInt(offset as string));
-
-        const total = await Transaction.countDocuments(query);
-
+            .limit(parseInt(limit))
+            .skip(parseInt(offset));
+        const total = await models_1.Transaction.countDocuments(query);
         const statsAggregation = [
             { $match: query },
             {
@@ -660,27 +591,25 @@ router.get('/transactions', async (req: AuthenticatedRequest, res: Response): Pr
             },
             { $project: { _id: 0, totalVolume: 1, totalCount: 1, breakdown: 1 } }
         ];
-
-        const statsResult = await Transaction.aggregate(statsAggregation);
+        const statsResult = await models_1.Transaction.aggregate(statsAggregation);
         const stats = statsResult[0] || { totalVolume: 0, totalCount: 0, breakdown: [] };
-
         // Process breakdown for backward compatibility or cleaner frontend usage
-        const categoryStats = stats.breakdown.reduce((acc: any, curr: any) => {
+        const categoryStats = stats.breakdown.reduce((acc, curr) => {
             const key = `${curr.category}-${curr.status}`;
-            if (!acc[key]) acc[key] = { category: curr.category, status: curr.status, count: 0, volume: 0 };
+            if (!acc[key])
+                acc[key] = { category: curr.category, status: curr.status, count: 0, volume: 0 };
             acc[key].count++;
             acc[key].volume += curr.amount;
             return acc;
         }, {});
-
         res.json({
             success: true,
             data: {
                 transactions,
                 pagination: {
                     total,
-                    limit: parseInt(limit as string),
-                    offset: parseInt(offset as string),
+                    limit: parseInt(limit),
+                    offset: parseInt(offset),
                 },
                 stats: Object.values(categoryStats),
                 meta: {
@@ -689,7 +618,8 @@ router.get('/transactions', async (req: AuthenticatedRequest, res: Response): Pr
                 }
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get all transactions error:', error);
         res.status(500).json({
             success: false,
@@ -697,105 +627,89 @@ router.get('/transactions', async (req: AuthenticatedRequest, res: Response): Pr
         });
     }
 });
-
 /**
  * Flag/Unflag a transaction
  * PATCH /api/admin/transactions/:id/flag
  */
-router.patch('/transactions/:id/flag', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/transactions/:id/flag', async (req, res) => {
     try {
         const { id } = req.params;
         const { flagged } = req.body;
-
-        const transaction = await Transaction.findByIdAndUpdate(
-            id,
-            { flagged },
-            { new: true }
-        );
-
+        const transaction = await models_1.Transaction.findByIdAndUpdate(id, { flagged }, { new: true });
         if (!transaction) {
             res.status(404).json({ success: false, message: 'Transaction not found' });
             return;
         }
-
         res.json({ success: true, data: transaction });
-    } catch (error: any) {
+    }
+    catch (error) {
         console.error('Flag transaction error:', error);
         res.status(500).json({ success: false, message: error.message || 'Failed to flag transaction' });
     }
 });
-
 /**
  * Manually verify a transaction
  * POST /api/admin/transactions/:id/verify
  */
-router.post('/transactions/:id/verify', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/transactions/:id/verify', async (req, res) => {
     try {
         const { id } = req.params;
-        const transaction = await Transaction.findById(id);
-
+        const transaction = await models_1.Transaction.findById(id);
         if (!transaction) {
             res.status(404).json({ success: false, message: 'Transaction not found' });
             return;
         }
-
         if (transaction.status === 'success') {
             res.status(400).json({ success: false, message: 'Transaction is already successful' });
             return;
         }
-
         // Logic for manual verification would go here
         // For now, we just mark it as success
         transaction.status = 'success';
         await transaction.save();
-
         res.json({ success: true, message: 'Transaction verified manually', data: transaction });
-    } catch (error: any) {
+    }
+    catch (error) {
         console.error('Verify transaction error:', error);
         res.status(500).json({ success: false, message: error.message || 'Failed to verify transaction' });
     }
 });
-
-
-
 /**
  * Get all webhook logs
  * GET /api/admin/webhooks
  */
-router.get('/webhooks', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/webhooks', async (req, res) => {
     try {
         const { limit = '50', offset = '0', source, status } = req.query;
-
         // Fetch admin IDs to exclude
-        const admins = await User.find({ role: 'admin' }).select('_id');
+        const admins = await models_1.User.find({ role: 'admin' }).select('_id');
         const adminIds = admins.map(a => a._id);
-
-        const query: any = {
+        const query = {
             userId: { $nin: adminIds }
         };
-        if (source && source !== 'all') query.source = source;
-        if (status && status !== 'all') query.dispatchStatus = status;
-
-        const webhooks = await WebhookLog.find(query)
+        if (source && source !== 'all')
+            query.source = source;
+        if (status && status !== 'all')
+            query.dispatchStatus = status;
+        const webhooks = await models_1.WebhookLog.find(query)
             .populate('userId', 'email businessName')
             .sort({ createdAt: -1 })
-            .limit(parseInt(limit as string))
-            .skip(parseInt(offset as string));
-
-        const total = await WebhookLog.countDocuments(query);
-
+            .limit(parseInt(limit))
+            .skip(parseInt(offset));
+        const total = await models_1.WebhookLog.countDocuments(query);
         res.json({
             success: true,
             data: {
                 webhooks,
                 pagination: {
                     total,
-                    limit: parseInt(limit as string),
-                    offset: parseInt(offset as string),
+                    limit: parseInt(limit),
+                    offset: parseInt(offset),
                 }
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get webhooks error:', error);
         res.status(500).json({
             success: false,
@@ -803,21 +717,17 @@ router.get('/webhooks', async (req: AuthenticatedRequest, res: Response): Promis
         });
     }
 });
-
-
-
 /**
  * Get all API keys (from Users)
  * GET /api/admin/api-keys
  */
-router.get('/api-keys', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/api-keys', async (req, res) => {
     try {
-        const usersWithKeys = await User.find({
+        const usersWithKeys = await models_1.User.find({
             apiKey: { $exists: true, $ne: null },
             role: { $ne: 'admin' }
         })
             .select('email businessName firstName lastName apiKey createdAt updatedAt status');
-
         // Map to the format expected by the frontend
         const apiKeys = usersWithKeys.map(user => ({
             _id: user._id,
@@ -832,12 +742,12 @@ router.get('/api-keys', async (req: AuthenticatedRequest, res: Response): Promis
             scopes: ['all'], // Placeholder
             createdAt: user.createdAt,
         }));
-
         res.json({
             success: true,
             data: apiKeys,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get API keys error:', error);
         res.status(500).json({
             success: false,
@@ -845,19 +755,19 @@ router.get('/api-keys', async (req: AuthenticatedRequest, res: Response): Promis
         });
     }
 });
-
 /**
  * Get all fee rules
  * GET /api/admin/fees
  */
-router.get('/fees', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/fees', async (req, res) => {
     try {
-        const fees = await FeeRule.find().sort({ createdAt: -1 });
+        const fees = await models_1.FeeRule.find().sort({ createdAt: -1 });
         res.json({
             success: true,
             data: fees,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get fees error:', error);
         res.status(500).json({
             success: false,
@@ -865,19 +775,19 @@ router.get('/fees', async (req: AuthenticatedRequest, res: Response): Promise<vo
         });
     }
 });
-
 /**
  * Create a fee rule
  * POST /api/admin/fees
  */
-router.post('/fees', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/fees', async (req, res) => {
     try {
-        const fee = await FeeRule.create(req.body);
+        const fee = await models_1.FeeRule.create(req.body);
         res.json({
             success: true,
             data: fee,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Create fee error:', error);
         res.status(500).json({
             success: false,
@@ -885,19 +795,19 @@ router.post('/fees', async (req: AuthenticatedRequest, res: Response): Promise<v
         });
     }
 });
-
 /**
  * Update a fee rule
  * PATCH /api/admin/fees/:id
  */
-router.patch('/fees/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/fees/:id', async (req, res) => {
     try {
-        const fee = await FeeRule.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const fee = await models_1.FeeRule.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json({
             success: true,
             data: fee,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update fee error:', error);
         res.status(500).json({
             success: false,
@@ -905,19 +815,19 @@ router.patch('/fees/:id', async (req: AuthenticatedRequest, res: Response): Prom
         });
     }
 });
-
 /**
  * Delete a fee rule
  * DELETE /api/admin/fees/:id
  */
-router.delete('/fees/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/fees/:id', async (req, res) => {
     try {
-        await FeeRule.findByIdAndDelete(req.params.id);
+        await models_1.FeeRule.findByIdAndDelete(req.params.id);
         res.json({
             success: true,
             message: 'Fee rule deleted',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Delete fee error:', error);
         res.status(500).json({
             success: false,
@@ -925,19 +835,19 @@ router.delete('/fees/:id', async (req: AuthenticatedRequest, res: Response): Pro
         });
     }
 });
-
 /**
  * Get all risk rules
  * GET /api/admin/risk
  */
-router.get('/risk', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/risk', async (req, res) => {
     try {
-        const rules = await RiskRule.find().sort({ priority: 1 });
+        const rules = await models_1.RiskRule.find().sort({ priority: 1 });
         res.json({
             success: true,
             data: rules,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get risk rules error:', error);
         res.status(500).json({
             success: false,
@@ -945,19 +855,19 @@ router.get('/risk', async (req: AuthenticatedRequest, res: Response): Promise<vo
         });
     }
 });
-
 /**
  * Create a risk rule
  * POST /api/admin/risk
  */
-router.post('/risk', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/risk', async (req, res) => {
     try {
-        const rule = await RiskRule.create(req.body);
+        const rule = await models_1.RiskRule.create(req.body);
         res.json({
             success: true,
             data: rule,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Create risk rule error:', error);
         res.status(500).json({
             success: false,
@@ -965,19 +875,19 @@ router.post('/risk', async (req: AuthenticatedRequest, res: Response): Promise<v
         });
     }
 });
-
 /**
  * Update a risk rule
  * PATCH /api/admin/risk/:id
  */
-router.patch('/risk/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/risk/:id', async (req, res) => {
     try {
-        const rule = await RiskRule.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const rule = await models_1.RiskRule.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json({
             success: true,
             data: rule,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update risk rule error:', error);
         res.status(500).json({
             success: false,
@@ -985,19 +895,19 @@ router.patch('/risk/:id', async (req: AuthenticatedRequest, res: Response): Prom
         });
     }
 });
-
 /**
  * Delete a risk rule
  * DELETE /api/admin/risk/:id
  */
-router.delete('/risk/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/risk/:id', async (req, res) => {
     try {
-        await RiskRule.findByIdAndDelete(req.params.id);
+        await models_1.RiskRule.findByIdAndDelete(req.params.id);
         res.json({
             success: true,
             message: 'Risk rule deleted',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Delete risk rule error:', error);
         res.status(500).json({
             success: false,
@@ -1005,53 +915,50 @@ router.delete('/risk/:id', async (req: AuthenticatedRequest, res: Response): Pro
         });
     }
 });
-
 /**
  * Send bulk email
  * POST /api/admin/communications/send
  */
-router.post('/communications/send', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/communications/send', async (req, res) => {
     try {
         const { recipientType, selectedTenants, subject, message } = req.body;
-
-        let query: any = {};
+        let query = {};
         if (recipientType === 'active') {
             query.status = 'active';
-        } else if (recipientType === 'inactive') {
+        }
+        else if (recipientType === 'inactive') {
             query.status = { $ne: 'active' };
-        } else if (recipientType === 'unverified') {
+        }
+        else if (recipientType === 'unverified') {
             query.kycLevel = { $lt: 3 };
-        } else if (recipientType === 'specific') {
+        }
+        else if (recipientType === 'specific') {
             query._id = { $in: selectedTenants };
         }
-
         // Always exclude admins unless explicitly choosing 'specific' or a special flag.
         // For general announcements, we probably only want tenants.
         if (recipientType !== 'specific') {
             query.role = { $ne: 'admin' };
         }
-
-        const tenants = await User.find(query).select('email');
+        const tenants = await models_1.User.find(query).select('email');
         const emails = tenants.map(t => t.email);
-
-        await emailService.sendBulkEmail(emails, subject, message);
-
+        await EmailService_1.emailService.sendBulkEmail(emails, subject, message);
         // Save communication to history
-        await Communication.create({
+        await models_1.Communication.create({
             recipientType,
             recipientCount: emails.length,
             selectedTenants: recipientType === 'specific' ? selectedTenants : [],
             subject,
             message,
-            sentBy: (req as any).user.id,
+            sentBy: req.user.id,
             sentAt: new Date()
         });
-
         res.json({
             success: true,
             message: `Email sent to ${emails.length} recipients`,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Send bulk email error:', error);
         res.status(500).json({
             success: false,
@@ -1059,22 +966,21 @@ router.post('/communications/send', async (req: AuthenticatedRequest, res: Respo
         });
     }
 });
-
 /**
  * Get recent communications
  * GET /api/admin/communications/recent
  */
-router.get('/communications/recent', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/communications/recent', async (req, res) => {
     try {
-        const communications = await Communication.find()
+        const communications = await models_1.Communication.find()
             .sort({ sentAt: -1 })
             .limit(20);
-
         res.json({
             success: true,
             data: communications,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get recent communications error:', error);
         res.status(500).json({
             success: false,
@@ -1082,16 +988,14 @@ router.get('/communications/recent', async (req: AuthenticatedRequest, res: Resp
         });
     }
 });
-
 /**
  * Send single email
  * POST /api/admin/communications/send-single
  */
-router.post('/communications/send-single', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/communications/send-single', async (req, res) => {
     try {
         const { userId, subject, message } = req.body;
-
-        const user = await User.findById(userId).select('email');
+        const user = await models_1.User.findById(userId).select('email');
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -1099,34 +1003,29 @@ router.post('/communications/send-single', async (req: AuthenticatedRequest, res
             });
             return;
         }
-
-
-
         // Convert plain text message to simple HTML
         const html = `
             <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
                 ${message.replace(/\n/g, '<br>')}
             </div>
         `;
-
-        await emailService.sendEmail(user.email, subject, html);
-
+        await EmailService_1.emailService.sendEmail(user.email, subject, html);
         // Save to communication history
-        await Communication.create({
+        await models_1.Communication.create({
             recipientType: 'specific',
             recipientCount: 1,
             selectedTenants: [userId],
             subject,
             message,
-            sentBy: (req as any).user.id,
+            sentBy: req.user.id,
             sentAt: new Date()
         });
-
         res.json({
             success: true,
             message: 'Email sent successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Send single email error:', error);
         res.status(500).json({
             success: false,
@@ -1134,22 +1033,22 @@ router.post('/communications/send-single', async (req: AuthenticatedRequest, res
         });
     }
 });
-
 /**
  * Get system settings
  * GET /api/admin/settings
  */
-router.get('/settings', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/settings', async (req, res) => {
     try {
-        let settings = await SystemSetting.findOne();
+        let settings = await models_1.SystemSetting.findOne();
         if (!settings) {
-            settings = await SystemSetting.create({});
+            settings = await models_1.SystemSetting.create({});
         }
         res.json({
             success: true,
             data: settings,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get settings error:', error);
         res.status(500).json({
             success: false,
@@ -1157,37 +1056,30 @@ router.get('/settings', async (req: AuthenticatedRequest, res: Response): Promis
         });
     }
 });
-
 /**
  * Update system settings
  * PATCH /api/admin/settings
  */
-router.patch('/settings', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/settings', async (req, res) => {
     try {
-        let settings = await SystemSetting.findOne();
+        let settings = await models_1.SystemSetting.findOne();
         if (!settings) {
-            settings = await SystemSetting.create(req.body);
-        } else {
+            settings = await models_1.SystemSetting.create(req.body);
+        }
+        else {
             Object.assign(settings, req.body);
             await settings.save();
         }
-
-
-
         // Update Global Settlement is handled by generic Object.assign above,
         // but we might want to trigger updates for existing Zainboxes here if needed.
         // For now, we only apply to new Zainboxes as requested.
-
         // Refreshed configs above.
-
-
-
-
         res.json({
             success: true,
             data: settings,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update settings error:', error);
         res.status(500).json({
             success: false,
@@ -1195,21 +1087,13 @@ router.patch('/settings', async (req: AuthenticatedRequest, res: Response): Prom
         });
     }
 });
-
-
-
-
-
-
-
 /**
  * Generate API Key (Admin)
  * POST /api/admin/api-keys
  */
-router.post('/api-keys', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/api-keys', async (req, res) => {
     try {
         const { userId, name, environment, scopes } = req.body;
-
         if (!userId) {
             res.status(400).json({
                 success: false,
@@ -1217,9 +1101,7 @@ router.post('/api-keys', async (req: AuthenticatedRequest, res: Response): Promi
             });
             return;
         }
-
-        const user = await User.findById(userId);
-
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -1227,15 +1109,12 @@ router.post('/api-keys', async (req: AuthenticatedRequest, res: Response): Promi
             });
             return;
         }
-
         // Generate a new API key
-        const randomPart = crypto.randomBytes(24).toString('hex');
+        const randomPart = crypto_1.default.randomBytes(24).toString('hex');
         const prefix = user.kycLevel < 3 ? 'sk_test_' : 'sk_live_';
         const newApiKey = `${prefix}${randomPart}`;
-
         user.apiKey = newApiKey;
         await user.save();
-
         res.json({
             success: true,
             message: 'API key generated successfully',
@@ -1243,7 +1122,8 @@ router.post('/api-keys', async (req: AuthenticatedRequest, res: Response): Promi
                 apiKey: newApiKey,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Generate API key error:', error);
         res.status(500).json({
             success: false,
@@ -1251,16 +1131,14 @@ router.post('/api-keys', async (req: AuthenticatedRequest, res: Response): Promi
         });
     }
 });
-
 /**
  * Revoke API Key
  * DELETE /api/admin/api-keys/:id
  */
-router.delete('/api-keys/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/api-keys/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await User.findById(id);
-
+        const user = await models_1.User.findById(id);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -1268,15 +1146,14 @@ router.delete('/api-keys/:id', async (req: AuthenticatedRequest, res: Response):
             });
             return;
         }
-
         user.apiKey = undefined; // Remove the key
         await user.save();
-
         res.json({
             success: true,
             message: 'API key revoked successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Revoke API key error:', error);
         res.status(500).json({
             success: false,
@@ -1284,14 +1161,13 @@ router.delete('/api-keys/:id', async (req: AuthenticatedRequest, res: Response):
         });
     }
 });
-
 /**
  * Get Admin Profile
  * GET /api/admin/profile
  */
-router.get('/profile', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/profile', async (req, res) => {
     try {
-        const user = await User.findById(req.user!.id).select('-passwordHash');
+        const user = await models_1.User.findById(req.user.id).select('-passwordHash');
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -1312,7 +1188,8 @@ router.get('/profile', async (req: AuthenticatedRequest, res: Response): Promise
                 role: user.role,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get profile error:', error);
         res.status(500).json({
             success: false,
@@ -1320,27 +1197,23 @@ router.get('/profile', async (req: AuthenticatedRequest, res: Response): Promise
         });
     }
 });
-
 /**
  * Update Admin Profile
  * PUT /api/admin/profile
  */
-router.put('/profile', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/profile', async (req, res) => {
     try {
         const { firstName, lastName, first_name, last_name, phone, email } = req.body;
-
-        const updateData: any = {};
-        if (firstName || first_name) updateData.firstName = firstName || first_name;
-        if (lastName || last_name) updateData.lastName = lastName || last_name;
-        if (phone) updateData.phone = phone;
-        if (email) updateData.email = email;
-
-        const user = await User.findByIdAndUpdate(
-            req.user!.id,
-            updateData,
-            { new: true }
-        ).select('-passwordHash');
-
+        const updateData = {};
+        if (firstName || first_name)
+            updateData.firstName = firstName || first_name;
+        if (lastName || last_name)
+            updateData.lastName = lastName || last_name;
+        if (phone)
+            updateData.phone = phone;
+        if (email)
+            updateData.email = email;
+        const user = await models_1.User.findByIdAndUpdate(req.user.id, updateData, { new: true }).select('-passwordHash');
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -1348,7 +1221,6 @@ router.put('/profile', async (req: AuthenticatedRequest, res: Response): Promise
             });
             return;
         }
-
         res.json({
             success: true,
             message: 'Profile updated successfully',
@@ -1363,7 +1235,8 @@ router.put('/profile', async (req: AuthenticatedRequest, res: Response): Promise
                 role: user.role,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({
             success: false,
@@ -1371,16 +1244,14 @@ router.put('/profile', async (req: AuthenticatedRequest, res: Response): Promise
         });
     }
 });
-
 /**
  * Change Admin Password
  * PUT /api/admin/profile/password
  */
-router.put('/profile/password', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/profile/password', async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        const user = await User.findById(req.user!.id);
-
+        const user = await models_1.User.findById(req.user.id);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -1388,8 +1259,7 @@ router.put('/profile/password', async (req: AuthenticatedRequest, res: Response)
             });
             return;
         }
-
-        const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+        const isMatch = await bcryptjs_1.default.compare(currentPassword, user.passwordHash);
         if (!isMatch) {
             res.status(400).json({
                 success: false,
@@ -1397,16 +1267,15 @@ router.put('/profile/password', async (req: AuthenticatedRequest, res: Response)
             });
             return;
         }
-
-        const salt = await bcrypt.genSalt(10);
-        user.passwordHash = await bcrypt.hash(newPassword, salt);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.passwordHash = await bcryptjs_1.default.hash(newPassword, salt);
         await user.save();
-
         res.json({
             success: true,
             message: 'Password changed successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Change password error:', error);
         res.status(500).json({
             success: false,
@@ -1414,25 +1283,19 @@ router.put('/profile/password', async (req: AuthenticatedRequest, res: Response)
         });
     }
 });
-
-
-
-
 /**
  * Manual Trigger Settlement
  * POST /api/admin/settlements/manual-trigger
  */
-router.post('/settlements/manual-trigger', isAdmin, async (req: Request, res: Response): Promise<void> => {
+router.post('/settlements/manual-trigger', isAdmin, async (req, res) => {
     try {
         const { userId, amount, reason } = req.body;
-
         if (!userId || !amount || !reason) {
             res.status(400).json({ success: false, message: 'Missing required fields' });
             return;
         }
-
         // Check weekend restriction
-        const settings = await SystemSetting.findOne();
+        const settings = await models_1.SystemSetting.findOne();
         if (settings?.globalSettlement?.weekendSettlementEnabled === false) {
             const today = new Date().getDay();
             const isWeekend = today === 0 || today === 6; // 0 is Sunday, 6 is Saturday
@@ -1444,9 +1307,8 @@ router.post('/settlements/manual-trigger', isAdmin, async (req: Request, res: Re
                 return;
             }
         }
-
         // Create a transaction to record this manual settlement
-        const transaction = await Transaction.create({
+        const transaction = await models_1.Transaction.create({
             userId,
             amount: -amount, // Debit user/Tenant
             type: 'settlement',
@@ -1455,120 +1317,105 @@ router.post('/settlements/manual-trigger', isAdmin, async (req: Request, res: Re
             narration: reason,
             metadata: {
                 manualTrigger: true,
-                triggeredBy: (req as any).user.id
+                triggeredBy: req.user.id
             }
         });
-
         res.json({
             success: true,
             message: 'Manual settlement triggered successfully',
             data: transaction
         });
-
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Manual settlement trigger error:', error);
         res.status(500).json({ success: false, message: 'Failed to trigger settlement' });
     }
 });
-
-
-
 /**
  * Get all settlements (Withdrawals & Settlements)
  * GET /api/admin/settlements
  */
-router.get('/settlements', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/settlements', async (req, res) => {
     try {
         const { limit = '50', offset = '0', status } = req.query;
-        const query: any = {
+        const query = {
             category: { $in: ['withdrawal', 'settlement'] }
         };
-        if (status && status !== 'all') query.status = status;
-
-        const settlements = await Transaction.find(query)
+        if (status && status !== 'all')
+            query.status = status;
+        const settlements = await models_1.Transaction.find(query)
             .populate('userId', 'email firstName lastName businessName')
             .sort({ createdAt: -1 })
-            .limit(parseInt(limit as string))
-            .skip(parseInt(offset as string));
-
+            .limit(parseInt(limit))
+            .skip(parseInt(offset));
         res.json({
             success: true,
             data: settlements // Return array directly
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get settlements error:', error);
         res.status(500).json({ success: false, message: 'Failed to get settlements' });
     }
 });
-
-
 /**
  * Process a settlement (Manual)
  * POST /api/admin/settlements/:id/process
  */
-router.post('/settlements/:id/process', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/settlements/:id/process', async (req, res) => {
     try {
         const { id } = req.params;
-        const transaction = await Transaction.findById(id);
-
+        const transaction = await models_1.Transaction.findById(id);
         if (!transaction) {
             res.status(404).json({ success: false, message: 'Settlement not found' });
             return;
         }
-
         if (transaction.status !== 'pending') {
             res.status(400).json({ success: false, message: `Cannot process settlement in ${transaction.status} state` });
             return;
         }
-
         // Mark as success (Assuming manual processing)
         transaction.status = 'success';
         await transaction.save();
-
         // Check if there is a linked Payout
         if (transaction.metadata?.payoutId) {
             // We could update Payout model too, but staying simple for now.
             // Just logging for audit.
             console.log(`Manual process for payout transaction ${id}`);
         }
-
         res.json({ success: true, message: 'Settlement processed successfully', data: transaction });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Process settlement error:', error);
         res.status(500).json({ success: false, message: 'Failed to process settlement' });
     }
 });
-
 /**
  * Retry a settlement
  * POST /api/admin/settlements/:id/retry
  */
-router.post('/settlements/:id/retry', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/settlements/:id/retry', async (req, res) => {
     try {
         const { id } = req.params;
-        const transaction = await Transaction.findById(id);
-
+        const transaction = await models_1.Transaction.findById(id);
         if (!transaction) {
             res.status(404).json({ success: false, message: 'Settlement not found' });
             return;
         }
-
         if (transaction.status !== 'failed') {
             res.status(400).json({ success: false, message: 'Only failed settlements can be retried' });
             return;
         }
-
         // Reset to pending
         transaction.status = 'pending';
         await transaction.save();
-
         res.json({ success: true, message: 'Settlement reset to pending', data: transaction });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Retry settlement error:', error);
         res.status(500).json({ success: false, message: 'Failed to retry settlement' });
     }
 });
-
 /**
  * Get Revenue Statistics
  * GET /api/admin/revenue-stats
@@ -1577,118 +1424,101 @@ router.post('/settlements/:id/retry', async (req: AuthenticatedRequest, res: Res
  * Retry Webhook (Dispatch to tenant)
  * POST /api/admin/webhooks/:id/retry
  */
-router.post('/webhooks/:id/retry', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/webhooks/:id/retry', async (req, res) => {
     try {
         const { id } = req.params;
-        const log = await WebhookLog.findById(id);
-
+        const log = await models_1.WebhookLog.findById(id);
         if (!log) {
             res.status(404).json({ success: false, message: 'Webhook log not found' });
             return;
         }
-
         if (log.source !== 'vtpay') {
             res.status(400).json({ success: false, message: 'Only outbound (vtpay) webhooks can be retried for delivery' });
             return;
         }
-
         // Trigger redelivery
-        await webhookService.sendUserWebhook(log.userId!.toString(), log.eventType, log.payload.data);
-
+        await WebhookService_1.webhookService.sendUserWebhook(log.userId.toString(), log.eventType, log.payload.data);
         log.dispatchStatus = 'success';
         log.dispatchAttempts = (log.dispatchAttempts || 0) + 1;
         await log.save();
-
         res.json({ success: true, message: 'Webhook retry initiated' });
-    } catch (error: any) {
+    }
+    catch (error) {
         console.error('Retry webhook error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
 /**
  * Reprocess Webhook (Inbound from provider)
  * POST /api/admin/webhooks/:id/reprocess
  */
-router.post('/webhooks/:id/reprocess', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/webhooks/:id/reprocess', async (req, res) => {
     try {
         const { id } = req.params;
-        const log = await WebhookLog.findById(id);
-
+        const log = await models_1.WebhookLog.findById(id);
         if (!log) {
             res.status(404).json({ success: false, message: 'Webhook log not found' });
             return;
         }
-
         // Re-verify signature if it was previously invalid (using new logic)
         if (!log.signatureValid && log.source === 'palmpay') {
             const signature = log.payload.sign || log.payload.signature || log.signature;
-            const isValid = webhookService.verifyBodySignature(log.payload, signature);
+            const isValid = WebhookService_1.webhookService.verifyBodySignature(log.payload, signature);
             if (isValid) {
                 log.signatureValid = true;
                 await log.save();
             }
         }
-
         // Process the event
-        const result = await webhookService.processWebhook(log.payload);
-
+        const result = await WebhookService_1.webhookService.processWebhook(log.payload);
         // Update log with result and user ID
-        await WebhookLog.findByIdAndUpdate(id, {
+        await models_1.WebhookLog.findByIdAndUpdate(id, {
             dispatchStatus: result.success ? 'success' : 'failed',
             userId: result.userId,
             processingResult: result.message
         });
-
         res.json({
             success: result.success,
             message: result.message || 'Webhook reprocessed'
         });
-    } catch (error: any) {
+    }
+    catch (error) {
         console.error('Reprocess webhook error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
-router.get('/revenue-stats', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/revenue-stats', async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
         // 1. Total Revenue (Sum of all fees)
         // We can sum the 'fee' field from all success transactions
-        const totalRevenueResult = await Transaction.aggregate([
+        const totalRevenueResult = await models_1.Transaction.aggregate([
             { $match: { status: 'success' } },
             { $group: { _id: null, total: { $sum: '$fee' } } }
         ]);
         const totalRevenue = totalRevenueResult[0]?.total || 0;
-
         // 2. Transaction Counts (Deposits vs Withdrawals)
-        const depositCount = await Transaction.countDocuments({ category: 'deposit', status: 'success' });
-        const withdrawalCount = await Transaction.countDocuments({ category: 'withdrawal', status: 'success' }); // Includes settlements
-
+        const depositCount = await models_1.Transaction.countDocuments({ category: 'deposit', status: 'success' });
+        const withdrawalCount = await models_1.Transaction.countDocuments({ category: 'withdrawal', status: 'success' }); // Includes settlements
         // 3. Today's Revenue
-        const todayRevenueResult = await Transaction.aggregate([
+        const todayRevenueResult = await models_1.Transaction.aggregate([
             { $match: { status: 'success', createdAt: { $gte: today } } },
             { $group: { _id: null, total: { $sum: '$fee' } } }
         ]);
         const todayRevenue = todayRevenueResult[0]?.total || 0;
-
         // 4. This Month's Revenue
-        const monthRevenueResult = await Transaction.aggregate([
+        const monthRevenueResult = await models_1.Transaction.aggregate([
             { $match: { status: 'success', createdAt: { $gte: startOfMonth } } },
             { $group: { _id: null, total: { $sum: '$fee' } } }
         ]);
         const monthRevenue = monthRevenueResult[0]?.total || 0;
-
         // 5. Daily Revenue Trend (Last 7 Days)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
         sevenDaysAgo.setHours(0, 0, 0, 0);
-
-        const dailyTrend = await Transaction.aggregate([
+        const dailyTrend = await models_1.Transaction.aggregate([
             {
                 $match: {
                     status: 'success',
@@ -1704,7 +1534,6 @@ router.get('/revenue-stats', async (req: AuthenticatedRequest, res: Response): P
             },
             { $sort: { _id: 1 } }
         ]);
-
         res.json({
             success: true,
             data: {
@@ -1716,69 +1545,69 @@ router.get('/revenue-stats', async (req: AuthenticatedRequest, res: Response): P
                 dailyTrend
             }
         });
-
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get revenue stats error:', error);
         res.status(500).json({ success: false, message: 'Failed to get revenue stats' });
     }
 });
-
 /**
  * Get system status
  * GET /api/admin/system/cron-status
  */
-router.get('/system/cron-status', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/system/cron-status', async (req, res) => {
     try {
         res.json({
             success: true,
-            data: cronService.getStatus()
+            data: CronService_1.cronService.getStatus()
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get system logic error:', error);
         res.status(500).json({ success: false, message: 'Failed to get system status' });
     }
 });
-
 /**
  * Get all disputes
  * GET /api/admin/disputes
  */
-router.get('/disputes', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/disputes', async (req, res) => {
     try {
-        const disputes = await Dispute.find().sort({ createdAt: -1 });
+        const disputes = await models_1.Dispute.find().sort({ createdAt: -1 });
         res.json({ success: true, data: disputes });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get disputes error:', error);
         res.status(500).json({ success: false, message: 'Failed to get disputes' });
     }
 });
-
 /**
  * Log a new dispute
  * POST /api/admin/dispute
  */
-router.post('/dispute', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/dispute', async (req, res) => {
     try {
-        const dispute = await Dispute.create(req.body);
+        const dispute = await models_1.Dispute.create(req.body);
         res.json({ success: true, data: dispute });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Create dispute error:', error);
         res.status(500).json({ success: false, message: 'Failed to create dispute' });
     }
 });
-
 /**
  * Update dispute status
  * PATCH /api/admin/dispute/:id
  */
-router.patch('/dispute/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/dispute/:id', async (req, res) => {
     try {
-        const dispute = await Dispute.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const dispute = await models_1.Dispute.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json({ success: true, data: dispute });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update dispute error:', error);
         res.status(500).json({ success: false, message: 'Failed to update dispute' });
     }
 });
-
-export default router;
+exports.default = router;
+//# sourceMappingURL=adminRoutes.js.map

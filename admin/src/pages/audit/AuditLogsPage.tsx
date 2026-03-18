@@ -31,13 +31,23 @@ const AuditLogsPage: React.FC = () => {
 
     const formatDetails = (details: any) => {
         if (!details) return '-';
-        if (typeof details === 'string') return details;
+        
+        const content = typeof details === 'string' 
+            ? details 
+            : JSON.stringify(details, null, 2);
+
         return (
-            <div className="max-w-xs md:max-w-sm lg:max-w-md overflow-x-auto">
-                <pre className="text-[10px] font-mono bg-slate-50 p-2 text-slate-700 rounded whitespace-pre-wrap break-all">
-                    {JSON.stringify(details, null, 2)}
-                </pre>
-            </div>
+            <details className="max-w-xs md:max-w-sm lg:max-w-md group">
+                <summary className="cursor-pointer text-xs text-primary-600 font-medium hover:underline select-none list-none inline-flex items-center gap-1">
+                    <span className="group-open:hidden">View Details</span>
+                    <span className="hidden group-open:inline">Hide Details</span>
+                </summary>
+                <div className="mt-2 overflow-x-auto max-h-48 overflow-y-auto">
+                    <pre className="text-[10px] font-mono bg-slate-50 p-2 text-slate-700 rounded whitespace-pre-wrap break-all">
+                        {content}
+                    </pre>
+                </div>
+            </details>
         );
     };
 

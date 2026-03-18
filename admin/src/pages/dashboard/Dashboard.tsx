@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs md:text-sm font-medium text-slate-500">Total Inflow (Today)</p>
+                            <p className="text-xs md:text-sm font-medium text-slate-500">Total Inflow (This Month)</p>
                             <h3 className="text-xl md:text-2xl font-bold text-primary-600 mt-1 md:mt-2 tracking-tight">
                                 {formatCurrency(stats?.transactions?.totalInflow || 0)}
                             </h3>
@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs md:text-sm font-medium text-slate-500">Total Outflow (Today)</p>
+                            <p className="text-xs md:text-sm font-medium text-slate-500">Total Outflow (This Month)</p>
                             <h3 className="text-xl md:text-2xl font-bold text-slate-900 mt-1 md:mt-2 tracking-tight">
                                 {formatCurrency(stats?.transactions?.totalOutflow || 0)}
                             </h3>

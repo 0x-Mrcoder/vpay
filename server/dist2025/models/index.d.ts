@@ -13,3 +13,4 @@ export { JobLock, IJobLockDocument } from './JobLock';
 export { Communication, ICommunication } from './Communication';
 export { AuditLog, IAuditLogDocument } from './AuditLog';
 export { Dispute, IDisputeDocument } from './Dispute';
+//# sourceMappingURL=index.d.ts.map

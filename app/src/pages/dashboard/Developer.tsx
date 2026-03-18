@@ -35,14 +35,16 @@ export const Developer: React.FC = () => {
     const [isSavingWebhook, setIsSavingWebhook] = useState(false);
     const [webhookError, setWebhookError] = useState<string>('');
     const [webhookSuccess, setWebhookSuccess] = useState<string>('');
+    const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
+    const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
             await Promise.all([
-
                 fetchApiKey(),
-                fetchWebhookUrl()
+                fetchWebhookUrl(),
+                fetchWebhookLogs()
             ]);
             setIsLoading(false);
         };
@@ -70,6 +72,20 @@ export const Developer: React.FC = () => {
             }
         } catch (error) {
             console.error('Error fetching webhook URL:', error);
+        }
+    };
+
+    const fetchWebhookLogs = async () => {
+        setIsLoadingLogs(true);
+        try {
+            const response = await api.get('/developer/webhook/logs');
+            if (response.data.success) {
+                setWebhookLogs(response.data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching webhook logs:', error);
+        } finally {
+            setIsLoadingLogs(false);
         }
     };
 
@@ -329,6 +345,59 @@ export const Developer: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Webhook Logs Section */}
+                    {webhookLogs && webhookLogs.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-gray-900">Recent Webhooks</h3>
+                                <button onClick={fetchWebhookLogs} className="text-primary-600 hover:text-primary-800 text-sm font-medium flex items-center gap-2 transition-colors">
+                                    <RefreshCw size={14} className={isLoadingLogs ? "animate-spin" : ""} /> Refresh
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto max-h-[400px]">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                                        <tr>
+                                            <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap">Event</th>
+                                            <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap">Status</th>
+                                            <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap">Subject</th>
+                                            <th className="px-6 py-4 font-medium text-slate-600 text-sm whitespace-nowrap text-right">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {isLoadingLogs && webhookLogs.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">Loading logs...</td>
+                                            </tr>
+                                        ) : webhookLogs.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">No logs generated yet.</td>
+                                            </tr>
+                                        ) : webhookLogs.map((log: any) => (
+                                            <tr key={log._id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-900">{log.eventType}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full tracking-wider border ${log.dispatchStatus === 'success' ? 'bg-green-100 text-green-700 border-green-200' :
+                                                        log.dispatchStatus === 'failed' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                            'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                                        }`}>
+                                                        {log.dispatchStatus || 'unknown'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs font-mono text-gray-600">
+                                                    {log.source || 'vtpay'} {log.orderNo ? `- ${log.orderNo}` : ''}
+                                                </td>
+                                                <td className="px-6 py-4 text-xs text-gray-500 text-right whitespace-nowrap">
+                                                    {new Date(log.createdAt).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar */}
