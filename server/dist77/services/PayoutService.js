@@ -169,11 +169,13 @@ class PayoutService {
                 logger_1.logger.info(`PalmPay transfer initiated: ${JSON.stringify(transferResponse)}`);
                 // Update reference with PalmPay's orderNo if available
                 if (transferResponse.orderNo) {
-                    payout.reference = transferResponse.orderNo;
+                    const orderNo = transferResponse.orderNo;
+                    // Update payout reference
+                    payout.reference = orderNo;
+                    payout.externalRef = orderNo; // Also store as externalRef
                     await payout.save();
-                    // Update transaction reference too
-                    transaction.reference = transferResponse.reference;
-                    await transaction.save();
+                    // Update transaction reference using findOneAndUpdate to be safe
+                    await models_1.Transaction.findOneAndUpdate({ 'metadata.payoutId': payout._id }, { $set: { reference: orderNo, externalRef: orderNo } });
                 }
                 // Return success (status remains INITIATED until webhook)
                 return payout;
@@ -182,8 +184,7 @@ class PayoutService {
                 // If gateway call fails, fail the payout immediately
                 logger_1.logger.error('PalmPay transfer failed:', gatewayError);
                 // Mark transaction as failed
-                transaction.status = 'failed';
-                await transaction.save();
+                await models_1.Transaction.findOneAndUpdate({ 'metadata.payoutId': payout._id }, { $set: { status: 'failed', narration: `Withdrawal Failed: ${gatewayError.message || 'Gateway Error'}` } });
                 throw new Error(gatewayError.message || 'Payment gateway failed to process transfer');
             }
         }
