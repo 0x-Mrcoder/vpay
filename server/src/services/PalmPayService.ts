@@ -198,7 +198,7 @@ export class PalmPayService {
                     nonceStr: crypto.randomBytes(16).toString('hex'),
                     palmpayAccNo: data.accountNumber
                 };
-                const response = await this.client.post<PalmPayResponse>('/api/v2/payment/merchant/payout/queryAccount', payload);
+                const response = await this.client.post<PalmPayResponse>('/payment/merchant/payout/queryAccount', payload);
 
                 if (response.data.respCode !== '00000000') {
                     throw new Error(response.data.respMsg || 'Bank resolution failed');
@@ -221,7 +221,7 @@ export class PalmPayService {
                     bankCode: data.bankCode,
                     bankAccNo: data.accountNumber
                 };
-                const response = await this.client.post<PalmPayResponse>('/api/v2/payment/merchant/payout/queryBankAccount', payload);
+                const response = await this.client.post<PalmPayResponse>('/payment/merchant/payout/queryBankAccount', payload);
 
                 if (response.data.respCode !== '00000000') {
                     throw new Error(response.data.respMsg || 'Bank resolution failed');
@@ -267,7 +267,7 @@ export class PalmPayService {
                 remark: data.description || "Payout"
             };
 
-            const response = await this.client.post<PalmPayResponse>('/api/v2/merchant/payment/payout', payload);
+            const response = await this.client.post<PalmPayResponse>('/merchant/payment/payout', payload);
 
             if (response.data.respCode !== '00000000') {
                 throw new Error(response.data.respMsg || 'Transfer initiation failed');
@@ -291,7 +291,7 @@ export class PalmPayService {
                 nonceStr: crypto.randomBytes(16).toString('hex'),
                 businessType: 0
             };
-            const response = await this.client.post<PalmPayResponse>('/api/v2/general/merchant/queryBankList', payload);
+            const response = await this.client.post<PalmPayResponse>('/general/merchant/queryBankList', payload);
 
             if (response.data.respCode !== '00000000') {
                 logger.warn('Failed to fetch bank list from PalmPay, using fallback');

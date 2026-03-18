@@ -152,7 +152,7 @@ router.post('/verify-account', async (req: AuthenticatedRequest, res: Response):
         });
     } catch (error: any) {
         logger.error('Account verification error:', error);
-        res.status(500).json({
+        res.status(400).json({
             success: false,
             message: error.message || 'Failed to verify account',
         });
