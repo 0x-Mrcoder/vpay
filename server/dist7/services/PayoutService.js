@@ -4,7 +4,7 @@ exports.payoutService = exports.PayoutService = void 0;
 const uuid_1 = require("uuid");
 const models_1 = require("../models");
 const EmailService_1 = require("./EmailService");
-const PayrantService_1 = require("./PayrantService");
+const PalmPayService_1 = require("./PalmPayService");
 const logger_1 = require("../utils/logger");
 class PayoutService {
     /**
@@ -153,20 +153,23 @@ class PayoutService {
                 clearedAt: new Date()
             });
             await transaction.save();
-            // Process with Payrant
+            // Process with PalmPay
             try {
-                const transferResponse = await PayrantService_1.payrantService.transfer({
-                    bank_code: details.bankCode,
-                    account_number: details.accountNumber,
-                    account_name: details.accountName,
-                    amount: fees.netAmount / 100, // Payrant expects Naira, we store Kobo
+                const transferResponse = await PalmPayService_1.palmPayService.initiateTransfer({
+                    amount: fees.netAmount, // PalmPay expects minor unit (kobo)
+                    currency: 'NGN',
+                    transactionReference: payout.reference,
                     description: `Payout to ${details.accountNumber}`,
-                    notify_url: `${process.env.WEBHOOK_BASE_URL}/payout` // Ensure this endpoint exists
+                    beneficiary: {
+                        accountNumber: details.accountNumber,
+                        bankCode: details.bankCode,
+                        accountName: details.accountName
+                    }
                 });
-                logger_1.logger.info(`Payrant transfer initiated: ${JSON.stringify(transferResponse)}`);
-                // Update reference with Payrant's reference if available
-                if (transferResponse.reference) {
-                    payout.reference = transferResponse.reference;
+                logger_1.logger.info(`PalmPay transfer initiated: ${JSON.stringify(transferResponse)}`);
+                // Update reference with PalmPay's orderNo if available
+                if (transferResponse.orderNo) {
+                    payout.reference = transferResponse.orderNo;
                     await payout.save();
                     // Update transaction reference too
                     transaction.reference = transferResponse.reference;
@@ -177,7 +180,7 @@ class PayoutService {
             }
             catch (gatewayError) {
                 // If gateway call fails, fail the payout immediately
-                logger_1.logger.error('Payrant transfer failed:', gatewayError);
+                logger_1.logger.error('PalmPay transfer failed:', gatewayError);
                 // Mark transaction as failed
                 transaction.status = 'failed';
                 await transaction.save();

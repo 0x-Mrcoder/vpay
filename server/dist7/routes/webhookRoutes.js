@@ -97,19 +97,44 @@ router.post('/palmpay', async (req, res) => {
     }
 });
 // ─────────────────────────────────────────────────────────────────────────────
-// Payrant / Payout Webhook Handler
-// POST /api/webhooks/payout
+// PalmPay Payout Webhook Handler
+// POST /api/webhooks/palmpay/payout
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/payout', async (req, res) => {
+router.post('/palmpay/payout', async (req, res) => {
     try {
-        logger_1.logger.info('[PAYOUT WEBHOOK] ══════ Payrant Webhook Received ══════');
-        logger_1.logger.info('[PAYOUT WEBHOOK] Body: ' + JSON.stringify(req.body, null, 2));
-        // TODO: Implement Payrant signature verification (Phase 2)
-        res.status(200).json({ success: true, message: 'Webhook received' });
+        const body = req.body;
+        logger_1.logger.info('[PAYOUT WEBHOOK] ══════ PalmPay Payout Webhook Received ══════');
+        logger_1.logger.info('[PAYOUT WEBHOOK] Body: ' + JSON.stringify(body, null, 2));
+        const { Payout } = require('../models');
+        const payoutService = require('../services/PayoutService').payoutService;
+        const orderNo = body.orderNo || body.orderId;
+        const state = Number(body.orderStatus);
+        if (!orderNo) {
+            logger_1.logger.warn('[PAYOUT WEBHOOK] ⚠️ Missing orderNo in payload');
+            res.status(200).send('success');
+            return;
+        }
+        const payout = await Payout.findOne({ reference: orderNo });
+        if (!payout) {
+            logger_1.logger.warn(`[PAYOUT WEBHOOK] ⚠️ Payout not found for orderNo: ${orderNo}`);
+            res.status(200).send('success');
+            return;
+        }
+        // orderStatus = 2 (Success), 3 (Failed), 4 (Refund)
+        if (state === 2) {
+            await payoutService.handlePayoutSuccess(payout);
+            logger_1.logger.info(`[PAYOUT WEBHOOK] ✅ Payout ${orderNo} marked as success.`);
+        }
+        else if (state === 3 || state === 4 || state === -1) {
+            await payoutService.handlePayoutFailure(payout, body.errorMsg || 'Transaction failed');
+            logger_1.logger.info(`[PAYOUT WEBHOOK] ❌ Payout ${orderNo} marked as failed. Reason: ${body.errorMsg}`);
+        }
+        // PalmPay expects 'success' plain text
+        res.status(200).send('success');
     }
     catch (error) {
         logger_1.logger.error('[PAYOUT WEBHOOK] Error', error);
-        res.status(200).json({ success: false });
+        res.status(500).send('error');
     }
 });
 exports.default = router;

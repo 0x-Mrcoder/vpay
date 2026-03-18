@@ -3,7 +3,7 @@ import { authenticate, AuthenticatedRequest } from '../middleware';
 import { payoutService } from '../services/PayoutService';
 import { walletService } from '../services/WalletService';
 import { palmPayService } from '../services/PalmPayService';
-import { payrantService } from '../services/PayrantService';
+
 import { User, Payout, VirtualAccount } from '../models';
 import { logger } from '../utils/logger';
 
@@ -130,8 +130,8 @@ router.post('/verify-account', async (req: AuthenticatedRequest, res: Response):
             return;
         }
 
-        // Use Payrant service to verify the account
-        const accountDetails = await payrantService.resolveBankAccount(bankCode, accountNumber);
+        // Use PalmPay service to verify the account
+        const accountDetails = await palmPayService.resolveBankAccount({ bankCode, accountNumber });
 
         if (!accountDetails || !accountDetails.accountName) {
             res.status(404).json({

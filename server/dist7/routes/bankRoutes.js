@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const PayrantService_1 = require("../services/PayrantService");
+const PalmPayService_1 = require("../services/PalmPayService");
 const middleware_1 = require("../middleware");
 const router = (0, express_1.Router)();
 // Routes might be public or protected depending on use case.
@@ -13,7 +13,7 @@ router.use(middleware_1.authenticate);
  */
 router.get('/', async (req, res) => {
     try {
-        const banks = await PayrantService_1.payrantService.getBankList();
+        const banks = await PalmPayService_1.palmPayService.getBankList();
         res.json({
             success: true,
             data: banks
@@ -42,7 +42,7 @@ router.get('/verify', async (req, res) => {
             });
             return;
         }
-        const accountDetails = await PayrantService_1.payrantService.resolveBankAccount(String(bankCode), String(accountNumber));
+        const accountDetails = await PalmPayService_1.palmPayService.resolveBankAccount({ bankCode: String(bankCode), accountNumber: String(accountNumber) });
         res.json({
             success: true,
             data: {

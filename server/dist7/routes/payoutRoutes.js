@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const middleware_1 = require("../middleware");
 const PayoutService_1 = require("../services/PayoutService");
-const PayrantService_1 = require("../services/PayrantService");
+const PalmPayService_1 = require("../services/PalmPayService");
 const models_1 = require("../models");
 const logger_1 = require("../utils/logger");
 const router = (0, express_1.Router)();
@@ -111,8 +111,8 @@ router.post('/verify-account', async (req, res) => {
             });
             return;
         }
-        // Use Payrant service to verify the account
-        const accountDetails = await PayrantService_1.payrantService.resolveBankAccount(bankCode, accountNumber);
+        // Use PalmPay service to verify the account
+        const accountDetails = await PalmPayService_1.palmPayService.resolveBankAccount({ bankCode, accountNumber });
         if (!accountDetails || !accountDetails.accountName) {
             res.status(404).json({
                 success: false,

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { payrantService } from '../services/PayrantService';
+import { palmPayService } from '../services/PalmPayService';
 import { AuthenticatedRequest, authenticate } from '../middleware';
 
 const router = Router();
@@ -14,7 +14,7 @@ router.use(authenticate);
  */
 router.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const banks = await payrantService.getBankList();
+        const banks = await palmPayService.getBankList();
         res.json({
             success: true,
             data: banks
@@ -45,7 +45,7 @@ router.get('/verify', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        const accountDetails = await payrantService.resolveBankAccount(String(bankCode), String(accountNumber));
+        const accountDetails = await palmPayService.resolveBankAccount({ bankCode: String(bankCode), accountNumber: String(accountNumber) });
 
         res.json({
             success: true,

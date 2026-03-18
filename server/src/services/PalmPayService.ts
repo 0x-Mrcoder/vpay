@@ -190,13 +190,56 @@ export class PalmPayService {
         try {
             logger.info(`Resolving bank account: ${data.accountNumber} (${data.bankCode})`);
 
-            const response = await this.client.post<PalmPayResponse<BankLookupResponse>>('/bank/resolve', data);
+            if (data.bankCode === "100033") {
+                // Query PalmPay Account
+                const payload = {
+                    requestTime: Date.now(),
+                    version: "V1.1",
+                    nonceStr: crypto.randomBytes(16).toString('hex'),
+                    palmpayAccNo: data.accountNumber
+                };
+                const response = await this.client.post<PalmPayResponse>('/api/v2/payment/merchant/payout/queryAccount', payload);
 
-            if (response.data.respCode !== '00') {
-                throw new Error(response.data.respMsg || 'Bank resolution failed');
+                if (response.data.respCode !== '00000000') {
+                    throw new Error(response.data.respMsg || 'Bank resolution failed');
+                }
+                const responseData = response.data.data;
+                if (responseData.accountStatus !== 0) {
+                    throw new Error('PalmPay account is unavailable');
+                }
+                return {
+                    accountName: responseData.accountName || 'Unknown',
+                    accountNumber: data.accountNumber,
+                    bankCode: data.bankCode
+                };
+            } else {
+                // Query Bank Account
+                const payload = {
+                    requestTime: Date.now(),
+                    version: "V1.1",
+                    nonceStr: crypto.randomBytes(16).toString('hex'),
+                    bankCode: data.bankCode,
+                    bankAccNo: data.accountNumber
+                };
+                const response = await this.client.post<PalmPayResponse>('/api/v2/payment/merchant/payout/queryBankAccount', payload);
+
+                if (response.data.respCode !== '00000000') {
+                    throw new Error(response.data.respMsg || 'Bank resolution failed');
+                }
+                const responseData: any = response.data.data;
+                if (!responseData) throw new Error('Bank resolution failed');
+                
+                // Note: The status could be "Success" or something else based on documentation
+                const statusStr = (responseData.Status || responseData.status || '').toLowerCase();
+                if (statusStr !== 'success' && statusStr !== '0') {
+                    throw new Error(responseData.errorMessage || 'Bank resolution failed');
+                }
+                return {
+                    accountName: responseData.accountName || responseData.accountname || 'Unknown',
+                    accountNumber: data.accountNumber,
+                    bankCode: data.bankCode
+                };
             }
-
-            return response.data.data!;
         } catch (error) {
             logger.error('Failed to resolve bank account', error);
             throw error;
@@ -210,9 +253,23 @@ export class PalmPayService {
         try {
             logger.info(`Initiating transfer: ${data.amount} to ${data.beneficiary.accountNumber}`);
 
-            const response = await this.client.post<PalmPayResponse>('/transfer/bank', data);
+            const payload = {
+                requestTime: Date.now(),
+                version: "V1.1",
+                nonceStr: crypto.randomBytes(16).toString('hex'),
+                orderId: data.transactionReference,
+                payeeName: data.beneficiary.accountName,
+                payeeBankCode: data.beneficiary.bankCode,
+                payeeBankAccNo: data.beneficiary.accountNumber,
+                amount: data.amount, // amount is in minimum unit (kobo)
+                currency: "NGN",
+                notifyUrl: `${process.env.WEBHOOK_BASE_URL}/api/webhooks/palmpay/payout`, // Must coordinate with webhook router
+                remark: data.description || "Payout"
+            };
 
-            if (response.data.respCode !== '00') {
+            const response = await this.client.post<PalmPayResponse>('/api/v2/merchant/payment/payout', payload);
+
+            if (response.data.respCode !== '00000000') {
                 throw new Error(response.data.respMsg || 'Transfer initiation failed');
             }
 
@@ -228,15 +285,27 @@ export class PalmPayService {
      */
     async getBankList(): Promise<Array<{ code: string; name: string }>> {
         try {
-            // Example endpoint, might be different
-            const response = await this.client.get<PalmPayResponse<Array<{ code: string; name: string }>>>('/bank/list');
+            const payload = {
+                requestTime: Date.now(),
+                version: "V1.1",
+                nonceStr: crypto.randomBytes(16).toString('hex'),
+                businessType: 0
+            };
+            const response = await this.client.post<PalmPayResponse>('/api/v2/general/merchant/queryBankList', payload);
 
-            if (response.data.respCode !== '00') {
-                // Fallback to static list if API fails
+            if (response.data.respCode !== '00000000') {
                 logger.warn('Failed to fetch bank list from PalmPay, using fallback');
                 return this.getFallbackBankList();
             }
-            return response.data.data || [];
+            const dataObj = response.data.data;
+            if (Array.isArray(dataObj)) {
+                return dataObj.map((b: any) => ({ code: b.bankCode, name: b.bankName }));
+            } else if (dataObj) {
+                // If it's a single object
+                return [{ code: (dataObj as any).bankCode, name: (dataObj as any).bankName }];
+            }
+            return this.getFallbackBankList();
+
         } catch (error) {
             logger.error('Failed to get bank list', error);
             return this.getFallbackBankList();
@@ -245,11 +314,11 @@ export class PalmPayService {
 
     private getFallbackBankList() {
         return [
+            { code: "100033", name: "PalmPay" },
             { code: "044", name: "Access Bank" },
             { code: "058", name: "Guaranty Trust Bank" },
             { code: "033", name: "United Bank for Africa" },
-            { code: "057", name: "Zenith Bank" },
-            { code: "999998", name: "PalmPay" }
+            { code: "057", name: "Zenith Bank" }
         ];
     }
 }
