@@ -1,0 +1,28 @@
+[
+  {
+    "_id": "69cd3f224fd713057334753a",
+    "action": "POST /api/admin/admins",
+    "actor": {
+      "type": "user",
+      "name": "System",
+      "email": "system@vtpay.com"
+    },
+    "details": {
+      "method": "POST",
+      "url": "/api/admin/admins",
+      "body": {
+        "firstName": "Aliyu",
+        "lastName": "Usman",
+        "email": "u@gmail.com",
+        "phone": "09138826727",
+        "password": "12345678"
+      },
+      "statusCode": 201
+    },
+    "ipAddress": "::ffff:127.0.0.1",
+    "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0",
+    "status": "success",
+    "createdAt": "2026-04-01T15:52:02.761Z",
+    "__v": 0
+  }
+]

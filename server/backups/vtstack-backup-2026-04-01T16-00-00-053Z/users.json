@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "69cd3d8cbf8e67798c3fd7ef",
+    "email": "admin@vtstack.com.ng",
+    "passwordHash": "$2a$10$.ANhB931.Yo0Ygh56gc1yuv0cw.WCeliDGI09B8f.I7ciNIEGkjJC",
+    "firstName": "Admin",
+    "lastName": "User",
+    "phone": "+2348000000000",
+    "businessName": "VTStack Admin",
+    "webhookActive": true,
+    "kycLevel": 3,
+    "kyc_status": "verified",
+    "role": "admin",
+    "status": "active",
+    "payoutAccounts": [],
+    "createdAt": "2026-04-01T15:45:16.365Z",
+    "updatedAt": "2026-04-01T15:45:16.365Z",
+    "__v": 0
+  },
+  {
+    "_id": "69cd3f224fd7130573347536",
+    "email": "u@gmail.com",
+    "passwordHash": "$2a$10$ca11QUix6E9Pimjw7cVK3OnTSUrpy9h8D.HGJmRwqxQ9gj1bD9.e2",
+    "firstName": "Aliyu",
+    "lastName": "Usman",
+    "fullName": "Aliyu Usman",
+    "phone": "09138826727",
+    "webhookActive": true,
+    "kycLevel": 3,
+    "kyc_status": "pending",
+    "role": "admin",
+    "status": "active",
+    "payoutAccounts": [],
+    "createdAt": "2026-04-01T15:52:02.715Z",
+    "updatedAt": "2026-04-01T15:52:02.715Z",
+    "__v": 0
+  }
+]

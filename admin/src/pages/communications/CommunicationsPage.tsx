@@ -62,12 +62,20 @@ const CommunicationsPage: React.FC = () => {
         }
     };
 
-    const filteredTenantsForSelection = tenants.filter(tenant =>
-        (tenant.email?.toLowerCase() || '').includes(userSearchQuery.toLowerCase()) ||
-        (tenant.firstName?.toLowerCase() || '').includes(userSearchQuery.toLowerCase()) ||
-        (tenant.lastName?.toLowerCase() || '').includes(userSearchQuery.toLowerCase()) ||
-        (tenant.businessName?.toLowerCase() || '').includes(userSearchQuery.toLowerCase())
-    );
+    const filteredTenantsForSelection = tenants.filter(tenant => {
+        const matchesSearch = (tenant.email?.toLowerCase() || '').includes(userSearchQuery.toLowerCase()) ||
+            (tenant.firstName?.toLowerCase() || '').includes(userSearchQuery.toLowerCase()) ||
+            (tenant.lastName?.toLowerCase() || '').includes(userSearchQuery.toLowerCase()) ||
+            (tenant.businessName?.toLowerCase() || '').includes(userSearchQuery.toLowerCase());
+
+        if (!matchesSearch) return false;
+
+        if (recipientType === 'active') return tenant.status === 'active';
+        if (recipientType === 'inactive') return tenant.status !== 'active';
+        if (recipientType === 'unverified') return (tenant.kycLevel || 0) < 3;
+
+        return true;
+    });
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -202,10 +210,12 @@ const CommunicationsPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {recipientType === 'specific' && (
+                            {recipientType !== 'all' && (
                                 <div className="space-y-4">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                        <label className="block text-sm font-medium text-slate-700">Select Tenants ({selectedTenants.length} selected)</label>
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            {recipientType === 'specific' ? 'Select Tenants' : 'Target Recipients'} ({filteredTenantsForSelection.length} total)
+                                        </label>
                                         <input
                                             type="text"
                                             placeholder="Search users..."
@@ -245,9 +255,10 @@ const CommunicationsPage: React.FC = () => {
                                                                 <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                                                                     <input
                                                                         type="checkbox"
-                                                                        checked={selectedTenants.includes(tenant._id)}
+                                                                        disabled={recipientType !== 'specific'}
+                                                                        checked={recipientType !== 'specific' || selectedTenants.includes(tenant._id)}
                                                                         onChange={() => toggleTenantSelection(tenant._id)}
-                                                                        className="rounded text-primary-600 focus:ring-primary-500"
+                                                                        className="rounded text-primary-600 focus:ring-primary-500 disabled:opacity-50"
                                                                     />
                                                                 </td>
                                                                 <td className="px-4 py-2">

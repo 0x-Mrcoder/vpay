@@ -7,12 +7,23 @@ import BarChart from '../../components/charts/BarChart';
 import Badge from '../../components/common/Badge';
 
 const Dashboard: React.FC = () => {
+    const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
+    const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth() + 1);
+
     const { data: stats, isLoading: loading, refetch } = useQuery({
-        queryKey: ['dashboard-stats'],
-        queryFn: adminApi.getStats,
+        queryKey: ['dashboard-stats', selectedYear, selectedMonth],
+        queryFn: () => adminApi.getStats({ year: selectedYear, month: selectedMonth }),
         refetchInterval: 30000,
         staleTime: 10000,
     });
+
+    const years = [2024, 2025, 2026];
+    const months = [
+        { val: 1, name: 'January' }, { val: 2, name: 'February' }, { val: 3, name: 'March' },
+        { val: 4, name: 'April' }, { val: 5, name: 'May' }, { val: 6, name: 'June' },
+        { val: 7, name: 'July' }, { val: 8, name: 'August' }, { val: 9, name: 'September' },
+        { val: 10, name: 'October' }, { val: 11, name: 'November' }, { val: 12, name: 'December' }
+    ];
 
     const { data: cronStatus } = useQuery({
         queryKey: ['cron-status'],
@@ -59,89 +70,205 @@ const Dashboard: React.FC = () => {
     return (
         <div className="p-4 md:p-6 space-y-6">
             {/* Page Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
                     <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900">Payment Operations Dashboard</h1>
                     <p className="text-xs md:text-sm text-slate-500 mt-1">Real-time financial monitoring and control</p>
                 </div>
-                <button
-                    onClick={() => refetch()}
-                    className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm active:scale-95"
-                >
-                    Refresh Data
-                </button>
+
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    {/* Period Selectors */}
+                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                            className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none border-none py-1 px-2 cursor-pointer"
+                        >
+                            {months.map(m => (
+                                <option key={m.val} value={m.val}>{m.name}</option>
+                            ))}
+                        </select>
+                        <div className="w-px h-4 bg-slate-200"></div>
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                            className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none border-none py-1 px-2 cursor-pointer"
+                        >
+                            {years.map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button
+                        onClick={() => refetch()}
+                        className="flex-1 sm:flex-none px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all text-sm font-bold shadow-md shadow-primary-200 active:scale-95"
+                    >
+                        Refresh Data
+                    </button>
+                </div>
             </div>
 
-            {/* Critical Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Total Inflow */}
-                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs md:text-sm font-medium text-slate-500">Total Inflow (This Month)</p>
-                            <h3 className="text-xl md:text-2xl font-bold text-primary-600 mt-1 md:mt-2 tracking-tight">
-                                {formatCurrency(stats?.transactions?.totalInflow || 0)}
+            {/* Financial Summaries Grid */}
+            <div className="space-y-6">
+                {/* Daily Overview */}
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <div className="w-2 h-6 bg-primary-500 rounded-full"></div>
+                        Today's Overview
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Today's Inflow</p>
+                            <h3 className="text-2xl font-bold text-primary-600 mt-2">
+                                {formatCurrency(stats?.transactions?.dailyInflow || 0)}
                             </h3>
-                            <p className="text-[10px] md:text-xs text-primary-600 font-bold mt-1">Live from server</p>
+                            <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-primary-500 bg-primary-50 w-fit px-2 py-0.5 rounded-full">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+                                </span>
+                                LIVE
+                            </div>
                         </div>
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-50 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 md:w-6 md:h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
+                        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Today's Outflow</p>
+                            <h3 className="text-2xl font-bold text-slate-900 mt-2">
+                                {formatCurrency(stats?.transactions?.dailyOutflow || 0)}
+                            </h3>
+                        </div>
+                        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Success Rate</p>
+                            <h3 className="text-2xl font-bold text-green-600 mt-2">
+                                {stats?.transactions?.successCount > 0
+                                    ? Math.round((stats.transactions.successCount / (stats.transactions.successCount + stats.transactions.failedCount)) * 100)
+                                    : 100}%
+                            </h3>
+                        </div>
+                        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">System Load</p>
+                            <h3 className="text-2xl font-bold text-blue-600 mt-2">
+                                {stats?.webhooks?.total || 0} <span className="text-xs font-normal text-slate-400">events/day</span>
+                            </h3>
                         </div>
                     </div>
                 </div>
 
-                {/* Total Outflow */}
-                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs md:text-sm font-medium text-slate-500">Total Outflow (This Month)</p>
-                            <h3 className="text-xl md:text-2xl font-bold text-slate-900 mt-1 md:mt-2 tracking-tight">
-                                {formatCurrency(stats?.transactions?.totalOutflow || 0)}
-                            </h3>
-                            <p className="text-[10px] md:text-xs text-slate-400 mt-1">Live from server</p>
+                {/* Monthly & Yearly Comparison */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Monthly Card */}
+                    <div className="bg-gradient-to-br from-primary-600 to-primary-800 p-6 rounded-[2rem] shadow-xl text-white">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-lg font-bold opacity-90">{months.find(m => m.val === selectedMonth)?.name} {selectedYear}</h3>
+                                <p className="text-xs opacity-70">Filtered monthly performance</p>
+                            </div>
+                            <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
                         </div>
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                            </svg>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs font-medium opacity-70 uppercase">Monthly Inflow</p>
+                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.transactions?.monthlyInflow || 0)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium opacity-70 uppercase">Monthly Outflow</p>
+                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.transactions?.monthlyOutflow || 0)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Yearly Card */}
+                    <div className="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-lg font-bold opacity-90">Annual Summary ({selectedYear})</h3>
+                                <p className="text-xs opacity-50">Year-to-date performance</p>
+                            </div>
+                            <div className="p-2 bg-white/5 rounded-xl">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs font-medium opacity-50 uppercase">Annual Inflow</p>
+                                <p className="text-2xl font-bold mt-1 text-primary-400">{formatCurrency(stats?.transactions?.yearlyInflow || 0)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium opacity-50 uppercase">Annual Outflow</p>
+                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.transactions?.yearlyOutflow || 0)}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Pending Transactions */}
-                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs md:text-sm font-medium text-slate-500">Pending Transactions</p>
-                            <h3 className="text-xl md:text-2xl font-bold text-yellow-600 mt-1 md:mt-2 tracking-tight">
-                                {stats?.transactions?.pendingCount || 0}
-                            </h3>
-                            <p className="text-[10px] md:text-xs text-slate-400 mt-1">Needs processing</p>
-                        </div>
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-50 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 md:w-6 md:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Quarterly Summary */}
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <div className="w-2 h-6 bg-slate-400 rounded-full"></div>
+                        Quarterly Performance ({selectedYear})
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {['Q1', 'Q2', 'Q3', 'Q4'].map((q) => {
+                            const qData = stats?.transactions?.quarters?.[q.toLowerCase()];
+                            return (
+                                <div key={q} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{q} Summary</p>
+                                        <div className="mt-4">
+                                            <p className="text-[10px] font-bold text-primary-600 uppercase mb-1">Inflow</p>
+                                            <p className="text-xl font-bold text-slate-900 tracking-tight">{formatCurrency(qData?.inflow || 0)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-3 border-t border-slate-50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Outflow</p>
+                                        <p className="text-sm font-semibold text-slate-600">{formatCurrency(qData?.outflow || 0)}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Operational Status */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center flex-shrink-0 text-yellow-600">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                    </div>
-                </div>
-
-                {/* Failed Transactions */}
-                <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs md:text-sm font-medium text-slate-500">Failed Transactions</p>
-                            <h3 className="text-xl md:text-2xl font-bold text-red-600 mt-1 md:mt-2 tracking-tight">
-                                {stats?.transactions?.failedCount || 0}
-                            </h3>
-                            <p className="text-[10px] md:text-xs text-red-600 font-bold mt-1">Needs attention</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Pending</p>
+                            <p className="text-lg font-bold text-slate-900">{stats?.transactions?.pendingCount || 0}</p>
                         </div>
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-red-50 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 md:w-6 md:h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0 text-red-600">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Failed</p>
+                            <p className="text-lg font-bold text-slate-900">{stats?.transactions?.failedCount || 0}</p>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0 text-green-600">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Successful</p>
+                            <p className="text-lg font-bold text-slate-900">{stats?.transactions?.successCount || 0}</p>
                         </div>
                     </div>
                 </div>

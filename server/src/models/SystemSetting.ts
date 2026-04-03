@@ -61,6 +61,8 @@ export interface ISystemSettingDocument extends Document {
         vtpayFeePercent: number;
         bankSettlementFee: number;
         bankSettlementThreshold: number;
+        payoutTierStep: number;    // Amount increment per tier (e.g. 2500)
+        payoutTierFeeStep: number; // Fee per tier increment (e.g. 25)
     };
     deposit: {
         vtpayFeePercent: number;
@@ -129,10 +131,12 @@ const SystemSettingSchema = new Schema<ISystemSettingDocument>(
             },
         },
         payout: {
-            minAmount: { type: Number, default: 10000 }, // 100 Naira
+            minAmount: { type: Number, default: 1000 }, // Min payout ₦1,000
             vtpayFeePercent: { type: Number, default: 0.6 },
-            bankSettlementFee: { type: Number, default: 2500 }, // 25 Naira
+            bankSettlementFee: { type: Number, default: 2500 },
             bankSettlementThreshold: { type: Number, default: 0 },
+            payoutTierStep: { type: Number, default: 2500 },    // Every ₦2,500 increment
+            payoutTierFeeStep: { type: Number, default: 25 },   // ₦25 fee per tier
         },
         deposit: {
             vtpayFeePercent: { type: Number, default: 2.0 }, // Default 2% total fee

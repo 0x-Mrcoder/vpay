@@ -46,6 +46,24 @@ export interface Tenant {
     updatedAt: string;
 }
 
+export interface Wallet {
+    _id: string;
+    userId: string;
+    balance: number;
+    lockedBalance: number;
+    currency: string;
+}
+
+export interface TenantDetail {
+    user: Tenant;
+    wallet?: Wallet;
+    stats?: {
+        totalTransactionAmount: number;
+        totalTransactionCount: number;
+    };
+    virtualAccounts?: any[];
+}
+
 export interface Admin {
     _id: string;
     email: string;
@@ -75,8 +93,12 @@ export const adminApi = {
         return response.data.data!;
     },
 
-    getTenantById: async (id: string): Promise<Tenant> => {
-        const response = await api.get<ApiResponse<Tenant>>(`/admin/tenants/${id}`);
+    deleteAdmin: async (id: string): Promise<void> => {
+        await api.delete(`/admin/admins/${id}`);
+    },
+
+    getTenantById: async (id: string): Promise<TenantDetail> => {
+        const response = await api.get<ApiResponse<TenantDetail>>(`/admin/tenants/${id}`);
         return response.data.data!;
     },
 
@@ -92,8 +114,13 @@ export const adminApi = {
         await api.patch(`/admin/tenants/${id}/kyc`, { status });
     },
 
-    getStats: async (): Promise<any> => {
-        const response = await api.get<ApiResponse<any>>('/admin/stats');
+    impersonateTenant: async (id: string): Promise<any> => {
+        const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/impersonate`);
+        return response.data.data;
+    },
+
+    getStats: async (params?: any): Promise<any> => {
+        const response = await api.get<ApiResponse<any>>('/admin/stats', { params });
         return response.data.data;
     },
 
@@ -214,6 +241,29 @@ export const adminApi = {
     },
     deleteFee: async (id: string): Promise<any> => {
         const response = await api.delete<ApiResponse<any>>(`/admin/fees/${id}`);
+        return response.data;
+    },
+
+    getFeeRevenue: async (): Promise<any> => {
+        const response = await api.get<ApiResponse<any>>('/admin/fees/revenue');
+        return response.data.data;
+    },
+
+    // Settlement Cron Management
+    getCronStatus: async (): Promise<any> => {
+        const response = await api.get<ApiResponse<any>>('/admin/settlements/cron/status');
+        return response.data.data;
+    },
+    pauseSettlementCron: async (): Promise<any> => {
+        const response = await api.post<ApiResponse<any>>('/admin/settlements/cron/pause');
+        return response.data;
+    },
+    resumeSettlementCron: async (): Promise<any> => {
+        const response = await api.post<ApiResponse<any>>('/admin/settlements/cron/resume');
+        return response.data;
+    },
+    updateSettlementSettings: async (data: { weekendSettlementEnabled: boolean }): Promise<any> => {
+        const response = await api.patch<ApiResponse<any>>('/admin/settlements/settings', data);
         return response.data;
     },
 

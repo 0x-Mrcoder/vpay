@@ -5,6 +5,7 @@ import Badge from '../common/Badge';
 import { useQuery } from '@tanstack/react-query';
 import { RefreshCw, FileText, User, CreditCard, Shield, Download } from 'lucide-react';
 import { downloadFile } from '../../utils/exportUtils';
+import toast from 'react-hot-toast';
 
 interface TenantDetailModalProps {
     isOpen: boolean;
@@ -27,28 +28,68 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc'>('overview');
 
+    // Fetch full tenant details (including wallet and stats)
+    const { data: detailData, isLoading: loadingDetail } = useQuery({
+        queryKey: ['tenant-detail', tenant._id],
+        queryFn: () => adminApi.getTenantById(tenant._id),
+        enabled: isOpen,
+    });
+
+    const fullTenant = detailData?.user || tenant;
+    const wallet = detailData?.wallet;
+    const stats = detailData?.stats;
+
     // Fetch transactions for this tenant
     const { data: transactions, isLoading: loadingTxns } = useQuery({
         queryKey: ['tenant-transactions', tenant._id],
-        queryFn: () => adminApi.getTransactions({ userId: tenant._id }),
+        queryFn: () => adminApi.getTransactions({ tenantId: tenant._id }),
         enabled: isOpen && activeTab === 'transactions',
     });
+
+    const handleImpersonate = async () => {
+        try {
+            const data = await adminApi.impersonateTenant(tenant._id);
+            const { token } = data;
+            
+            // Direct handover to the user application
+            // We assume the user app is running on localhost:5174 (standard Vite dev sequence)
+            // or we use a relative path if it's the same origin.
+            // For production, this would be the main app domain.
+            const userAppUrl = `http://localhost:5174/auth/handover?token=${token}`;
+            
+            toast.success('Session generated. Opening user account...');
+            window.open(userAppUrl, '_blank');
+        } catch (error) {
+            console.error('Impersonation failed:', error);
+            toast.error('Failed to generate user session');
+        }
+    };
+
     const tabs = [
         { id: 'overview', label: 'Overview', icon: User },
         { id: 'transactions', label: 'Transactions', icon: CreditCard },
         { id: 'kyc', label: 'KYC & Documents', icon: Shield },
     ] as const;
 
+    const formatCurrency = (amount: number) => {
+        // Amount is in base units (kobo/cents), so divide by 100
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+            minimumFractionDigits: 0,
+        }).format((amount || 0) / 100);
+    };
+
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
             title={`${tenant.firstName} ${tenant.lastName}`}
-            maxWidth="2xl"
+            maxWidth="3xl"
         >
             <div className="flex flex-col h-full">
                 {/* Tabs Header */}
-                <div className="flex border-b border-slate-200 mb-6">
+                <div className="flex border-b border-slate-200 mb-6 sticky top-0 bg-white z-10">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
@@ -68,9 +109,49 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                 </div>
 
                 {/* Tab Content */}
-                <div className="min-h-[300px]">
+                <div className="min-h-[400px]">
                     {activeTab === 'overview' && (
-                        <div className="space-y-6 animate-fade-in">
+                        <div className="space-y-6 animate-fade-in px-1">
+                            {/* Financial Status Section */}
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-green-500 rounded-full"></div>
+                                    Financial Status
+                                </h3>
+                                {loadingDetail ? (
+                                    <div className="flex justify-center py-4 bg-slate-50 rounded-xl">
+                                        <RefreshCw className="animate-spin text-slate-400" size={20} />
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                                            <div className="absolute -right-2 -bottom-2 opacity-5 text-green-600 group-hover:scale-110 transition-transform">
+                                                <CreditCard size={64} />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Balance</p>
+                                            <p className="text-xl font-black text-slate-900 mt-1">{formatCurrency(wallet?.balance ?? 0)}</p>
+                                            <div className="mt-2 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full w-fit">ACTIVE FUNDS</div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                                            <div className="absolute -right-2 -bottom-2 opacity-5 text-yellow-600 group-hover:scale-110 transition-transform">
+                                                <RefreshCw size={64} />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Balance</p>
+                                            <p className="text-xl font-black text-slate-900 mt-1">{formatCurrency(wallet?.lockedBalance ?? 0)}</p>
+                                            <div className="mt-2 text-[10px] text-yellow-600 font-bold bg-yellow-50 px-2 py-0.5 rounded-full w-fit">HELD IN ESCROW</div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                                            <div className="absolute -right-2 -bottom-2 opacity-5 text-primary-600 group-hover:scale-110 transition-transform">
+                                                <FileText size={64} />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lifetime Volume</p>
+                                            <p className="text-xl font-black text-slate-900 mt-1">{formatCurrency(stats?.totalTransactionAmount ?? 0)}</p>
+                                            <div className="mt-2 text-[10px] text-primary-600 font-bold bg-primary-50 px-2 py-0.5 rounded-full w-fit">{stats?.totalTransactionCount || 0} TOTAL TXNS</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Business Information */}
                             <div>
                                 <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -80,19 +161,19 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">Business Name</p>
-                                        <p className="text-sm font-medium text-slate-900 mt-1">{tenant.businessName || 'N/A'}</p>
+                                        <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.businessName || 'N/A'}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">Phone</p>
-                                        <p className="text-sm font-medium text-slate-900 mt-1">{tenant.phone}</p>
+                                        <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.phone}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">Email</p>
-                                        <p className="text-sm font-medium text-slate-900 mt-1">{tenant.email}</p>
+                                        <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.email}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">Joined Date</p>
-                                        <p className="text-sm font-medium text-slate-900 mt-1">{new Date(tenant.createdAt).toLocaleDateString()}</p>
+                                        <p className="text-sm font-medium text-slate-900 mt-1">{new Date(fullTenant.createdAt).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                             </div>
@@ -107,24 +188,24 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                     <div className="flex justify-between items-center sm:block">
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">Account Status</p>
                                         <div className="mt-1">
-                                            <Badge variant={tenant.status === 'active' ? 'success' : tenant.status === 'suspended' ? 'error' : 'neutral'}>
-                                                {tenant.status.toUpperCase()}
+                                            <Badge variant={fullTenant.status === 'active' ? 'success' : fullTenant.status === 'suspended' ? 'error' : 'neutral'}>
+                                                {fullTenant.status.toUpperCase()}
                                             </Badge>
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center sm:block">
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">KYC Status</p>
                                         <div className="mt-1">
-                                            <Badge variant={tenant.kyc_status === 'verified' ? 'success' : tenant.kyc_status === 'pending' ? 'warning' : 'error'}>
-                                                {tenant.kyc_status.toUpperCase()}
+                                            <Badge variant={fullTenant.kyc_status === 'verified' ? 'success' : fullTenant.kyc_status === 'pending' ? 'warning' : 'error'}>
+                                                {fullTenant.kyc_status.toUpperCase()}
                                             </Badge>
                                         </div>
                                     </div>
-                                    {tenant.webhookUrl && (
+                                    {fullTenant.webhookUrl && (
                                         <div className="sm:col-span-2">
                                             <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Webhook URL</p>
                                             <div className="bg-white px-3 py-2 rounded border border-slate-200 font-mono text-xs text-slate-600 break-all">
-                                                {tenant.webhookUrl}
+                                                {fullTenant.webhookUrl}
                                             </div>
                                         </div>
                                     )}
@@ -132,32 +213,42 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                             </div>
 
                             {/* Quick Actions */}
-                            <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-3">
-                                {tenant.status !== 'active' && (
+                            <div className="pt-6 border-t border-slate-100 flex flex-wrap gap-3">
+                                <button
+                                    onClick={handleImpersonate}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all text-sm font-bold shadow-lg shadow-slate-200 active:scale-95"
+                                >
+                                    <User size={18} />
+                                    Login as User
+                                </button>
+                                
+                                <div className="h-10 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
+                                {fullTenant.status !== 'active' && (
                                     <button
-                                        onClick={() => onStatusChange(tenant._id, 'active')}
-                                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                                        onClick={() => onStatusChange(fullTenant._id, 'active')}
+                                        className="px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium"
                                     >
                                         Activate Account
                                     </button>
                                 )}
-                                {tenant.status !== 'suspended' && (
+                                {fullTenant.status !== 'suspended' && (
                                     <button
-                                        onClick={() => onStatusChange(tenant._id, 'suspended')}
-                                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium"
+                                        onClick={() => onStatusChange(fullTenant._id, 'suspended')}
+                                        className="px-4 py-2.5 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition-colors text-sm font-medium"
                                     >
                                         Suspend Account
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => onSendMessage(tenant)}
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                                    onClick={() => onSendMessage(fullTenant)}
+                                    className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-medium"
                                 >
                                     Send Message
                                 </button>
                                 <button
-                                    onClick={() => onDelete(tenant._id)}
-                                    className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium ml-auto"
+                                    onClick={() => onDelete(fullTenant._id)}
+                                    className="px-4 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-medium ml-auto"
                                 >
                                     Delete Account
                                 </button>
@@ -227,11 +318,11 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">NIN</p>
-                                        <p className="text-sm font-mono font-medium text-slate-900 mt-1">{tenant.nin || 'Not provided'}</p>
+                                        <p className="text-sm font-mono font-medium text-slate-900 mt-1">{fullTenant.nin || 'Not provided'}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">BVN</p>
-                                        <p className="text-sm font-mono font-medium text-slate-900 mt-1">{tenant.bvn || 'Not provided'}</p>
+                                        <p className="text-sm font-mono font-medium text-slate-900 mt-1">{fullTenant.bvn || 'Not provided'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -240,11 +331,11 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 <h3 className="text-sm font-bold text-slate-900 mb-3">Submitted Documents</h3>
                                 <div className="space-y-3">
                                     {/* ID Card */}
-                                    {tenant.idCardPath ? (
+                                    {fullTenant.idCardPath ? (
                                         <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
                                             <div className="w-12 h-12 bg-blue-50 rounded overflow-hidden flex items-center justify-center border border-blue-100">
-                                                {tenant.idCardPath.match(/\.(jpeg|jpg|gif|png)$/) || tenant.idCardPath.includes('cloudinary') ? (
-                                                    <img src={tenant.idCardPath} className="w-full h-full object-cover" alt="ID Card" />
+                                                {fullTenant.idCardPath.match(/\.(jpeg|jpg|gif|png)$/) || fullTenant.idCardPath.includes('cloudinary') ? (
+                                                    <img src={fullTenant.idCardPath} className="w-full h-full object-cover" alt="ID Card" />
                                                 ) : (
                                                     <FileText size={20} className="text-blue-600" />
                                                 )}
@@ -254,11 +345,11 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                                 <p className="text-xs text-slate-500">Provided identification card</p>
                                             </div>
                                             <div className="flex gap-2">
-                                                <a href={tenant.idCardPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                <a href={fullTenant.idCardPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
                                                     View Full
                                                 </a>
                                                 <button 
-                                                    onClick={() => downloadFile(tenant.idCardPath!, `ID_${tenant.firstName}_${tenant.lastName}`)}
+                                                    onClick={() => downloadFile(fullTenant.idCardPath!, `ID_${fullTenant.firstName}_${fullTenant.lastName}`)}
                                                     className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
                                                     title="Download"
                                                 >
@@ -273,21 +364,21 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                     )}
 
                                     {/* Selfie */}
-                                    {tenant.selfiePath && (
+                                    {fullTenant.selfiePath && (
                                         <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
                                             <div className="w-12 h-12 bg-purple-50 rounded overflow-hidden flex items-center justify-center border border-purple-100">
-                                                <img src={tenant.selfiePath} className="w-full h-full object-cover" alt="Selfie" />
+                                                <img src={fullTenant.selfiePath} className="w-full h-full object-cover" alt="Selfie" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-slate-900 truncate">Selfie Image</p>
                                                 <p className="text-xs text-slate-500">Live portrait for verification</p>
                                             </div>
                                             <div className="flex gap-2">
-                                                <a href={tenant.selfiePath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                <a href={fullTenant.selfiePath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
                                                     View Full
                                                 </a>
                                                 <button 
-                                                    onClick={() => downloadFile(tenant.selfiePath!, `Selfie_${tenant.firstName}_${tenant.lastName}`)}
+                                                    onClick={() => downloadFile(fullTenant.selfiePath!, `Selfie_${fullTenant.firstName}_${fullTenant.lastName}`)}
                                                     className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
                                                     title="Download"
                                                 >
@@ -298,13 +389,13 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                     )}
 
                                     {/* CAC Document */}
-                                    {tenant.cacDocumentPath && (
+                                    {fullTenant.cacDocumentPath && (
                                         <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
                                             <div className="w-12 h-12 bg-primary-50 rounded overflow-hidden flex items-center justify-center border border-primary-100">
-                                                {tenant.cacDocumentPath.match(/\.(pdf)$/) ? (
+                                                {fullTenant.cacDocumentPath.match(/\.(pdf)$/) ? (
                                                     <FileText size={20} className="text-primary-600" />
                                                 ) : (
-                                                    <img src={tenant.cacDocumentPath} className="w-full h-full object-cover" alt="CAC Cert" />
+                                                    <img src={fullTenant.cacDocumentPath} className="w-full h-full object-cover" alt="CAC Cert" />
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -312,11 +403,11 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                                 <p className="text-xs text-slate-500">CAC Registration Certificate</p>
                                             </div>
                                             <div className="flex gap-2">
-                                                <a href={tenant.cacDocumentPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                <a href={fullTenant.cacDocumentPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
                                                     View Full
                                                 </a>
                                                 <button 
-                                                    onClick={() => downloadFile(tenant.cacDocumentPath!, `CAC_${tenant.businessName || tenant.firstName}`)}
+                                                    onClick={() => downloadFile(fullTenant.cacDocumentPath!, `CAC_${fullTenant.businessName || fullTenant.firstName}`)}
                                                     className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
                                                     title="Download"
                                                 >
@@ -329,17 +420,17 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                                {tenant.kyc_status !== 'verified' && (
+                                {fullTenant.kyc_status !== 'verified' && (
                                     <button
-                                        onClick={() => onKycStatusChange(tenant._id, 'verified')}
+                                        onClick={() => onKycStatusChange(fullTenant._id, 'verified')}
                                         className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
                                     >
                                         Approve KYC
                                     </button>
                                 )}
-                                {tenant.kyc_status !== 'rejected' && (
+                                {fullTenant.kyc_status !== 'rejected' && (
                                     <button
-                                        onClick={() => onKycStatusChange(tenant._id, 'rejected')}
+                                        onClick={() => onKycStatusChange(fullTenant._id, 'rejected')}
                                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                                     >
                                         Reject KYC

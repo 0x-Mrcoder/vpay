@@ -86,18 +86,29 @@ const TransactionsPage: React.FC = () => {
         type: 'all',
         status: 'all'
     });
+    const [currentPage, setCurrentPage] = useState(1);
+    const limit = 50;
 
     const { data: transactionData, isLoading: loading, refetch } = useQuery({
-        queryKey: ['transactions', activeFilters],
+        queryKey: ['transactions', activeFilters, currentPage, searchQuery],
         queryFn: async () => {
-            const params: any = {};
+            const params: any = {
+                limit,
+                offset: (currentPage - 1) * limit
+            };
             if (activeFilters.type !== 'all') params.type = activeFilters.type;
             if (activeFilters.status !== 'all') params.status = activeFilters.status;
+            if (searchQuery) params.search = searchQuery;
             return await adminApi.getTransactions(params);
         },
         refetchInterval: 15000,
         staleTime: 5000,
     });
+
+    // Reset to first page when search query changes
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const transactions: Transaction[] = transactionData?.transactions || [];
 
@@ -159,16 +170,7 @@ const TransactionsPage: React.FC = () => {
         return `₦${(amount / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
     };
 
-    const filteredTransactions = transactions.filter((txn) => {
-        const matchesSearch =
-            txn.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            txn.userId.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (txn.userId.businessName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            txn.narration.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesType = activeFilters.type === 'all' || txn.type === activeFilters.type;
-        const matchesStatus = activeFilters.status === 'all' || txn.status === activeFilters.status;
-        return matchesSearch && matchesType && matchesStatus;
-    });
+    const filteredTransactions = transactions;
 
     const filterConfigs: FilterConfig[] = [
         {
@@ -198,10 +200,12 @@ const TransactionsPage: React.FC = () => {
 
     const handleFilterChange = (key: string, value: any) => {
         setActiveFilters(prev => ({ ...prev, [key]: value }));
+        setCurrentPage(1); // Reset to first page on filter change
     };
 
     const handleClearFilters = () => {
         setActiveFilters({ type: 'all', status: 'all' });
+        setCurrentPage(1);
     };
 
 
@@ -257,26 +261,43 @@ const TransactionsPage: React.FC = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Total Transactions</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-slate-900 mt-1">{transactions.length}</h3>
+                    <h3 className="text-lg md:text-2xl font-bold text-slate-900 mt-1">
+                        {transactionData?.pagination?.total?.toLocaleString() || transactions.length}
+                    </h3>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Success Rate</p>
                     <h3 className="text-lg md:text-2xl font-bold text-primary-600 mt-1">
-                        {transactions.length > 0
-                            ? ((transactions.filter((t) => t.status === 'success').length / transactions.length) * 100).toFixed(1)
-                            : '0.0'}%
+                        {(() => {
+                            const stats = transactionData?.stats || [];
+                            const total = transactionData?.pagination?.total || 0;
+                            if (total === 0) return '0.0%';
+                            const successCount = stats
+                                .filter((s: any) => s.status === 'success')
+                                .reduce((acc: number, curr: any) => acc + curr.count, 0);
+                            return ((successCount / total) * 100).toFixed(1) + '%';
+                        })()}
                     </h3>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <p className="text-xs md:text-sm font-medium text-slate-500">Pending</p>
                     <h3 className="text-lg md:text-2xl font-bold text-yellow-600 mt-1">
-                        {transactions.filter((t) => t.status === 'pending').length}
+                        {(() => {
+                            const stats = transactionData?.stats || [];
+                            return stats
+                                .filter((s: any) => s.status === 'pending')
+                                .reduce((acc: number, curr: any) => acc + curr.count, 0) || 0;
+                        })()}
                     </h3>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                    <p className="text-xs md:text-sm font-medium text-slate-500">Flagged</p>
-                    <h3 className="text-lg md:text-2xl font-bold text-red-600 mt-1">
-                        {transactions.filter((t) => t.flagged).length}
+                    <p className="text-xs md:text-sm font-medium text-slate-500">Total Volume</p>
+                    <h3 className="text-lg md:text-2xl font-bold text-blue-600 mt-1">
+                        {new Intl.NumberFormat('en-NG', {
+                            style: 'currency',
+                            currency: 'NGN',
+                            maximumFractionDigits: 0,
+                        }).format((transactionData?.meta?.totalVolume || 0) / 100)}
                     </h3>
                 </div>
             </div>
@@ -398,6 +419,52 @@ const TransactionsPage: React.FC = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                )}
+                
+                {/* Pagination Controls */}
+                {!loading && transactionData?.pagination && (
+                    <div className="px-4 md:px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="text-sm text-slate-500">
+                            Showing <span className="font-medium text-slate-900">{((currentPage - 1) * limit) + 1}</span> to <span className="font-medium text-slate-900">{Math.min(currentPage * limit, transactionData.pagination.total)}</span> of <span className="font-medium text-slate-900">{transactionData.pagination.total.toLocaleString()}</span> entries
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, Math.ceil(transactionData.pagination.total / limit)) }, (_, i) => {
+                                    const pageNum = i + 1;
+                                    // Simple logic for showing pages around current page could be added here
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
+                                                ? 'bg-primary-600 text-white'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                                }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                {Math.ceil(transactionData.pagination.total / limit) > 5 && (
+                                    <span className="text-slate-400">...</span>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(transactionData.pagination.total / limit), prev + 1))}
+                                disabled={currentPage >= Math.ceil(transactionData.pagination.total / limit)}
+                                className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

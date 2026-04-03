@@ -1,4 +1,5 @@
 import { Router, Response, Request } from 'express';
+import mongoose from 'mongoose';
 import { User, VirtualAccount, Wallet, Transaction, WebhookLog, FeeRule, RiskRule, SystemSetting, Communication, Dispute } from '../models';
 import { authenticate, AuthenticatedRequest, generateToken, requireAdmin, auditMiddleware } from '../middleware';
 import bcrypt from 'bcryptjs';
@@ -198,24 +199,69 @@ router.get('/audit-logs', async (req: AuthenticatedRequest, res: Response): Prom
  */
 router.get('/stats', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
+        const { year, month } = req.query;
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth();
+        
+        let selectedYear = year ? parseInt(year as string) : currentYear;
+        let selectedMonth = month ? parseInt(month as string) - 1 : currentMonth;
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const startOfYear = new Date(selectedYear, 0, 1);
+        const endOfYear = new Date(selectedYear + 1, 0, 1);
+        const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+        const endOfMonth = new Date(selectedYear, selectedMonth + 1, 1);
 
-        // 1. Transaction Stats (This Month)
-        const monthlyTransactions = await Transaction.find({
-            createdAt: { $gte: startOfMonth },
-            status: 'success'
-        });
+        // 1. Transaction Stats with dynamic filtering and quarterly aggregation
+        const statsAggregation = await Transaction.aggregate([
+            {
+                $match: {
+                    status: 'success',
+                    createdAt: { $gte: startOfYear, $lt: endOfYear }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    // Quarterly Stats
+                    q1Inflow: { $sum: { $cond: [{ $lt: ["$createdAt", new Date(selectedYear, 3, 1)] }, { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] }, 0] } },
+                    q1Outflow: { $sum: { $cond: [{ $lt: ["$createdAt", new Date(selectedYear, 3, 1)] }, { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] }, 0] } },
+                    
+                    q2Inflow: { $sum: { $cond: [{ $and: [{ $gte: ["$createdAt", new Date(selectedYear, 3, 1)] }, { $lt: ["$createdAt", new Date(selectedYear, 6, 1)] }] }, { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] }, 0] } },
+                    q2Outflow: { $sum: { $cond: [{ $and: [{ $gte: ["$createdAt", new Date(selectedYear, 3, 1)] }, { $lt: ["$createdAt", new Date(selectedYear, 6, 1)] }] }, { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] }, 0] } },
+                    
+                    q3Inflow: { $sum: { $cond: [{ $and: [{ $gte: ["$createdAt", new Date(selectedYear, 6, 1)] }, { $lt: ["$createdAt", new Date(selectedYear, 9, 1)] }] }, { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] }, 0] } },
+                    q3Outflow: { $sum: { $cond: [{ $and: [{ $gte: ["$createdAt", new Date(selectedYear, 6, 1)] }, { $lt: ["$createdAt", new Date(selectedYear, 9, 1)] }] }, { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] }, 0] } },
+                    
+                    q4Inflow: { $sum: { $cond: [{ $gte: ["$createdAt", new Date(selectedYear, 9, 1)] }, { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] }, 0] } },
+                    q4Outflow: { $sum: { $cond: [{ $gte: ["$createdAt", new Date(selectedYear, 9, 1)] }, { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] }, 0] } },
 
-        const totalInflow = monthlyTransactions
-            .filter(t => t.type === 'credit')
-            .reduce((sum, t) => sum + t.amount, 0);
+                    // Selected Month Stats
+                    selectedMonthInflow: { $sum: { $cond: [{ $and: [{ $gte: ["$createdAt", startOfMonth] }, { $lt: ["$createdAt", endOfMonth] }] }, { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] }, 0] } },
+                    selectedMonthOutflow: { $sum: { $cond: [{ $and: [{ $gte: ["$createdAt", startOfMonth] }, { $lt: ["$createdAt", endOfMonth] }] }, { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] }, 0] } },
+                    
+                    // Daily Inflow (Only if current day is within selected year/month)
+                    dailyInflow: { $sum: { $cond: [{ $gte: ["$createdAt", today] }, { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] }, 0] } },
+                    dailyOutflow: { $sum: { $cond: [{ $gte: ["$createdAt", today] }, { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] }, 0] } },
 
-        const totalOutflow = monthlyTransactions
-            .filter(t => t.type === 'debit')
-            .reduce((sum, t) => sum + t.amount, 0);
+                    // Yearly Stats
+                    yearlyInflow: { $sum: { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] } },
+                    yearlyOutflow: { $sum: { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] } }
+                }
+            }
+        ]);
+
+        const tStats = statsAggregation[0] || {
+            dailyInflow: 0, dailyOutflow: 0,
+            selectedMonthInflow: 0, selectedMonthOutflow: 0,
+            yearlyInflow: 0, yearlyOutflow: 0,
+            q1Inflow: 0, q1Outflow: 0,
+            q2Inflow: 0, q2Outflow: 0,
+            q3Inflow: 0, q3Outflow: 0,
+            q4Inflow: 0, q4Outflow: 0
+        };
 
         // 2. Pending/Failed/Success Transactions
         const pendingTransactionsCount = await Transaction.countDocuments({ status: 'pending' });
@@ -245,8 +291,26 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response): Promise<v
             success: true,
             data: {
                 transactions: {
-                    totalInflow,
-                    totalOutflow,
+                    // Current/Legacy fields (Reflects selected month)
+                    totalInflow: tStats.selectedMonthInflow,
+                    totalOutflow: tStats.selectedMonthOutflow,
+                    
+                    // Detailed fields
+                    dailyInflow: tStats.dailyInflow,
+                    dailyOutflow: tStats.dailyOutflow,
+                    monthlyInflow: tStats.selectedMonthInflow,
+                    monthlyOutflow: tStats.selectedMonthOutflow,
+                    yearlyInflow: tStats.yearlyInflow,
+                    yearlyOutflow: tStats.yearlyOutflow,
+
+                    // Quarterly Stats
+                    quarters: {
+                        q1: { inflow: tStats.q1Inflow, outflow: tStats.q1Outflow },
+                        q2: { inflow: tStats.q2Inflow, outflow: tStats.q2Outflow },
+                        q3: { inflow: tStats.q3Inflow, outflow: tStats.q3Outflow },
+                        q4: { inflow: tStats.q4Inflow, outflow: tStats.q4Outflow },
+                    },
+
                     successCount: successTransactionsCount,
                     pendingCount: pendingTransactionsCount,
                     failedCount: failedTransactionsCount,
@@ -370,6 +434,56 @@ router.post('/admins', async (req: AuthenticatedRequest, res: Response): Promise
 });
 
 /**
+ * Delete admin
+ * DELETE /api/admin/admins/:id
+ */
+router.delete('/admins/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        // Prevent admin from deleting themselves
+        if (req.user!.id === id) {
+            res.status(403).json({
+                success: false,
+                message: 'You cannot delete your own admin account',
+            });
+            return;
+        }
+
+        const user = await User.findById(id);
+        if (!user || user.role !== 'admin') {
+            res.status(404).json({
+                success: false,
+                message: 'Admin not found',
+            });
+            return;
+        }
+
+        // Prevent deleting super/default admin
+        if (['admin@vtstack.com.ng'].includes(user.email)) {
+            res.status(403).json({
+                success: false,
+                message: 'Cannot delete the master admin account',
+            });
+            return;
+        }
+
+        await User.findByIdAndDelete(id);
+
+        res.json({
+            success: true,
+            message: 'Admin deleted successfully',
+        });
+    } catch (error) {
+        console.error('Delete admin error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete admin',
+        });
+    }
+});
+
+/**
  * Get all tenants (users)
  * GET /api/admin/tenants
  */
@@ -463,12 +577,25 @@ router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Pro
 
         const virtualAccounts = await VirtualAccount.find({ userId: id });
 
+        // Financial Aggregation: Total sum of all transactions for this user
+        const transactionStats = await Transaction.aggregate([
+            { $match: { userId: new mongoose.Types.ObjectId(id), status: 'success' } },
+            { $group: { _id: null, totalAmount: { $sum: "$amount" }, count: { $sum: 1 } } }
+        ]);
+
+        const totalTransactionAmount = transactionStats[0]?.totalAmount || 0;
+        const totalTransactionCount = transactionStats[0]?.count || 0;
+
         res.json({
             success: true,
             data: {
                 user,
                 wallet,
                 virtualAccounts,
+                stats: {
+                    totalTransactionAmount,
+                    totalTransactionCount
+                }
             },
         });
     } catch (error) {
@@ -476,6 +603,49 @@ router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Pro
         res.status(500).json({
             success: false,
             message: 'Failed to get tenant',
+        });
+    }
+});
+
+/**
+ * Impersonate tenant (Login as User)
+ * POST /api/admin/tenants/:id/impersonate
+ */
+router.post('/tenants/:id/impersonate', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id);
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'Tenant not found',
+            });
+            return;
+        }
+
+        // Generate token for the target user (Standard User Token)
+        const token = generateToken(user._id.toString(), user.email);
+
+        res.json({
+            success: true,
+            message: `Session generated for ${user.firstName}`,
+            data: {
+                user: {
+                    _id: user._id,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    role: user.role,
+                },
+                token,
+            },
+        });
+    } catch (error) {
+        console.error('Impersonate tenant error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to impersonate tenant',
         });
     }
 });
@@ -619,8 +789,8 @@ router.get('/virtual-accounts', async (req: AuthenticatedRequest, res: Response)
  */
 router.get('/transactions', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-        const { limit = '50', offset = '0', type, status, category, tenantId } = req.query;
-        console.log('GET /transactions query:', { type, status, category, tenantId });
+        const { limit = '50', offset = '0', type, status, category, tenantId, search } = req.query;
+        console.log('GET /transactions query:', { type, status, category, tenantId, search });
 
         // Fetch admin IDs to exclude
         const admins = await User.find({ role: 'admin' }).select('_id');
@@ -633,6 +803,34 @@ router.get('/transactions', async (req: AuthenticatedRequest, res: Response): Pr
         if (status && status !== 'all') query.status = status;
         if (category && category !== 'all') query.category = category;
         if (tenantId) query.userId = tenantId;
+
+        // Add search filtering
+        if (search) {
+            const searchRegex = new RegExp(search as string, 'i');
+            
+            // Find users matching search for user-based filtering
+            const matchingUsers = await User.find({
+                $or: [
+                    { email: searchRegex },
+                    { firstName: searchRegex },
+                    { lastName: searchRegex },
+                    { businessName: searchRegex }
+                ]
+            }).select('_id');
+            const matchingUserIds = matchingUsers.map(u => u._id);
+
+            query.$or = [
+                { reference: searchRegex },
+                { externalRef: searchRegex },
+                { narration: searchRegex },
+                { userId: { $in: matchingUserIds } }
+            ];
+
+            // If it looks like a number, also try searching the amount
+            if (!isNaN(Number(search))) {
+                query.$or.push({ amount: Number(search) * 100 });
+            }
+        }
 
         const transactions = await Transaction.find(query)
             .populate('userId', 'email firstName lastName businessName')
@@ -863,6 +1061,65 @@ router.get('/fees', async (req: AuthenticatedRequest, res: Response): Promise<vo
             success: false,
             message: 'Failed to get fees',
         });
+    }
+});
+
+/**
+ * Get fee revenue analytics
+ * GET /api/admin/fees/revenue
+ */
+router.get('/fees/revenue', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const now = new Date();
+
+        // Time boundaries
+        const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
+        const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0, 0, 0, 0);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+        const buildRevenuePipeline = (startDate: Date) => [
+            { $match: { status: 'success', createdAt: { $gte: startDate }, category: { $in: ['deposit', 'withdrawal'] } } },
+            {
+                $group: {
+                    _id: '$category',
+                    totalFee: { $sum: '$fee' },
+                    totalVolume: { $sum: '$amount' },
+                    count: { $sum: 1 },
+                }
+            }
+        ];
+
+        const [dayData, weekData, monthData, yearData] = await Promise.all([
+            Transaction.aggregate(buildRevenuePipeline(startOfDay)),
+            Transaction.aggregate(buildRevenuePipeline(startOfWeek)),
+            Transaction.aggregate(buildRevenuePipeline(startOfMonth)),
+            Transaction.aggregate(buildRevenuePipeline(startOfYear)),
+        ]);
+
+        const parseResult = (data: any[]) => {
+            const deposit = data.find((d: any) => d._id === 'deposit') || { totalFee: 0, totalVolume: 0, count: 0 };
+            const withdrawal = data.find((d: any) => d._id === 'withdrawal') || { totalFee: 0, totalVolume: 0, count: 0 };
+            return {
+                payin: { fee: deposit.totalFee, volume: deposit.totalVolume, count: deposit.count },
+                payout: { fee: withdrawal.totalFee, volume: withdrawal.totalVolume, count: withdrawal.count },
+                totalFee: deposit.totalFee + withdrawal.totalFee,
+                totalVolume: deposit.totalVolume + withdrawal.totalVolume,
+            };
+        };
+
+        res.json({
+            success: true,
+            data: {
+                day: parseResult(dayData),
+                week: parseResult(weekData),
+                month: parseResult(monthData),
+                year: parseResult(yearData),
+            }
+        });
+    } catch (error) {
+        console.error('Get fee revenue error:', error);
+        res.status(500).json({ success: false, message: 'Failed to get fee revenue' });
     }
 });
 
@@ -1419,6 +1676,88 @@ router.put('/profile/password', async (req: AuthenticatedRequest, res: Response)
 
 
 /**
+ * Get settlement cron job status
+ * GET /api/admin/settlements/cron/status
+ */
+router.get('/settlements/cron/status', isAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { cronService } = await import('../services/CronService');
+        const status = cronService.getCronStatus();
+        const settings = await SystemSetting.findOne();
+        res.json({
+            success: true,
+            data: {
+                ...status,
+                weekendSettlementEnabled: settings?.globalSettlement?.weekendSettlementEnabled ?? true,
+                globalSettlementEnabled: settings?.globalSettlement?.status ?? false,
+            }
+        });
+    } catch (error) {
+        console.error('Get cron status error:', error);
+        res.status(500).json({ success: false, message: 'Failed to get cron status' });
+    }
+});
+
+/**
+ * Pause settlement cron job
+ * POST /api/admin/settlements/cron/pause
+ */
+router.post('/settlements/cron/pause', isAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { cronService } = await import('../services/CronService');
+        const result = cronService.pauseSettlement();
+        if (!result.success) {
+            res.status(400).json({ success: false, message: result.message });
+            return;
+        }
+        res.json({ success: true, message: result.message });
+    } catch (error) {
+        console.error('Pause cron error:', error);
+        res.status(500).json({ success: false, message: 'Failed to pause cron job' });
+    }
+});
+
+/**
+ * Resume settlement cron job
+ * POST /api/admin/settlements/cron/resume
+ */
+router.post('/settlements/cron/resume', isAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { cronService } = await import('../services/CronService');
+        const result = cronService.resumeSettlement();
+        if (!result.success) {
+            res.status(400).json({ success: false, message: result.message });
+            return;
+        }
+        res.json({ success: true, message: result.message });
+    } catch (error) {
+        console.error('Resume cron error:', error);
+        res.status(500).json({ success: false, message: 'Failed to resume cron job' });
+    }
+});
+
+/**
+ * Update weekend settlement toggle
+ * PATCH /api/admin/settlements/settings
+ */
+router.patch('/settlements/settings', isAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { weekendSettlementEnabled } = req.body;
+        const settings = await SystemSetting.findOne();
+        if (!settings) {
+            res.status(404).json({ success: false, message: 'Settings not found' });
+            return;
+        }
+        settings.globalSettlement.weekendSettlementEnabled = weekendSettlementEnabled;
+        await settings.save();
+        res.json({ success: true, message: 'Settlement settings updated', data: { weekendSettlementEnabled } });
+    } catch (error) {
+        console.error('Update settlement settings error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update settings' });
+    }
+});
+
+/**
  * Manual Trigger Settlement
  * POST /api/admin/settlements/manual-trigger
  */
@@ -1731,7 +2070,7 @@ router.get('/system/cron-status', async (req: AuthenticatedRequest, res: Respons
     try {
         res.json({
             success: true,
-            data: cronService.getStatus()
+            data: cronService.getCronStatus()
         });
     } catch (error) {
         console.error('Get system logic error:', error);

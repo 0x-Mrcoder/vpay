@@ -58,6 +58,8 @@ export interface ISystemSettingDocument extends Document {
         vtpayFeePercent: number;
         bankSettlementFee: number;
         bankSettlementThreshold: number;
+        payoutTierStep: number;
+        payoutTierFeeStep: number;
     };
     deposit: {
         vtpayFeePercent: number;

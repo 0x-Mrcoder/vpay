@@ -3,7 +3,7 @@ import { adminApi, type Admin } from '../../api/client';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, X, Shield, Mail, User, Phone, Lock, RefreshCw, Search } from 'lucide-react';
+import { Plus, X, Shield, Mail, User, Phone, Lock, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { createAdminSchema, type CreateAdminFormData } from '../../schemas/admin';
 
 const AdminsPage: React.FC = () => {
@@ -48,6 +48,18 @@ const AdminsPage: React.FC = () => {
             fetchAdmins();
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to create admin user');
+        }
+    };
+
+    const handleDeleteAdmin = async (id: string, email: string) => {
+        if (window.confirm(`Are you sure you want to delete the admin ${email}? This action cannot be undone.`)) {
+            try {
+                await adminApi.deleteAdmin(id);
+                toast.success('Admin deleted successfully');
+                fetchAdmins();
+            } catch (error: any) {
+                toast.error(error.response?.data?.message || 'Failed to delete admin');
+            }
         }
     };
 
@@ -154,9 +166,18 @@ const AdminsPage: React.FC = () => {
                                             {new Date(admin.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-slate-400 hover:text-primary-600 transition-colors">
-                                                <Shield size={18} />
-                                            </button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button className="text-slate-400 hover:text-primary-600 transition-colors" title="Manage Permissions">
+                                                    <Shield size={18} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDeleteAdmin(admin._id, admin.email)}
+                                                    className="text-slate-400 hover:text-red-600 transition-colors" 
+                                                    title="Delete Admin"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

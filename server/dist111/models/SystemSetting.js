@@ -94,10 +94,12 @@ const SystemSettingSchema = new mongoose_1.Schema({
         },
     },
     payout: {
-        minAmount: { type: Number, default: 10000 }, // 100 Naira
+        minAmount: { type: Number, default: 1000 }, // Min payout ₦1,000
         vtpayFeePercent: { type: Number, default: 0.6 },
-        bankSettlementFee: { type: Number, default: 2500 }, // 25 Naira
+        bankSettlementFee: { type: Number, default: 2500 },
         bankSettlementThreshold: { type: Number, default: 0 },
+        payoutTierStep: { type: Number, default: 2500 }, // Every ₦2,500 increment
+        payoutTierFeeStep: { type: Number, default: 25 }, // ₦25 fee per tier
     },
     deposit: {
         vtpayFeePercent: { type: Number, default: 2.0 }, // Default 2% total fee

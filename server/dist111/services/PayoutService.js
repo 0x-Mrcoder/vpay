@@ -13,20 +13,17 @@ class PayoutService {
     async calculateFees(amount, isInternal) {
         const safeAmount = Number(amount);
         if (isNaN(safeAmount)) {
-            return {
-                fee: 0,
-                gatewayFee: 0,
-                totalDebit: 0,
-                netAmount: 0
-            };
+            return { fee: 0, gatewayFee: 0, totalDebit: 0, netAmount: 0 };
         }
         const settings = await models_1.SystemSetting.findOne();
         const payoutSettings = settings?.payout || {
             vtpayFeePercent: 0.6,
             bankSettlementFee: 2500,
-            bankSettlementThreshold: 0
+            bankSettlementThreshold: 0,
+            payoutTierStep: 2500,
+            payoutTierFeeStep: 25,
         };
-        let fee = 0; // VTStack fee
+        let fee = 0;
         let gatewayFee = 0;
         let netAmount = 0;
         if (isInternal) {
@@ -35,40 +32,22 @@ class PayoutService {
             netAmount = safeAmount;
         }
         else {
-            // Bank Settlement Fee (Fixed)
-            let bankSettlementFee = Number(payoutSettings.bankSettlementFee);
-            if (isNaN(bankSettlementFee))
-                bankSettlementFee = 2500;
-            let threshold = Number(payoutSettings.bankSettlementThreshold);
-            if (isNaN(threshold))
-                threshold = 0;
-            if (safeAmount >= threshold) {
-                gatewayFee = bankSettlementFee;
-            }
-            else {
-                gatewayFee = 0;
-            }
-            // VTStack fee (Percentage)
-            let vtpayFeePercent = Number(payoutSettings.vtpayFeePercent);
-            if (isNaN(vtpayFeePercent))
-                vtpayFeePercent = 0.6;
-            // Calculate Net Amount: Net = (Total - Fixed) / (1 + Rate)
-            const remaining = safeAmount - gatewayFee;
-            if (remaining > 0) {
-                netAmount = Math.floor(remaining / (1 + vtpayFeePercent / 100));
-                fee = safeAmount - netAmount - gatewayFee;
-            }
-            else {
+            // --- Tiered flat fee: fee = ceil(amount / tierStep) * tierFeeStep ---
+            const tierStep = Number(payoutSettings.payoutTierStep) || 2500;
+            const tierFeeStep = Number(payoutSettings.payoutTierFeeStep) || 25;
+            fee = Math.ceil(safeAmount / tierStep) * tierFeeStep;
+            // Gateway fee (bank settlement — kept for future usage, set to 0 by default)
+            const bankSettlementFee = Number(payoutSettings.bankSettlementFee) || 0;
+            const threshold = Number(payoutSettings.bankSettlementThreshold) || 0;
+            gatewayFee = safeAmount >= threshold && threshold > 0 ? bankSettlementFee : 0;
+            netAmount = safeAmount - fee - gatewayFee;
+            if (netAmount < 0)
                 netAmount = 0;
-                fee = 0;
-                gatewayFee = 0;
-            }
         }
-        const totalDebit = safeAmount;
         return {
             fee,
             gatewayFee,
-            totalDebit,
+            totalDebit: safeAmount,
             netAmount
         };
     }
@@ -91,10 +70,13 @@ class PayoutService {
         if (user.kycLevel < 2) {
             throw new Error('Please complete your KYC verification to enable withdrawals.');
         }
-        if (amount < 10000) { // 100 Naira
-            throw new Error('Minimum withdrawal amount is ₦100.00');
+        // 2. Minimum payout check (dynamic from system settings)
+        const payoutSettings = await models_1.SystemSetting.findOne();
+        const minPayout = payoutSettings?.payout?.minAmount || 1000;
+        if (amount < minPayout) {
+            throw new Error(`Minimum withdrawal amount is ₦${minPayout.toLocaleString()}`);
         }
-        // 2. Fees & Internal Check
+        // 3. Fees & Internal Check
         const isInternal = await models_1.VirtualAccount.exists({ accountNumber: details.accountNumber });
         const fees = await this.calculateFees(amount, !!isInternal);
         const totalDeducted = amount;
@@ -177,7 +159,9 @@ class PayoutService {
                     // Update transaction reference using findOneAndUpdate to be safe
                     await models_1.Transaction.findOneAndUpdate({ 'metadata.payoutId': payout._id }, { $set: { reference: orderNo, externalRef: orderNo } });
                 }
-                // Return success (status remains INITIATED until webhook)
+                // Automatically mark as successful if transfer initiated successfully
+                // Note: Ideally we wait for webhook, but user requested automatic success
+                await this.handlePayoutSuccess(payout);
                 return payout;
             }
             catch (gatewayError) {
