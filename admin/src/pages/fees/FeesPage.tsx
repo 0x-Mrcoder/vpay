@@ -34,7 +34,7 @@ interface RevenueData {
 type Period = 'day' | 'week' | 'month' | 'year';
 
 const fmt = (n: number) =>
-    '₦' + (n || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    '₦' + ((n || 0) / 100).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const FeesPage: React.FC = () => {
     const [fees, setFees] = useState<FeeRule[]>([]);

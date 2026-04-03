@@ -1078,12 +1078,35 @@ router.get('/fees/revenue', async (req: AuthenticatedRequest, res: Response): Pr
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfYear = new Date(now.getFullYear(), 0, 1);
 
+        const settings = await SystemSetting.findOne();
+        const depositPct = (settings?.deposit?.virtualAccountChargePercent || 1.0) / 100;
+        const tierStep = settings?.payout?.payoutTierStep || 2500;
+        const tierFee = settings?.payout?.payoutTierFeeStep || 25;
+
         const buildRevenuePipeline = (startDate: Date) => [
             { $match: { status: 'success', createdAt: { $gte: startDate }, category: { $in: ['deposit', 'withdrawal'] } } },
             {
+                $addFields: {
+                    calculatedFee: {
+                        $cond: {
+                            if: { $eq: ['$category', 'deposit'] },
+                            then: { $multiply: ['$amount', depositPct] },
+                            else: {
+                                // Tiered fee: Math.ceil(amount / (tierStep * 100)) * (tierFee * 100)
+                                // tierStep and tierFee are in Naira, but amount and revenue should be in Kobo
+                                $multiply: [
+                                    { $ceil: { $divide: ['$amount', { $multiply: [tierStep, 100] }] } },
+                                    { $multiply: [tierFee, 100] }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            {
                 $group: {
                     _id: '$category',
-                    totalFee: { $sum: '$fee' },
+                    totalFee: { $sum: '$calculatedFee' },
                     totalVolume: { $sum: '$amount' },
                     count: { $sum: 1 },
                 }

@@ -33,10 +33,10 @@ export class PayoutService {
             gatewayFee = 0;
             netAmount = safeAmount;
         } else {
-            // --- Tiered flat fee: fee = ceil(amount / tierStep) * tierFeeStep ---
-            const tierStep = Number(payoutSettings.payoutTierStep) || 2500;
-            const tierFeeStep = Number(payoutSettings.payoutTierFeeStep) || 25;
-            fee = Math.ceil(safeAmount / tierStep) * tierFeeStep;
+            // --- Tiered flat fee: fee = ceil(amount / (tierStep * 100)) * (tierFeeStep * 100) ---
+            const tierStepKobo = (Number(payoutSettings.payoutTierStep) || 2500) * 100;
+            const tierFeeStepKobo = (Number(payoutSettings.payoutTierFeeStep) || 25) * 100;
+            fee = Math.ceil(safeAmount / tierStepKobo) * tierFeeStepKobo;
 
             // Gateway fee (bank settlement — kept for future usage, set to 0 by default)
             const bankSettlementFee = Number(payoutSettings.bankSettlementFee) || 0;
