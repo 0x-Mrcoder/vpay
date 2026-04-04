@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import {
     ArrowRight,
@@ -6,101 +6,18 @@ import {
     Zap,
     Globe,
     CreditCard,
-    CheckCircle,
-    Menu,
-    X,
     Code,
-    Smartphone,
     Terminal,
-    MessageSquare,
-    Mail,
-    MapPin,
-    ChevronRight,
-    Server
+    Server,
+    Send
 } from 'lucide-react';
-import vtpayLogo from '../../assets/logo.png';
+import { Navbar } from '../../components/public/Navbar';
+import { Footer } from '../../components/public/Footer';
 
 export const LandingPage: React.FC = () => {
-    const [isScrolled, setIsScrolled] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
-    const navLinks = [
-        { name: 'About', href: '#about' },
-        { name: 'Features', href: '#features' },
-        { name: 'Pricing', href: '#pricing' },
-        { name: 'Developers', href: '#developers' },
-        { name: 'Contact', href: '#contact' },
-    ];
-
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-primary-100 selection:text-primary-900">
-            {/* Navigation */}
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-lg border-b border-gray-100 py-3' : 'bg-transparent py-5'}`}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between">
-                        <Link to="/" className="flex items-center gap-2 group">
-                            <div className=" rounded-xl shad">
-                                <img src={vtpayLogo} alt="VTStack Logo" className="h-14 w-auto" />
-                            </div>
-                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700"></span>
-                        </Link>
-
-                        {/* Desktop Links */}
-                        <div className="hidden md:flex items-center gap-8">
-                            {navLinks.map((link) => (
-                                <a key={link.name} href={link.href} className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
-                                    {link.name}
-                                </a>
-                            ))}
-                        </div>
-
-                        {/* Desktop Actions */}
-                        <div className="hidden md:flex items-center gap-4">
-                            <Link to="/login" className="text-sm font-bold text-gray-700 hover:text-primary-600 transition-colors">
-                                Log in
-                            </Link>
-                            <Link to="/register" className="px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-bold rounded-full shadow-lg shadow-primary-500/30 hover:shadow-primary-500/40 transform hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-                                Get Started <ArrowRight size={16} />
-                            </Link>
-                        </div>
-
-                        {/* Mobile Menu Button */}
-                        <button className="md:hidden p-2 text-gray-600 hover:text-primary-600 transition-colors" onClick={toggleMenu}>
-                            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Mobile Menu */}
-                {isMenuOpen && (
-                    <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-xl p-4">
-                        <div className="flex flex-col gap-4">
-                            {navLinks.map((link) => (
-                                <a key={link.name} href={link.href} className="text-base font-medium text-gray-600 hover:text-primary-600 py-2" onClick={() => setIsMenuOpen(false)}>
-                                    {link.name}
-                                </a>
-                            ))}
-                            <hr className="border-gray-100" />
-                            <Link to="/login" className="text-center font-bold text-gray-700 py-2" onClick={() => setIsMenuOpen(false)}>
-                                Log in
-                            </Link>
-                            <Link to="/register" className="w-full py-3 bg-primary-600 text-white font-bold rounded-xl shadow-lg shadow-primary-500/30 text-center" onClick={() => setIsMenuOpen(false)}>
-                                Get Started
-                            </Link>
-                        </div>
-                    </div>
-                )}
-            </nav>
+            <Navbar transparent />
 
             {/* Hero Section */}
             <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
@@ -117,10 +34,10 @@ export const LandingPage: React.FC = () => {
                         </div>
                         <h1 className="text-5xl lg:text-7xl font-black text-gray-900 mb-6 leading-tight tracking-tight">
                             The Ultimate Payment <br />
-                            Gateway for <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-primary-700">VTU Business</span>
+                            Gateway for <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-primary-700">Small Businesses</span>
                         </h1>
                         <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-                            Accept payments, manage virtual accounts, and scale your VTU business with
+                            Accept payments, manage virtual accounts, and scale your small business with
                             enterprise-grade payment infrastructure designed for growth.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -136,7 +53,6 @@ export const LandingPage: React.FC = () => {
 
                         <div className="mt-20 pt-10 border-t border-gray-100/50 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Trusted by leading companies</p>
-                            {/* Add logos here if needed */}
                         </div>
                     </div>
                 </div>
@@ -184,13 +100,13 @@ export const LandingPage: React.FC = () => {
                             <span className="text-primary-600 font-bold tracking-wider uppercase text-sm">About Us</span>
                             <h2 className="text-4xl font-black text-gray-900 mt-2 mb-6">Empowering Your Digital Economy</h2>
                             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                                VTStack is more than just a payment gateway. We are the backbone of modern VTU businesses, providing the essential infrastructure needed to process payments, manage virtual accounts, and automate verified transactions.
+                                VTStack is more than just a payment gateway. We are the backbone of modern small businesses, providing the essential infrastructure needed to process payments, manage virtual accounts, and automate verified transactions.
                             </p>
                             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
                                 Whether you're a startup or an enterprise, our platform scales with you, offering robust APIs and intuitive tools to manage your financial flows.
                             </p>
-                            <Link to="/contact" className="text-primary-600 font-bold hover:text-primary-700 flex items-center gap-2 group">
-                                Learn more about our mission <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                            <Link to="/about" className="text-primary-600 font-bold hover:text-primary-700 flex items-center gap-2 group">
+                                Learn more about our mission <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>
                     </div>
@@ -211,7 +127,7 @@ export const LandingPage: React.FC = () => {
                             { icon: CreditCard, title: 'Virtual Accounts', desc: 'Instantly generate dedicated virtual bank accounts for your users to fund their wallets.' },
                             { icon: Zap, title: 'Instant Settlement', desc: 'Receive payments instantly and settle to your bank account without delays.' },
                             { icon: Shield, title: 'Fraud Protection', desc: 'Advanced fraud detection systems to keep your platform and users safe.' },
-                            { icon: Smartphone, title: 'Mobile SDKs', desc: 'Native SDKs for iOS and Android to build seamless mobile experiences.' },
+                            { icon: Send, title: 'Automated Payouts', desc: 'Securely send money to any bank account or wallet with our automated payout system.' },
                             { icon: Server, title: 'Webhooks', desc: 'Real-time notifications for every transaction event on your platform.' },
                             { icon: Terminal, title: 'Developer Tools', desc: 'Comprehensive API documentation, sandboxes, and developer logs.' }
                         ].map((feature, idx) => (
@@ -237,7 +153,6 @@ export const LandingPage: React.FC = () => {
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                        {/* Plan 1 */}
                         <div className="bg-gray-50 border border-gray-200 rounded-3xl p-8 hover:border-primary-300 transition-colors">
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
                             <p className="text-gray-500 text-sm mb-6">Perfect for new businesses.</p>
@@ -246,14 +161,13 @@ export const LandingPage: React.FC = () => {
                                 <span className="text-gray-500 ml-2">/ transaction</span>
                             </div>
                             <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-sm text-gray-600"><CheckCircle size={16} className="text-primary-600" /> Capped at ₦2000</li>
-                                <li className="flex items-center gap-3 text-sm text-gray-600"><CheckCircle size={16} className="text-primary-600" /> Instant Settlement</li>
-                                <li className="flex items-center gap-3 text-sm text-gray-600"><CheckCircle size={16} className="text-primary-600" /> Standard Support</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-600"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Capped at ₦2000</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-600"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Instant Settlement</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-600"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Standard Support</li>
                             </ul>
                             <Link to="/register" className="block w-full py-3 px-4 bg-white border border-gray-200 text-gray-900 font-bold rounded-xl text-center hover:border-primary-500 hover:text-primary-600 transition-colors">Get Started</Link>
                         </div>
 
-                        {/* Plan 2 (Popular) */}
                         <div className="bg-gray-900 text-white rounded-3xl p-8 relative transform md:-translate-y-4 shadow-2xl shadow-primary-500/20 border border-gray-800">
                             <div className="absolute top-0 right-0 bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl">POPULAR</div>
                             <h3 className="text-xl font-bold mb-2">Growth</h3>
@@ -263,15 +177,14 @@ export const LandingPage: React.FC = () => {
                                 <span className="text-gray-400 ml-2">/ transaction</span>
                             </div>
                             <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-sm text-gray-300"><CheckCircle size={16} className="text-primary-500" /> Capped at ₦1500</li>
-                                <li className="flex items-center gap-3 text-sm text-gray-300"><CheckCircle size={16} className="text-primary-500" /> Instant Settlement</li>
-                                <li className="flex items-center gap-3 text-sm text-gray-300"><CheckCircle size={16} className="text-primary-500" /> Priority Support</li>
-                                <li className="flex items-center gap-3 text-sm text-gray-300"><CheckCircle size={16} className="text-primary-500" /> Dedicated Account Manager</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-300"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Capped at ₦1500</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-300"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Instant Settlement</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-300"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Priority Support</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-300"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Dedicated Account Manager</li>
                             </ul>
                             <Link to="/register" className="block w-full py-3 px-4 bg-primary-500 text-white font-bold rounded-xl text-center hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/40">Choose Growth</Link>
                         </div>
 
-                        {/* Plan 3 */}
                         <div className="bg-gray-50 border border-gray-200 rounded-3xl p-8 hover:border-primary-300 transition-colors">
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
                             <p className="text-gray-500 text-sm mb-6">For high volume processing.</p>
@@ -279,9 +192,9 @@ export const LandingPage: React.FC = () => {
                                 <span className="text-4xl font-black text-gray-900">Custom</span>
                             </div>
                             <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-sm text-gray-600"><CheckCircle size={16} className="text-primary-600" /> Volume Discounts</li>
-                                <li className="flex items-center gap-3 text-sm text-gray-600"><CheckCircle size={16} className="text-primary-600" /> 24/7 Dedicated Support</li>
-                                <li className="flex items-center gap-3 text-sm text-gray-600"><CheckCircle size={16} className="text-primary-600" /> Custom Integration</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-600"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Volume Discounts</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-600"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> 24/7 Dedicated Support</li>
+                                <li className="flex items-center gap-3 text-sm text-gray-600"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Custom Integration</li>
                             </ul>
                             <Link to="/contact" className="block w-full py-3 px-4 bg-white border border-gray-200 text-gray-900 font-bold rounded-xl text-center hover:border-primary-500 hover:text-primary-600 transition-colors">Contact Sales</Link>
                         </div>
@@ -335,121 +248,20 @@ export const LandingPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Contact Section */}
-            <section id="contact" className="py-24 bg-primary-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <span className="text-primary-600 font-bold tracking-wider uppercase text-sm">Get in Touch</span>
-                    <h2 className="text-3xl md:text-4xl font-black text-gray-900 mt-3 mb-8">We're here to help</h2>
-
-                    <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                        <div className="bg-white p-8 rounded-2xl shadow-sm">
-                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 mx-auto mb-4">
-                                <MessageSquare size={24} />
-                            </div>
-                            <h3 className="font-bold text-gray-900 mb-2">Live Chat</h3>
-                            <p className="text-gray-500 text-sm mb-4">Chat with our support team.</p>
-                            <Link to="/contact" className="text-primary-600 font-bold text-sm hover:underline">Start Chat</Link>
-                        </div>
-                        <div className="bg-white p-8 rounded-2xl shadow-sm">
-                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 mx-auto mb-4">
-                                <Mail size={24} />
-                            </div>
-                            <h3 className="font-bold text-gray-900 mb-2">Email Support</h3>
-                            <p className="text-gray-500 text-sm mb-4">Get help via email.</p>
-                            <a href="mailto:vtstackltd@gmail.com" className="text-primary-600 font-bold text-sm hover:underline">vtstackltd@gmail.com</a>
-                        </div>
-                        <div className="bg-white p-8 rounded-2xl shadow-sm">
-                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 mx-auto mb-4">
-                                <MapPin size={24} />
-                            </div>
-                            <h3 className="font-bold text-gray-900 mb-2">Office</h3>
-                            <p className="text-gray-500 text-sm mb-4">Visit our HQ.</p>
-                            <span className="text-gray-900 font-medium text-sm">Lagos, Nigeria</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* Powered By Section */}
-            <section className="py-20 bg-gray-900 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20">
-                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary-500 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary-600 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/3"></div>
-                </div>
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-800 border border-gray-700 text-primary-400 font-bold text-xs uppercase tracking-wider mb-8">
-                        <Server size={14} />
-                        Infrastructure Partner
-                    </div>
-
-                    <h2 className="text-3xl md:text-5xl font-black text-white mb-6">
-                        Powered by <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-600">VTfree</span>
-                    </h2>
-
-                    <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                        Built on the robust, scalable, and secure infrastructure of VTfree.
-                        Experience enterprise-grade reliability for your payment flows.
+            <section className="py-20 bg-primary-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 className="text-3xl font-black text-gray-900 mb-6">Powered by VTfree</h2>
+                    <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+                        VTStack is built on the robust, scalable, and secure infrastructure of VTfree. Experience enterprise-grade reliability for your payment flows.
                     </p>
-
-                    <a href="https://vtfree.com.ng/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-8 py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/40 hover:-translate-y-1">
-                        Visit VTfree
-                        <ArrowRight size={20} />
+                    <a href="https://vtfree.com.ng/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-bold text-primary-600 hover:text-primary-700">
+                        Visit VTfree <ArrowRight size={18} />
                     </a>
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="bg-gray-950 text-white pt-20 pb-10 border-t border-gray-900">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-16">
-                        <div className="col-span-2 md:col-span-1">
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="bg-primary-50 p-1.5 rounded-lg">
-                                    <img src={vtpayLogo} alt="VTStack" className="h-15 w-auto " />
-                                </div>
-                            </div>
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                Modern payment infrastructure for the internet economy.
-                            </p>
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-white mb-6">Product</h4>
-                            <ul className="space-y-4 text-sm text-gray-400">
-                                <li><Link to="/features" className="hover:text-primary-500 transition-colors">Features</Link></li>
-                                <li><Link to="/pricing" className="hover:text-primary-500 transition-colors">Pricing</Link></li>
-                                <li><Link to="/api-docs" className="hover:text-primary-500 transition-colors">API Keys</Link></li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-white mb-6">Resources</h4>
-                            <ul className="space-y-4 text-sm text-gray-400">
-                                <li><Link to="/api-docs" className="hover:text-primary-500 transition-colors">Documentation</Link></li>
-                                <li><a href="#" className="hover:text-primary-500 transition-colors">API Reference</a></li>
-                                <li><a href="#" className="hover:text-primary-500 transition-colors">Status</a></li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-white mb-6">Company</h4>
-                            <ul className="space-y-4 text-sm text-gray-400">
-                                <li><Link to="/about" className="hover:text-primary-500 transition-colors">About</Link></li>
-                                <li><Link to="/contact" className="hover:text-primary-500 transition-colors">Contact</Link></li>
-                                <li><a href="#" className="hover:text-primary-500 transition-colors">Terms of Service</a></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                        <p className="text-gray-500 text-sm">© 2025 VTStack Inc. All rights reserved.</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                            <span>Powered by</span>
-                            <a href="https://vtfree.com.ng/" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:text-primary-400 font-bold flex items-center gap-1 transition-colors">
-                                VTfree <ArrowRight size={12} />
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+            <Footer />
         </div>
     );
 };

@@ -1,7 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/Button';
-import { ArrowLeft, Copy, Check, Shield, Globe, Zap, Bell, Menu, X, Server } from 'lucide-react';
+import { 
+    ArrowLeft, 
+    Copy, 
+    Check, 
+    Shield, 
+    Globe, 
+    Zap, 
+    Bell, 
+    Menu, 
+    X, 
+    Server, 
+    AlertCircle, 
+    Lock, 
+    RefreshCcw,
+    Layout,
+    Cpu
+} from 'lucide-react';
 import '../../styles/api-docs.css';
 import vtpayLogo from '../../assets/logo.png';
 
@@ -25,371 +41,386 @@ export const ApiDocs: React.FC = () => {
         }
     }, [isMenuOpen]);
 
-    const CodeBlock = ({ code, id }: { code: string, id: string }) => (
-        <div className="code-block-container border border-primary-100/50 shadow-sm">
-            <button
-                onClick={() => copyToClipboard(code, id)}
-                className="code-block-copy-btn hover:bg-primary-50 text-gray-500 hover:text-primary-600"
-                title="Copy to clipboard"
-            >
-                {copied === id ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
-            </button>
-            <pre className="code-block-pre bg-gray-900 text-gray-100 rounded-xl">
+    const CodeBlock = ({ code, id, method, path }: { code: string, id: string, method?: string, path?: string }) => (
+        <div className="code-block-container border border-primary-100/30">
+            <div className="code-block-header bg-gray-900/50">
+                <div className="flex items-center gap-3">
+                    {method && (
+                        <span className={`method-badge method-${method.toLowerCase()}`}>
+                            {method}
+                        </span>
+                    )}
+                    {path && <span className="text-xs font-mono text-gray-400 font-bold">{path}</span>}
+                    {!method && !path && <span className="text-xs font-mono text-gray-400 font-bold uppercase tracking-widest">Example Request</span>}
+                </div>
+                <button
+                    onClick={() => copyToClipboard(code, id)}
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-primary-docs transition-colors"
+                    title="Copy to clipboard"
+                >
+                    {copied === id ? <Check size={14} className="text-primary-docs" /> : <Copy size={14} />}
+                </button>
+            </div>
+            <pre className="code-block-pre">
                 <code>{code}</code>
             </pre>
         </div>
     );
 
+    const navLinks = [
+        { group: 'Getting Started', links: [
+            { id: 'introduction', name: 'Introduction', icon: Globe },
+            { id: 'quickstart', name: 'Quick Start', icon: Zap },
+            { id: 'authentication', name: 'Authentication', icon: Lock },
+            { id: 'base-url', name: 'Base URL', icon: Server },
+        ]},
+        { group: 'Core Resources', links: [
+            { id: 'create-account', name: 'Create Account', icon: Cpu },
+            { id: 'list-accounts', name: 'Fetch Accounts', icon: Layout },
+            { id: 'get-balance', name: 'Fetch Balance', icon: RefreshCcw },
+        ]},
+        { group: 'Lifecycle', links: [
+            { id: 'webhooks', name: 'Webhooks', icon: Bell },
+            { id: 'errors', name: 'Errors & Retries', icon: AlertCircle },
+            { id: 'best-practices', name: 'Best Practices', icon: Shield },
+        ]}
+    ];
+
     return (
-        <div className="min-h-screen bg-[#FDFDFC]">
+        <div className="min-h-screen bg-white">
             {/* Header */}
-            <header className="api-docs-header bg-white border-b border-gray-200 sticky top-0 z-50">
-                <div className="api-docs-header-content max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <header className="api-docs-header">
+                <div className="api-docs-header-content max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link to="/" className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-primary-600">
-                            <ArrowLeft size={20} />
+                        <Link to="/" className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                            <ArrowLeft size={18} />
                         </Link>
                         <div className="flex items-center gap-3">
                             <img src={vtpayLogo} alt="VTStack API" className="h-8" />
                             <div className="h-6 w-px bg-gray-200 mx-1"></div>
-                            <span className="font-bold text-gray-900 tracking-tight">API Reference</span>
-                            <span className="px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[10px] font-bold uppercase tracking-wider border border-primary-100">v1.0</span>
+                            <span className="font-black text-gray-900 tracking-tight">Docs</span>
+                            <span className="px-2 py-0.5 rounded-md bg-primary-50 text-primary-docs text-[10px] font-black uppercase tracking-wider border border-primary-100">v1.2</span>
                         </div>
                     </div>
-                    <div className="api-docs-header-actions flex items-center gap-4">
+                    <div className="flex items-center gap-4">
                         <div className="hidden md:flex items-center gap-3">
                             <Link to="/login">
-                                <Button variant="ghost" size="sm" className="font-semibold text-gray-600 hover:text-primary-600">Sign In</Button>
+                                <Button variant="ghost" size="sm" className="font-bold text-gray-600">Log In</Button>
                             </Link>
                             <Link to="/register">
-                                <Button size="sm" className="bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-200/50">Get API Keys</Button>
+                                <Button size="sm" className="bg-primary-docs hover:bg-primary-docs-hover text-white font-bold shadow-lg shadow-primary-docs/20">Get API Keys</Button>
                             </Link>
                         </div>
-                        <button className="md:hidden p-2 text-gray-600" onClick={toggleMenu} aria-label="Toggle menu">
+                        <button className="md:hidden p-2 text-gray-600" onClick={toggleMenu}>
                             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
                 </div>
             </header>
 
-            <div className="api-docs-container max-w-7xl mx-auto flex items-start pt-8 pb-20 px-4 gap-12">
+            <div className="api-docs-container max-w-7xl mx-auto">
                 {/* Mobile Backdrop */}
                 {isMenuOpen && (
-                    <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsMenuOpen(false)}></div>
+                    <div className="api-docs-mobile-backdrop md:hidden" onClick={() => setIsMenuOpen(false)}></div>
                 )}
 
                 {/* Sidebar */}
-                <aside className={`fixed md:sticky top-24 left-0 h-[calc(100vh-6rem)] w-64 bg-white md:bg-transparent z-50 transform transition-transform duration-300 md:translate-x-0 overflow-y-auto pr-4 ${isMenuOpen ? 'translate-x-0 p-6 shadow-2xl' : '-translate-x-full md:shadow-none'}`}>
-                    <nav className="space-y-8">
-                        <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-3">Getting Started</p>
-                            <ul className="space-y-1">
-                                <li>
-                                    <a href="#introduction" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                                        <Globe size={16} /> Introduction
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#authentication" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                                        <Shield size={16} /> Authentication
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#base-url" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                                        <Server size={16} /> Base URL
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-3">Virtual Accounts</p>
-                            <ul className="space-y-1">
-                                <li><a href="#create-account" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors ml-4 border-l-2 border-transparent hover:border-primary-300">Create Account</a></li>
-                                <li><a href="#list-accounts" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors ml-4 border-l-2 border-transparent hover:border-primary-300">Fetch Accounts</a></li>
-                                <li><a href="#get-balance" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors ml-4 border-l-2 border-transparent hover:border-primary-300">Fetch Balance</a></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-3">Notifications</p>
-                            <ul className="space-y-1">
-                                <li>
-                                    <a href="#webhooks" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-                                        <Bell size={16} /> Webhooks
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                <aside className={`api-docs-sidebar ${isMenuOpen ? 'mobile-open' : ''}`}>
+                    <nav>
+                        {navLinks.map((group, idx) => (
+                            <div key={idx}>
+                                <p className="api-docs-sidebar-section-title">{group.group}</p>
+                                <ul className="mb-8">
+                                    {group.links.map((link) => (
+                                        <li key={link.id}>
+                                            <a 
+                                                href={`#${link.id}`} 
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className="group"
+                                            >
+                                                <link.icon size={16} className="text-gray-500 group-hover:text-primary-docs" /> {link.name}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
                     </nav>
                 </aside>
 
-                {/* Content */}
-                <main className="flex-1 min-w-0 max-w-3xl pb-20">
-                    <section id="introduction" className="scroll-mt-28 mb-16">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6">Introduction</h2>
-                        <p className="text-gray-600 leading-relaxed mb-6">
-                            Welcome to the VTStack API. This API is dedicated to <strong>Virtual Account Management</strong>.
-                            It allows you to seamlessly create and manage dedicated virtual bank accounts for your customers,
-                            check balances, and retrieve account details.
-                        </p>
-                        <div className="bg-primary-50/50 border border-primary-100 rounded-2xl p-6 flex flex-col md:flex-row gap-4 items-start">
-                            <div className="p-3 bg-white rounded-xl shadow-sm text-primary-600 shrink-0">
-                                <Zap size={24} />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-2">Dedicated Infrastructure</h4>
-                                <p className="text-sm text-gray-600 leading-relaxed">
-                                    VTStack provides robust virtual account infrastructure powered by PalmPay, ensuring high reliability and instant settlements for your fintech applications.
-                                </p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section id="authentication" className="scroll-mt-28 mb-16">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Authentication</h2>
-                        <p className="text-gray-600 mb-6">
-                            Authenticate your requests by including your Secret Key in the <code className="bg-gray-100 px-1.5 py-0.5 rounded text-primary-600 font-mono text-sm border border-gray-200">x-api-key</code> header.
-                        </p>
-                        <CodeBlock
-                            id="auth"
-                            code={`x-api-key: sk_live_xxxxxxxxxxxxxxxxxxxx`}
-                        />
-                        <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
-                            <Shield size={20} className="text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="text-sm font-bold text-amber-900 mb-1">Security Warning</h4>
-                                <p className="text-xs text-amber-800">Never share your secret keys in client-side code or public repositories.</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section id="base-url" className="scroll-mt-28 mb-16">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Base URL</h2>
-                        <p className="text-gray-600 mb-6">All API requests should be made to our production endpoint:</p>
-                        <CodeBlock
-                            id="base-url"
-                            code={`https://api.vtstack.com.ng/api`}
-                        />
-                    </section>
-
-                    <section id="endpoints" className="scroll-mt-28 mb-16">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-8">Virtual Account Endpoints</h2>
-
-                        <div className="space-y-12">
-                            {/* 1. Create Virtual Account */}
-                            <div id="create-account" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transistion-all hover:border-primary-200 hover:shadow-md">
-                                <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold font-mono">POST</span>
-                                        <h3 className="font-bold text-gray-900">Create Virtual Account</h3>
-                                    </div>
-                                    <span className="font-mono text-sm text-gray-500 bg-white px-3 py-1 rounded-lg border border-gray-200">/virtual-accounts</span>
-                                </div>
-
-                                <div className="p-6 md:p-8">
-                                    <p className="text-gray-600 mb-6 text-sm">
-                                        Generate a new dedicated virtual account for a customer.
-                                        The account is automatically assigned to <strong>PalmPay</strong>.
-                                    </p>
-
-                                    <div className="bg-gray-50 rounded-xl p-5 mb-8 border border-gray-200">
-                                        <h4 className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Required Parameters</h4>
-                                        <ul className="space-y-3">
-                                            <li className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                                                <code className="text-primary-600 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">firstName</code>
-                                                <span className="text-gray-600">Customer's first name.</span>
-                                            </li>
-                                            <li className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                                                <code className="text-primary-600 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">lastName</code>
-                                                <span className="text-gray-600">Customer's last name.</span>
-                                            </li>
-                                            <li className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                                                <code className="text-primary-600 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">email</code>
-                                                <span className="text-gray-600">Customer's email address.</span>
-                                            </li>
-                                            <li className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                                                <code className="text-primary-600 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">bvn</code>
-                                                <span className="text-gray-600">11-digit Bank Verification Number.</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-
-                                    <h4 className="text-sm font-bold text-gray-900 mb-3">Request Body</h4>
-                                    <CodeBlock
-                                        id="req-create"
-                                        code={`{
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john.doe@example.com",
-  "phone": "08012345678",
-  "bvn": "12345678901",
-  "identityType": "INDIVIDUAL",
-  "reference": "cust_ref_12345"
-}`}
-                                    />
-
-                                    <h4 className="text-sm font-bold text-gray-900 mt-8 mb-3">Response</h4>
-                                    <CodeBlock
-                                        id="res-create"
-                                        code={`{
-  "success": true,
-  "message": "Virtual account created successfully",
-  "data": {
-    "id": "65a1b2c3d4e5f6g7h8i9j0k1",
-    "accountNumber": "1234567890",
-    "accountName": "John Doe",
-    "alias": "John Doe",
-    "reference": "cust_ref_12345",
-    "bankName": "PalmPay",
-    "status": "active"
-  }
-}`}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* 2. Fetch Virtual Accounts */}
-                            <div id="list-accounts" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transistion-all hover:border-primary-200 hover:shadow-md">
-                                <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold font-mono">GET</span>
-                                        <h3 className="font-bold text-gray-900">Fetch Virtual Accounts</h3>
-                                    </div>
-                                    <span className="font-mono text-sm text-gray-500 bg-white px-3 py-1 rounded-lg border border-gray-200">/virtual-accounts</span>
-                                </div>
-
-                                <div className="p-6 md:p-8">
-                                    <p className="text-gray-600 mb-6 text-sm">Retrieve a list of all virtual accounts created under your API key.</p>
-
-                                    <h4 className="text-sm font-bold text-gray-900 mb-3">Response</h4>
-                                    <CodeBlock
-                                        id="res-list"
-                                        code={`{
-  "success": true,
-  "data": [
-    {
-      "id": "65a1b2c3d4e5f6g7h8i9j0k1",
-      "accountNumber": "1234567890",
-      "accountName": "John Doe",
-      "bankName": "PalmPay",
-      "status": "active",
-      "createdAt": "2024-01-15T10:00:00.000Z"
-    }
-  ]
-}`}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* 3. Fetch Account Balance */}
-                            <div id="get-balance" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transistion-all hover:border-primary-200 hover:shadow-md">
-                                <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold font-mono">GET</span>
-                                        <h3 className="font-bold text-gray-900">Fetch Account Balance</h3>
-                                    </div>
-                                    <span className="font-mono text-sm text-gray-500 bg-white px-3 py-1 rounded-lg border border-gray-200">/virtual-accounts/:accountNumber/balance</span>
-                                </div>
-
-                                <div className="p-6 md:p-8">
-                                    <p className="text-gray-600 mb-6 text-sm">Fetch the current balance of a specific virtual account.</p>
-
-                                    <h4 className="text-sm font-bold text-gray-900 mb-3">Response</h4>
-                                    <CodeBlock
-                                        id="res-balance"
-                                        code={`{
-  "success": true,
-  "data": {
-    "balanceAmount": 0,
-    "availableBalance": 0,
-    "currency": "NGN"
-  }
-}`}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section id="webhooks" className="scroll-mt-28 mb-16">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Webhooks</h2>
-                        <p className="text-gray-600 mb-6 leading-relaxed">
-                            Webhooks allow VTStack to notify your application when events occur, such as when a customer pays into a virtual account.
-                            To receive webhooks, you must provide a URL in your dashboard and implement a listener that can handle POST requests.
-                        </p>
-
-                        <div className="bg-primary-50 border border-primary-100 rounded-2xl p-6 mb-8">
-                            <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Shield size={18} className="text-primary-600" />
-                                Security & Verification
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                Every webhook request from VTStack includes two security headers to ensure the notification is authentic and hasn't been tampered with:
+                {/* Main Content */}
+                <main className="api-docs-main-wrapper font-sans text-gray-900 selection:bg-primary-100">
+                    <div className="api-docs-content">
+                        {/* Introduction */}
+                        <section id="introduction" className="api-docs-section">
+                            <h2>Introduction</h2>
+                            <p>
+                                Welcome to the VTStack API Reference. Our platform provides enterprise-grade infrastructure 
+                                for Virtual Account Management, specifically optimized for small businesses and digital top-up platforms.
                             </p>
-                            <ul className="space-y-4">
-                                <li className="flex gap-3">
-                                    <div className="h-5 w-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">1</div>
-                                    <div>
-                                        <code className="text-xs font-bold text-primary-700 bg-white px-2 py-1 rounded border border-primary-100">X-VTStack-Signature</code>
-                                        <p className="text-xs text-gray-500 mt-1">An HMAC-SHA256 hex digest of the raw JSON request body, signed with your webhook secret. Use this to verify payload integrity.</p>
+                            <p>
+                                With VTStack, you can programmatically create dedicated virtual bank accounts through our partner 
+                                <strong> PalmPay</strong>, enabling instant wallet funding and real-time transaction notifications.
+                            </p>
+                            
+                            <div className="info-box">
+                                <div className="info-box-icon">
+                                    <Cpu size={24} />
+                                </div>
+                                <div className="info-box-content">
+                                    <h4>Developer-First Infrastructure</h4>
+                                    <p>Our APIs are built by engineers, for engineers. We handle the complex banking integration so you can focus on building your product.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Quick Start */}
+                        <section id="quickstart" className="api-docs-section">
+                            <h2>Quick Start</h2>
+                            <p>Go from integration to production in 4 simple steps.</p>
+                            
+                            <div className="grid gap-6 mt-10">
+                                {[
+                                    { step: '01', title: 'Get API Keys', desc: 'Create a developer account and generate your Secret Keys in the dashboard.' },
+                                    { step: '02', title: 'Configure Webhooks', desc: 'Set your webhook URL to receive instant notifications for every deposit.' },
+                                    { step: '03', title: 'Create Virtual Account', desc: 'Use the SDK or API to create accounts for your customers instantly.' },
+                                    { step: '04', title: 'Scale', desc: 'Monitor your transactions and manage your funds via our robust dashboard.' }
+                                ].map((s, idx) => (
+                                    <div key={idx} className="flex gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-primary-docs/30 transition-all">
+                                        <div className="text-2xl font-black text-gray-200 leading-none">{s.step}</div>
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 mb-1">{s.title}</h4>
+                                            <p className="text-sm text-gray-500 mb-0">{s.desc}</p>
+                                        </div>
                                     </div>
-                                </li>
-                                <li className="flex gap-3">
-                                    <div className="h-5 w-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">2</div>
-                                    <div>
-                                        <code className="text-xs font-bold text-primary-700 bg-white px-2 py-1 rounded border border-primary-100">X-VTStack-Secret</code>
-                                        <p className="text-xs text-gray-500 mt-1">A static shared secret string unique to your account. This provides a simple secondary layer of authentication.</p>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Authentication */}
+                        <section id="authentication" className="api-docs-section">
+                            <div className="flex items-center gap-2 mb-4 text-primary-docs">
+                                <Lock size={20} />
+                                <span className="font-bold text-sm tracking-wide uppercase">Security</span>
+                            </div>
+                            <h2>Authentication</h2>
+                            <p>
+                                All API requests require a secret key to be included in the header of your request. 
+                                Your secret keys allow access to your account sensitive operations, so keep them secure.
+                            </p>
+                            
+                            <CodeBlock 
+                                id="auth-code"
+                                code={`// Use the x-api-key header for all requests\nx-api-key: YOUR_SECRET_KEY`}
+                            />
+
+                            <div className="info-box bg-amber-50 border-amber-200">
+                                <div className="info-box-icon text-amber-600 shadow-amber-500/10">
+                                    <Shield size={24} />
+                                </div>
+                                <div className="info-box-content">
+                                    <h4 className="text-amber-900">Protect your Secret Key</h4>
+                                    <p className="text-amber-800 font-medium">Never expose your secret keys in frontend code, mobile apps, or public repositories. Use server-side variables to store them.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Base URL */}
+                        <section id="base-url" className="api-docs-section">
+                            <h2>Base URL</h2>
+                            <p>Our production API endpoint is available at:</p>
+                            <CodeBlock 
+                                id="base-url-code"
+                                code={`https://api.vtstack.com.ng/api`}
+                            />
+                        </section>
+
+                        {/* Endpoints */}
+                        <section id="endpoints" className="api-docs-section">
+                            <h2>Endpoints</h2>
+                            
+                            {/* Create Account */}
+                            <div id="create-account" className="mt-12">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="method-badge method-post">POST</span>
+                                    <h3 className="font-black m-0 tracking-tight">Create Virtual Account</h3>
+                                </div>
+                                <p>Creates a new dedicated virtual bank account (PalmPay) for your customer.</p>
+                                
+                                <div className="docs-table-wrapper">
+                                    <table className="docs-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Parameter</th>
+                                                <th>Type</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="font-mono font-bold text-primary-docs">firstName</td>
+                                                <td>string <span className="text-[10px] text-red-500 font-bold uppercase">(Req)</span></td>
+                                                <td>Standard first name (Matches BVN record).</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="font-mono font-bold text-primary-docs">lastName</td>
+                                                <td>string <span className="text-[10px] text-red-500 font-bold uppercase">(Req)</span></td>
+                                                <td>Standard last name (Matches BVN record).</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="font-mono font-bold text-primary-docs">email</td>
+                                                <td>string <span className="text-[10px] text-red-500 font-bold uppercase">(Req)</span></td>
+                                                <td>Unique email address for the customer.</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="font-mono font-bold text-primary-docs">bvn</td>
+                                                <td>string <span className="text-[10px] text-red-500 font-bold uppercase">(Req)</span></td>
+                                                <td>11-digit BVN for identity verification.</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="font-mono font-bold text-primary-docs">reference</td>
+                                                <td>string</td>
+                                                <td>Your unique internal customer/transaction ID.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <CodeBlock 
+                                    id="create-json"
+                                    method="POST"
+                                    path="/virtual-accounts"
+                                    code={`{\n  "firstName": "Hassan",\n  "lastName": "Ibrahim",\n  "email": "hassan@example.com",\n  "phone": "08012345678",\n  "bvn": "22123456789",\n  "reference": "user_id_102"\n}`}
+                                />
+                            </div>
+
+                            {/* Fetch Accounts */}
+                            <div id="list-accounts" className="mt-20">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="method-badge method-get">GET</span>
+                                    <h3 className="font-black m-0 tracking-tight">Fetch Virtual Accounts</h3>
+                                </div>
+                                <p>Returns a paginated list of all virtual accounts associated with your platform.</p>
+                                <CodeBlock 
+                                    id="list-json"
+                                    method="GET"
+                                    path="/virtual-accounts"
+                                    code={`{\n  "success": true,\n  "data": [\n    {\n      "accountNumber": "8102345678",\n      "accountName": "Hassan Ibrahim",\n      "bankName": "PalmPay",\n      "status": "active"\n    }\n  ]\n}`}
+                                />
+                            </div>
+                        </section>
+
+                        {/* Webhooks */}
+                        <section id="webhooks" className="api-docs-section">
+                            <h2>Webhooks</h2>
+                            <p>
+                                Webhooks are used to notify your server of events. We send a <strong>POST</strong> request 
+                                to your configured URL when a deposit is received.
+                            </p>
+
+                            <div className="info-box">
+                                <div className="info-box-icon">
+                                    <Shield size={24} />
+                                </div>
+                                <div className="info-box-content">
+                                    <h4>Signature Verification</h4>
+                                    <p>Ensure your server validates the <code>X-VTStack-Signature</code> header using your webhook secret to prevent spoofing calls.</p>
+                                </div>
+                            </div>
+
+                            <CodeBlock 
+                                id="webhook-example"
+                                code={`{\n  "event": "transaction.deposit",\n  "data": {\n    "reference": "TXN_7726182",\n    "amount": 5000,\n    "currency": "NGN",\n    "customer": { "name": "Hassan Ibrahim" },\n    "timestamp": "2026-03-20T14:30:00Z"\n  }\n}`}
+                            />
+                        </section>
+
+                        {/* Errors */}
+                        <section id="errors" className="api-docs-section">
+                            <h2>Errors & Handling</h2>
+                            <p>Our API returns standard HTTP status codes. Errors are always returned in a JSON format for easy parsing.</p>
+                            
+                            <div className="docs-table-wrapper">
+                                <table className="docs-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Meaning</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td className="font-bold text-gray-900">400</td>
+                                            <td>Bad Request</td>
+                                            <td>Required parameters are missing or invalid.</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="font-bold text-gray-900">401</td>
+                                            <td>Unauthorized</td>
+                                            <td>Invalid or missing API key.</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="font-bold text-red-600">422</td>
+                                            <td>Validation Error</td>
+                                            <td>BVN verification failed or duplicate account found.</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="font-bold text-gray-900">429</td>
+                                            <td>Too Many Requests</td>
+                                            <td>Your platform has exceeded the rate limit.</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="font-bold text-gray-900">500</td>
+                                            <td>Server Error</td>
+                                            <td>Something went wrong on our end.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        {/* Best Practices */}
+                        <section id="best-practices" className="api-docs-section">
+                            <h2>Best Practices</h2>
+                            <div className="grid md:grid-cols-2 gap-8 mt-10">
+                                <div className="p-8 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary-docs mb-6">
+                                        <Lock size={24} />
                                     </div>
-                                </li>
-                            </ul>
-                        </div>
+                                    <h4 className="font-bold text-gray-900 mb-2">Key Management</h4>
+                                    <p className="text-sm text-gray-500 leading-relaxed mb-0">Never hardcode your API keys. Use environment variables and store them in vault systems like Hashicorp Vault or AWS Secrets Manager.</p>
+                                </div>
+                                <div className="p-8 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary-docs mb-6">
+                                        <RefreshCcw size={24} />
+                                    </div>
+                                    <h4 className="font-bold text-gray-900 mb-2">Idempotency</h4>
+                                    <p className="text-sm text-gray-500 leading-relaxed mb-0">Always use unique <code>reference</code> strings for account creation to avoid creating duplicate accounts for the same user on retries.</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
 
-                        <h4 className="text-sm font-bold text-gray-900 mb-3">Event: <code className="text-primary-600">transaction.deposit</code></h4>
-                        <p className="text-sm text-gray-600 mb-4">Sent when a virtual account is successfully credited via bank transfer.</p>
-
-                        <div className="code-block-container border border-primary-100/50 shadow-sm">
-                            <h4 className="text-primary-400 font-bold px-5 pt-4 text-xs uppercase tracking-widest bg-gray-900 rounded-t-xl mb-0 pb-2">Sample Webhook Payload</h4>
-                            <pre className="code-block-pre rounded-t-none mt-0">
-                                <code>{`{
-  "event": "transaction.deposit",
-  "data": {
-    "reference": "TXN-c8172422-7c64-4a06-81e8-bfaceda84021",
-    "amount": 10000,
-    "currency": "NGN",
-    "status": "success",
-    "customer": {
-      "name": "AMINU MUHAMMAD",
-      "accountNumber": "8100015498"
-    },
-    "virtualAccount": "6654762099",
-    "timestamp": "2026-03-17T12:37:59.997Z"
-  },
-  "timestamp": "2026-03-17T12:38:00.001Z"
-}`}</code>
-                            </pre>
+                    {/* Footer for Docs */}
+                    <div className="max-w-7xl mx-auto px-4 py-20 border-t border-gray-100 bg-white">
+                        <div className="text-center">
+                            <p className="text-gray-400 text-sm font-medium mb-6">Was this documentation helpful?</p>
+                            <div className="flex justify-center gap-4">
+                                <button className="px-6 py-2 rounded-xl border border-gray-200 text-sm font-bold hover:border-primary-docs hover:text-primary-docs transition-all">Yes</button>
+                                <button className="px-6 py-2 rounded-xl border border-gray-200 text-sm font-bold hover:border-primary-docs hover:text-primary-docs transition-all">No</button>
+                            </div>
+                            <div className="mt-12 pt-12 border-t border-gray-50 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <p className="text-xs text-gray-400">© 2026 VTStack Documentation. Powered by VTfree Infrastructure.</p>
+                                <div className="flex gap-8">
+                                    <Link to="/contact" className="text-xs font-bold text-gray-500 hover:text-primary-docs">Support</Link>
+                                    <Link to="/status" className="text-xs font-bold text-gray-500 hover:text-primary-docs">Service Status</Link>
+                                    <a href="#" className="text-xs font-bold text-gray-500 hover:text-primary-docs">GitHub API</a>
+                                </div>
+                            </div>
                         </div>
-
-                        <div className="mt-8 bg-gray-50 rounded-xl p-5 border border-gray-200">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Rules & Best Practices</h4>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li className="flex items-start gap-2">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-primary-400 mt-1.5 shrink-0"></div>
-                                    <span><strong>Acknowledge with 200 OK:</strong> Your server must return a 200 HTTP status code within 10 seconds to acknowledge receipt.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-primary-400 mt-1.5 shrink-0"></div>
-                                    <span><strong>Handle Duplicates:</strong> Webhooks may occasionally be sent more than once. Always use the <code>reference</code> to check for duplicate transactions in your system.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-primary-400 mt-1.5 shrink-0"></div>
-                                    <span><strong>Verify Signatures:</strong> For maximum security, always verify the <code>X-VTStack-Signature</code> header before processing the data.</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </section>
+                    </div>
                 </main>
             </div>
-        </div >
+        </div>
     );
 };

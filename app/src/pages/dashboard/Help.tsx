@@ -255,8 +255,8 @@ export const Help: React.FC = () => {
                                 <Mail size={24} />
                             </div>
                             <h3 className="text-xl font-bold mb-2">Email Support</h3>
-                            <p className="text-primary-100 text-sm mb-6 font-medium">vtstackltd@gmail.com</p>
-                            <a href="mailto:vtstackltd@gmail.com" className="w-full py-3.5 bg-white text-primary-700 font-bold rounded-xl hover:bg-primary-50 transition-all shadow-lg transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                            <p className="text-primary-100 text-sm mb-6 font-medium">vtstackltdng@gmail.com</p>
+                            <a href="mailto:vtstackltdng@gmail.com" className="w-full py-3.5 bg-white text-primary-700 font-bold rounded-xl hover:bg-primary-50 transition-all shadow-lg transform active:scale-95 text-sm flex items-center justify-center gap-2">
                                 Send Email
                                 <Send size={16} />
                             </a>

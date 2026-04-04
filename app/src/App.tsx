@@ -22,6 +22,10 @@ import { ApiDocs } from './pages/public/ApiDocs';
 import { LandingPage } from './pages/public/LandingPage';
 import { Contact } from './pages/public/Contact';
 import { About } from './pages/public/About';
+import { Terms } from './pages/public/Terms';
+import { Privacy } from './pages/public/Privacy';
+import { Status } from './pages/public/Status';
+import { ApiReference } from './pages/public/ApiReference';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -60,6 +64,10 @@ const AppRoutes = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/about" element={<About />} />
       <Route path="/api-docs" element={<ApiDocs />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/status" element={<Status />} />
+      <Route path="/api-reference" element={<ApiReference />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/verify-otp" element={<VerifyOtp />} />
 
