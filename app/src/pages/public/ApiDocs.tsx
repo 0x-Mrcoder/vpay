@@ -16,7 +16,9 @@ import {
     Lock, 
     RefreshCcw,
     Layout,
-    Cpu
+    Cpu,
+    Building,
+    Search
 } from 'lucide-react';
 import '../../styles/api-docs.css';
 import vtpayLogo from '../../assets/logo.png';
@@ -78,6 +80,10 @@ export const ApiDocs: React.FC = () => {
             { id: 'create-account', name: 'Create Account', icon: Cpu },
             { id: 'list-accounts', name: 'Fetch Accounts', icon: Layout },
             { id: 'get-balance', name: 'Fetch Balance', icon: RefreshCcw },
+        ]},
+        { group: 'Bank Verification', links: [
+            { id: 'list-banks', name: 'List Banks', icon: Building },
+            { id: 'verify-bank', name: 'Verify Account', icon: Search },
         ]},
         { group: 'Lifecycle', links: [
             { id: 'webhooks', name: 'Webhooks', icon: Bell },
@@ -306,6 +312,192 @@ export const ApiDocs: React.FC = () => {
                                     method="GET"
                                     path="/virtual-accounts"
                                     code={`{\n  "success": true,\n  "data": [\n    {\n      "accountNumber": "8102345678",\n      "accountName": "Hassan Ibrahim",\n      "bankName": "PalmPay",\n      "status": "active"\n    }\n  ]\n}`}
+                                />
+                            </div>
+                        </section>
+
+                        {/* Bank Verification */}
+                        <section id="bank-verification" className="api-docs-section">
+                            <h2>Bank Verification</h2>
+                            <p>
+                                Use VTStack's Bank Verification API to <strong>resolve and verify bank account details</strong> before 
+                                initiating payouts. This helps prevent failed transfers by confirming the account holder's name 
+                                and validating the account number against the bank.
+                            </p>
+
+                            <div className="info-box">
+                                <div className="info-box-icon">
+                                    <Building size={24} />
+                                </div>
+                                <div className="info-box-content">
+                                    <h4>Why Verify?</h4>
+                                    <p>Always verify a bank account before sending money. This prevents sending funds to the wrong recipient and reduces dispute 
+                                    and chargeback risks. Verification is instant and powered by PalmPay infrastructure.</p>
+                                </div>
+                            </div>
+
+                            {/* List Banks */}
+                            <div id="list-banks" className="mt-12">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="method-badge method-get">GET</span>
+                                    <h3 className="font-black m-0 tracking-tight">List Supported Banks</h3>
+                                </div>
+                                <p>Returns a list of all supported Nigerian banks with their codes. Use the <code>code</code> value when calling the verify endpoint.</p>
+
+                                <CodeBlock 
+                                    id="list-banks-req"
+                                    method="GET"
+                                    path="/banks"
+                                    code={`curl -X GET https://api.vtstack.com.ng/api/banks \\
+  -H "x-api-key: YOUR_SECRET_KEY"`}
+                                />
+
+                                <h4 className="text-sm font-bold text-gray-900 mt-8 mb-3">Success Response</h4>
+                                <CodeBlock 
+                                    id="list-banks-res"
+                                    code={`{
+  "success": true,
+  "data": [
+    { "code": "100033", "name": "PalmPay" },
+    { "code": "044", "name": "Access Bank" },
+    { "code": "058", "name": "Guaranty Trust Bank" },
+    { "code": "033", "name": "United Bank for Africa" },
+    { "code": "057", "name": "Zenith Bank" }
+  ]
+}`}
+                                />
+                            </div>
+
+                            {/* Verify Bank Account */}
+                            <div id="verify-bank" className="mt-20">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="method-badge method-get">GET</span>
+                                    <h3 className="font-black m-0 tracking-tight">Verify Bank Account</h3>
+                                </div>
+                                <p>
+                                    Performs a <strong>Name Enquiry</strong> — resolves an account number to the registered account holder name. 
+                                    Pass the <code>bankCode</code> and <code>accountNumber</code> as query parameters.
+                                </p>
+
+                                <div className="docs-table-wrapper">
+                                    <table className="docs-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Parameter</th>
+                                                <th>Type</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="font-mono font-bold text-primary-docs">bankCode</td>
+                                                <td>string <span className="text-[10px] text-red-500 font-bold uppercase">(Req)</span></td>
+                                                <td>The bank code from the List Banks endpoint (e.g. <code>"044"</code> for Access Bank).</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="font-mono font-bold text-primary-docs">accountNumber</td>
+                                                <td>string <span className="text-[10px] text-red-500 font-bold uppercase">(Req)</span></td>
+                                                <td>The 10-digit NUBAN account number to verify.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <h4 className="text-sm font-bold text-gray-900 mt-8 mb-3">Example Request</h4>
+                                <CodeBlock 
+                                    id="verify-bank-req"
+                                    method="GET"
+                                    path="/banks/verify?bankCode=044&accountNumber=0123456789"
+                                    code={`curl -X GET "https://api.vtstack.com.ng/api/banks/verify?bankCode=044&accountNumber=0123456789" \\
+  -H "x-api-key: YOUR_SECRET_KEY"`}
+                                />
+
+                                <h4 className="text-sm font-bold text-gray-900 mt-8 mb-3">Success Response</h4>
+                                <CodeBlock 
+                                    id="verify-bank-res-success"
+                                    code={`{
+  "success": true,
+  "data": {
+    "accountName": "HASSAN IBRAHIM",
+    "accountNumber": "0123456789",
+    "bankCode": "044"
+  }
+}`}
+                                />
+
+                                <h4 className="text-sm font-bold text-gray-900 mt-8 mb-3">Error Response</h4>
+                                <CodeBlock 
+                                    id="verify-bank-res-error"
+                                    code={`// 400 — Missing parameters
+{
+  "success": false,
+  "message": "bankCode and accountNumber are required"
+}
+
+// 400 — Invalid account
+{
+  "success": false,
+  "message": "Bank resolution failed"
+}`}
+                                />
+
+                                <div className="info-box bg-blue-50 border-blue-200 mt-8">
+                                    <div className="info-box-icon text-blue-600 shadow-blue-500/10">
+                                        <Shield size={24} />
+                                    </div>
+                                    <div className="info-box-content">
+                                        <h4 className="text-blue-900">Integration Tip</h4>
+                                        <p className="text-blue-800 font-medium">
+                                            Always verify the account name with your user before proceeding with a transfer. 
+                                            Display the resolved <code>accountName</code> and ask for explicit confirmation 
+                                            to prevent wrong-account payouts.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Code Examples */}
+                            <div className="mt-20">
+                                <h3 className="font-black tracking-tight mb-6">Full Integration Example</h3>
+                                <p className="mb-6">Here's a complete Node.js example showing how to verify a bank account before initiating a payout:</p>
+                                <CodeBlock 
+                                    id="verify-bank-full-example"
+                                    code={`const axios = require('axios');
+
+const API_KEY = 'sk_live_xxxxxxxxxxxx';
+const BASE_URL = 'https://api.vtstack.com.ng/api';
+
+// Step 1: Get list of supported banks
+async function listBanks() {
+  const { data } = await axios.get(BASE_URL + '/banks', {
+    headers: { 'x-api-key': API_KEY }
+  });
+  console.log('Banks:', data.data);
+  return data.data;
+}
+
+// Step 2: Verify a bank account
+async function verifyAccount(bankCode, accountNumber) {
+  const { data } = await axios.get(BASE_URL + '/banks/verify', {
+    params: { bankCode, accountNumber },
+    headers: { 'x-api-key': API_KEY }
+  });
+
+  if (data.success) {
+    console.log('Account Name:', data.data.accountName);
+    return data.data;
+  } else {
+    throw new Error(data.message);
+  }
+}
+
+// Usage
+(async () => {
+  const banks = await listBanks();
+  // Verify an Access Bank account
+  const account = await verifyAccount('044', '0123456789');
+  console.log('Verified:', account.accountName);
+})();`}
                                 />
                             </div>
                         </section>
