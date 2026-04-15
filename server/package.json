@@ -8,6 +8,7 @@
     "build": "tsc && cp src/config/*.pem dist/config/",
     "start": "node dist/server.js",
     "create-admin": "tsx src/scripts/create-admin.ts",
+    "change-email": "tsx src/scripts/change-email.ts",
     "migrate:payouts": "tsx src/scripts/migratePayouts.ts",
     "test": "echo \"No tests configured\" && exit 0"
   },
