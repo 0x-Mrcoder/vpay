@@ -21,11 +21,8 @@ import { logger } from './utils/logger';
 
 const app: Application = express();
 
-// Security middleware
-app.use(helmet());
-
-// CORS configuration
-app.use(cors({
+// CORS configuration — must come BEFORE helmet so headers are not stripped
+const corsOptions: cors.CorsOptions = {
     origin: [
         'https://vtstack.com.ng',
         'https://admin.vtstack.com.ng',
@@ -36,7 +33,15 @@ app.use(cors({
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-palm-signature', 'x-api-key'],
-}));
+    credentials: true,
+};
+
+// Handle preflight (OPTIONS) requests immediately before any other middleware
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
+
+// Security middleware
+app.use(helmet());
 
 // Rate limiting removed as per user request
 // const limiter = rateLimit({

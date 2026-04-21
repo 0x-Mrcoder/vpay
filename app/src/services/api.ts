@@ -2,10 +2,7 @@ import axios from 'axios';
 
 // Create axios instance
 const api = axios.create({
-    // baseURL: import.meta.env.VITE_API_URL || 'https://vtpayapi.vtfree.com.ng/api',
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
-
-    // VITE_API_URL=
+    baseURL: import.meta.env.VITE_API_URL || 'https://api.vtstack.com.ng/api',
     headers: {
         'Content-Type': 'application/json',
     },
