@@ -15,6 +15,7 @@ import {
     adminRoutes,
     helpRoutes,
 } from './routes';
+import securePayoutRoutes from './routes/securePayoutRoutes';
 import config from './config';
 import { logger } from './utils/logger';
 
@@ -101,6 +102,7 @@ app.use('/api/banks', bankRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/developer', developerRoutes);
 app.use('/api/payout', payoutRoutes);
+app.use('/api/v1/payouts', securePayoutRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/help', helpRoutes);

@@ -13,7 +13,8 @@ import {
     Send,
     ChevronLeft,
     ChevronRight,
-    X
+    X,
+    ShieldCheck
 } from 'lucide-react';
 import vtpayLogo from '../assets/logo.png';
 
@@ -45,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen, isDesk
         { path: '/dashboard/transactions', label: 'Transactions', icon: <History size={20} /> },
         { path: '/dashboard/virtual-accounts', label: 'Virtual Accounts', icon: <CreditCard size={20} /> },
         { path: '/dashboard/payout', label: 'Payout', icon: <Send size={20} /> },
+        { path: '/dashboard/verification', label: 'Verification', icon: <ShieldCheck size={20} /> },
         { path: '/dashboard/developer', label: 'Developer', icon: <Code size={20} /> },
         { path: '/dashboard/settings', label: 'Settings', icon: <Settings size={20} /> },
         { path: '/dashboard/help', label: 'Need Help?', icon: <HelpCircle size={20} /> },

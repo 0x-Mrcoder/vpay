@@ -13,6 +13,7 @@ export interface IUserDocument extends Document {
     identityType?: string; // e.g., 'nin', 'voter', 'passport'
     idCardPath?: string;
     selfiePath?: string;
+    utilityBillPath?: string;
     state?: string;
     lga?: string;
     address?: string;
@@ -24,6 +25,13 @@ export interface IUserDocument extends Document {
     cacDocumentPath?: string;
     // System Fields
     verificationToken?: string; // Added for email verification
+    isPayoutEnabled: boolean;
+    payoutRequestStatus: 'none' | 'pending' | 'approved' | 'rejected';
+    payoutRequestReason?: string;
+    payoutSecretKeyHash?: string;
+    payoutIpWhitelist?: string[];
+    payoutDailyLimit: number;
+    payoutHourlyLimit: number;
     apiKey?: string;
     webhookUrl?: string; // Webhook URL for payment notifications
     webhookActive: boolean;
@@ -101,6 +109,9 @@ const UserSchema = new Schema<IUserDocument>(
         selfiePath: {
             type: String,
         },
+        utilityBillPath: {
+            type: String,
+        },
         state: {
             type: String,
             trim: true,
@@ -140,6 +151,33 @@ const UserSchema = new Schema<IUserDocument>(
             type: String,
             unique: true,
             sparse: true,
+        },
+        isPayoutEnabled: {
+            type: Boolean,
+            default: false,
+        },
+        payoutRequestStatus: {
+            type: String,
+            enum: ['none', 'pending', 'approved', 'rejected'],
+            default: 'none',
+        },
+        payoutRequestReason: {
+            type: String,
+            trim: true,
+        },
+        payoutSecretKeyHash: {
+            type: String,
+        },
+        payoutIpWhitelist: [{
+            type: String,
+        }],
+        payoutDailyLimit: {
+            type: Number,
+            default: 10000000,
+        },
+        payoutHourlyLimit: {
+            type: Number,
+            default: 2000000,
         },
         webhookActive: {
             type: Boolean,

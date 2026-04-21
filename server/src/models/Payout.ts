@@ -13,7 +13,7 @@ export interface IPayoutDocument extends Document {
     reference: string;
     externalRef?: string;
     idempotencyKey?: string;
-    status: 'INITIATED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'MANUAL_REVIEW';
+    status: 'INITIATED' | 'LOCKED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'REVERSED';
     failureReason?: string;
     retryCount: number;
     lastReconciledAt?: Date;
@@ -77,6 +77,8 @@ const PayoutSchema = new Schema<IPayoutDocument>(
         },
         idempotencyKey: {
             type: String,
+            unique: true,
+            sparse: true,
             index: true,
         },
         notifyUrl: {
@@ -84,7 +86,7 @@ const PayoutSchema = new Schema<IPayoutDocument>(
         },
         status: {
             type: String,
-            enum: ['INITIATED', 'PROCESSING', 'COMPLETED', 'FAILED', 'MANUAL_REVIEW'],
+            enum: ['INITIATED', 'LOCKED', 'PROCESSING', 'SUCCESS', 'FAILED', 'REVERSED'],
             default: 'INITIATED',
             index: true,
         },

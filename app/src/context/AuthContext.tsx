@@ -7,6 +7,7 @@ interface User {
     lastName: string;
     phone: string;
     kycLevel: number;
+    kyc_status: 'pending' | 'verified' | 'rejected';
     status: string;
     role: 'user' | 'admin';
     fullName?: string;
@@ -22,6 +23,7 @@ interface User {
     bvn?: string;
     idCardPath?: string;
     selfiePath?: string;
+    utilityBillPath?: string;
 
     // Business Fields
     businessName?: string;
@@ -29,6 +31,11 @@ interface User {
     businessPhone?: string;
     rcNumber?: string;
     cacDocumentPath?: string;
+    isPayoutEnabled?: boolean;
+    payoutRequestStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+    payoutRequestReason?: string;
+    payoutIpWhitelist?: string[];
+    webhookUrl?: string;
 }
 
 interface AuthContextType {
@@ -39,6 +46,7 @@ interface AuthContextType {
     login: (token: string, user: User) => void;
     logout: () => void;
     updateUser: (user: User) => void;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -79,6 +87,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(updatedUser);
     };
 
+    const refreshUser = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const apiUrl = (window as any)._env_?.REACT_APP_API_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiUrl}/api/auth/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                updateUser(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to refresh user profile:', error);
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -89,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 login,
                 logout,
                 updateUser,
+                refreshUser,
             }}
         >
             {children}

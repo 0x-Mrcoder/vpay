@@ -8,7 +8,6 @@ import {
     Webhook,
     Key,
     TrendingUp,
-    ShieldAlert,
     HelpCircle,
     Send,
     Settings,
@@ -17,7 +16,8 @@ import {
     X,
     UserPlus,
     Activity,
-    LogOut
+    LogOut,
+    Bell
 } from 'lucide-react';
 
 interface NavItem {
@@ -69,9 +69,9 @@ const navItems: NavItem[] = [
         icon: <TrendingUp size={20} />,
     },
     {
-        to: '/risk',
-        label: 'Risk & Compliance',
-        icon: <ShieldAlert size={20} />,
+        to: '/notifications',
+        label: 'Notifications',
+        icon: <Bell size={20} />,
     },
     {
         to: '/help',

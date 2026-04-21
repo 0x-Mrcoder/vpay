@@ -37,11 +37,16 @@ export interface Tenant {
     bvn?: string;
     idCardPath?: string;
     selfiePath?: string;
+    utilityBillPath?: string;
     cacDocumentPath?: string;
     kycLevel: number;
     kyc_status: 'pending' | 'verified' | 'rejected';
     status: 'active' | 'inactive' | 'suspended';
     webhookUrl?: string;
+    isPayoutEnabled?: boolean;
+    payoutRequestStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+    payoutRequestReason?: string;
+    payoutIpWhitelist?: string[];
     createdAt: string;
     updatedAt: string;
 }
@@ -114,9 +119,21 @@ export const adminApi = {
         await api.patch(`/admin/tenants/${id}/kyc`, { status });
     },
 
+    approvePayoutRequest: async (id: string): Promise<void> => {
+        await api.post(`/admin/payout/approve/${id}`);
+    },
+
+    rejectPayoutRequest: async (id: string, reason: string): Promise<void> => {
+        await api.post(`/admin/payout/reject/${id}`, { reason });
+    },
+
     impersonateTenant: async (id: string): Promise<any> => {
         const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/impersonate`);
         return response.data.data;
+    },
+    fundTenantWallet: async (id: string, amount: number, reason?: string): Promise<any> => {
+        const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/fund`, { amount, reason });
+        return response.data;
     },
 
     getStats: async (params?: any): Promise<any> => {
@@ -350,6 +367,18 @@ export const adminApi = {
     getAuditLogs: async (params?: any): Promise<{ logs: any[]; pagination: any }> => {
         const response = await api.get<ApiResponse<any>>('/admin/audit-logs', { params });
         return response.data.data;
+    },
+
+    // Notifications
+    getNotifications: async (): Promise<any[]> => {
+        const response = await api.get<ApiResponse<any[]>>('/admin/notifications');
+        return response.data.data || [];
+    },
+    markAllNotificationsRead: async (): Promise<void> => {
+        await api.patch('/admin/notifications/read-all');
+    },
+    markNotificationRead: async (id: string): Promise<void> => {
+        await api.patch(`/admin/notifications/${id}/read`);
     },
 };
 

@@ -3,7 +3,7 @@ import { type Tenant, adminApi } from '../../api/client';
 import Modal from '../common/Modal';
 import Badge from '../common/Badge';
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, FileText, User, CreditCard, Shield, Download } from 'lucide-react';
+import { RefreshCw, FileText, User, CreditCard, Shield, Download, Zap } from 'lucide-react';
 import { downloadFile } from '../../utils/exportUtils';
 import toast from 'react-hot-toast';
 
@@ -26,7 +26,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
     onDelete,
     onSendMessage
 }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc' | 'payout'>('overview');
 
     // Fetch full tenant details (including wallet and stats)
     const { data: detailData, isLoading: loadingDetail } = useQuery({
@@ -46,33 +46,44 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
         enabled: isOpen && activeTab === 'transactions',
     });
 
-    const handleImpersonate = async () => {
-        try {
-            const data = await adminApi.impersonateTenant(tenant._id);
-            const { token } = data;
-            
-            // Direct handover to the user application
-            // We assume the user app is running on localhost:5174 (standard Vite dev sequence)
-            // or we use a relative path if it's the same origin.
-            // For production, this would be the main app domain.
-            const userAppUrl = `http://localhost:5174/auth/handover?token=${token}`;
-            
-            toast.success('Session generated. Opening user account...');
-            window.open(userAppUrl, '_blank');
-        } catch (error) {
-            console.error('Impersonation failed:', error);
-            toast.error('Failed to generate user session');
-        }
-    };
-
     const tabs = [
         { id: 'overview', label: 'Overview', icon: User },
         { id: 'transactions', label: 'Transactions', icon: CreditCard },
         { id: 'kyc', label: 'KYC & Documents', icon: Shield },
+        { id: 'payout', label: 'Payout Access', icon: Zap },
     ] as const;
 
+    const handleApprovePayout = async () => {
+        try {
+            await adminApi.approvePayoutRequest(fullTenant._id);
+            toast.success('Payout request approved successfully');
+            if (fullTenant) {
+               fullTenant.payoutRequestStatus = 'approved';
+               fullTenant.isPayoutEnabled = true;
+            }
+        } catch (error) {
+            toast.error('Failed to approve payout request');
+        }
+    };
+
+    const handleRejectPayout = async () => {
+        const reason = window.prompt("Reason for rejection:");
+        if (reason === null) return;
+        try {
+            await adminApi.rejectPayoutRequest(fullTenant._id, reason);
+            toast.success('Payout request rejected');
+            if (fullTenant) {
+               fullTenant.payoutRequestStatus = 'rejected';
+               fullTenant.isPayoutEnabled = false;
+               fullTenant.payoutRequestReason = reason;
+            }
+        } catch (error) {
+            toast.error('Failed to reject payout request');
+        }
+    };
+
     const formatCurrency = (amount: number) => {
-        // Amount is in base units (kobo/cents), so divide by 100
+        // Amount is in base units (kobo), so divide by 100
         return new Intl.NumberFormat('en-NG', {
             style: 'currency',
             currency: 'NGN',
@@ -152,6 +163,30 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 )}
                             </div>
 
+                            {/* Payout Access Alert (If Pending) */}
+                            {fullTenant.payoutRequestStatus === 'pending' && (
+                                <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center justify-between gap-4 animate-pulse">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                                            <Zap size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-amber-900">Tier 3 (Business) Upgrade Pending</p>
+                                            <p className="text-xs text-amber-700">This tenant has submitted business documents for review.</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setActiveTab('payout');
+                                            handleApprovePayout();
+                                        }}
+                                        className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-colors shadow-sm"
+                                    >
+                                        Approve T3 Now
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Business Information */}
                             <div>
                                 <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -213,21 +248,11 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                             </div>
 
                             {/* Quick Actions */}
-                            <div className="pt-6 border-t border-slate-100 flex flex-wrap gap-3">
-                                <button
-                                    onClick={handleImpersonate}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all text-sm font-bold shadow-lg shadow-slate-200 active:scale-95"
-                                >
-                                    <User size={18} />
-                                    Login as User
-                                </button>
-                                
-                                <div className="h-10 w-px bg-slate-200 mx-1 hidden sm:block"></div>
-
+                            <div className="pt-6 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-3 pb-8">
                                 {fullTenant.status !== 'active' && (
                                     <button
                                         onClick={() => onStatusChange(fullTenant._id, 'active')}
-                                        className="px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium"
+                                        className="px-4 py-2.5 bg-slate-100 text-slate-900 rounded-xl hover:bg-slate-200 transition-colors text-sm font-bold shadow-sm"
                                     >
                                         Activate Account
                                     </button>
@@ -235,22 +260,22 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 {fullTenant.status !== 'suspended' && (
                                     <button
                                         onClick={() => onStatusChange(fullTenant._id, 'suspended')}
-                                        className="px-4 py-2.5 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition-colors text-sm font-medium"
+                                        className="px-4 py-2.5 bg-yellow-50 text-yellow-700 rounded-xl hover:bg-yellow-100 transition-colors text-sm font-bold shadow-sm"
                                     >
                                         Suspend Account
                                     </button>
                                 )}
                                 <button
                                     onClick={() => onSendMessage(fullTenant)}
-                                    className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-medium"
+                                    className="px-4 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors text-sm font-bold shadow-sm"
                                 >
-                                    Send Message
+                                    Message
                                 </button>
                                 <button
                                     onClick={() => onDelete(fullTenant._id)}
-                                    className="px-4 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-medium ml-auto"
+                                    className="px-4 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-bold shadow-sm"
                                 >
-                                    Delete Account
+                                    Delete
                                 </button>
                             </div>
                         </div>
@@ -388,6 +413,35 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                         </div>
                                     )}
 
+                                    {/* Utility Bill */}
+                                    {fullTenant.utilityBillPath && (
+                                        <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
+                                            <div className="w-12 h-12 bg-green-50 rounded overflow-hidden flex items-center justify-center border border-green-100">
+                                                {fullTenant.utilityBillPath.match(/\.(pdf)$/) ? (
+                                                    <FileText size={20} className="text-green-600" />
+                                                ) : (
+                                                    <img src={fullTenant.utilityBillPath} className="w-full h-full object-cover" alt="Utility Bill" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-900 truncate">Utility Bill</p>
+                                                <p className="text-xs text-slate-500">Proof of Address (Nepa/Water)</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <a href={fullTenant.utilityBillPath} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-xs font-medium hover:bg-slate-200">
+                                                    View Full
+                                                </a>
+                                                <button 
+                                                    onClick={() => downloadFile(fullTenant.utilityBillPath!, `Utility_${fullTenant.firstName}_${fullTenant.lastName}`)}
+                                                    className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                                                    title="Download"
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* CAC Document */}
                                     {fullTenant.cacDocumentPath && (
                                         <div className="flex items-center p-3 bg-white rounded-lg border border-slate-200 shadow-sm gap-3">
@@ -436,6 +490,68 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                         Reject KYC
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'payout' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-900">Private Payout API Access</h3>
+                                        <p className="text-sm text-slate-500">Manage tenant's ability to trigger programmatic external payouts.</p>
+                                    </div>
+                                    <Badge variant={fullTenant.payoutRequestStatus === 'approved' ? 'success' : fullTenant.payoutRequestStatus === 'pending' ? 'warning' : 'neutral'}>
+                                        {(fullTenant.payoutRequestStatus || 'none').toUpperCase()}
+                                    </Badge>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide">Status</p>
+                                        <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.isPayoutEnabled ? 'Enabled' : 'Disabled'}</p>
+                                    </div>
+                                    {fullTenant.payoutRequestReason && (
+                                        <div>
+                                            <p className="text-xs text-slate-500 uppercase tracking-wide">Request / Reason</p>
+                                            <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.payoutRequestReason}</p>
+                                        </div>
+                                    )}
+                                    {fullTenant.payoutIpWhitelist && fullTenant.payoutIpWhitelist.length > 0 && (
+                                        <div>
+                                            <p className="text-xs text-slate-500 uppercase tracking-wide">Whitelisted IPs</p>
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                {fullTenant.payoutIpWhitelist.map((ip: string, i: number) => (
+                                                    <span key={i} className="px-2 py-1 bg-white border border-slate-200 rounded text-xs font-mono font-medium text-slate-700">
+                                                        {ip}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-6 mt-6 border-t border-slate-200">
+                                        <div className="flex gap-3">
+                                            {(fullTenant.payoutRequestStatus === 'pending' || fullTenant.payoutRequestStatus === 'rejected') && (
+                                                <button
+                                                    onClick={handleApprovePayout}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                                                >
+                                                    Approve Payout Access
+                                                </button>
+                                            )}
+                                            {(fullTenant.payoutRequestStatus === 'pending' || fullTenant.payoutRequestStatus === 'approved') && (
+                                                <button
+                                                    onClick={handleRejectPayout}
+                                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
+                                                >
+                                                    Revoke / Reject Access
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

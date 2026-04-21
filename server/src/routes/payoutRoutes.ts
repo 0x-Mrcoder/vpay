@@ -35,6 +35,16 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
             return;
         }
 
+        // Enforce maximum payout limit of 299,999 Naira (29,999,900 Kobo)
+        const MAX_LIMIT_KOBO = 29999900;
+        if (amount > MAX_LIMIT_KOBO) {
+            res.status(400).json({
+                success: false,
+                message: `Maximum payout limit is ₦299,999. Please reduce the amount.`,
+            });
+            return;
+        }
+
         // 1. Initiate Payout via Service (handles locking funds and PalmPay call)
         const payout = await payoutService.initiatePayout(userId, amount, {
             bankCode,

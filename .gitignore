@@ -1,3 +1,35 @@
 mongodata/
 mongodb-linux-x86_64-ubuntu2404-8.0.4/
 mongodb-linux-x86_64-ubuntu2404-8.0.4.tgz
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist*/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backups
+backups/
+server/backups/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

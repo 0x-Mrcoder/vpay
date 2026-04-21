@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { User } from '../models';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
-import { emailService } from '../services';
+import { emailService, AdminNotificationService } from '../services';
 import { uploadToCloudinary } from '../services/cloudinary';
 
 const router = Router();
@@ -23,6 +23,7 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
             // Step 3: Document
             idCard, // File path/URL
             selfie,
+            utilityBill,
             nin
         } = req.body;
 
@@ -45,6 +46,7 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
         if (!identityType) missingFields.push('Identity Type');
         if (!idCard) missingFields.push('ID Document');
         if (!selfie) missingFields.push('Selfie');
+        if (!utilityBill) missingFields.push('Utility Bill (Proof of Address)');
         // NIN might be optional if they chose Voter/Passport, but let's keep it if they chose NIN
         if (identityType === 'National ID Card' && !nin) missingFields.push('NIN');
 
@@ -88,6 +90,16 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
             }
         }
 
+        let utilityBillUrl = utilityBill;
+        if (utilityBill && utilityBill.startsWith('data:')) {
+            try {
+                utilityBillUrl = await uploadToCloudinary(utilityBill, `kyc/${user._id}/utility_bill`);
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to upload utility bill image' });
+                return;
+            }
+        }
+
         // Update user KYC details
         user.state = state;
         user.lga = lga;
@@ -96,9 +108,9 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
         user.identityType = identityType;
         user.idCardPath = idCardUrl;
         user.selfiePath = selfieUrl;
+        user.utilityBillPath = utilityBillUrl;
         if (nin) user.nin = nin;
 
-        user.kycLevel = 2; // 2: KYC Submitted (Pending Approval)
         user.kyc_status = 'pending';
 
         await user.save();
@@ -106,6 +118,10 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
         // Notify admins
         emailService.sendKycSubmissionAdminNotification(user, 'KYC').catch(err =>
             console.error('[KYC] Failed to send admin notification:', err)
+        );
+
+        AdminNotificationService.notifyKycSubmission(user, 1).catch(err =>
+            console.error('[KYC] Failed to create admin notification:', err)
         );
 
         res.json({
@@ -130,7 +146,7 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
  */
 router.post('/upgrade-business', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-        const { businessName, businessAddress, businessPhone, rcNumber, cacDocument } = req.body;
+        const { businessName, businessAddress, businessPhone, rcNumber, cacDocument, utilityBill } = req.body;
         const userId = req.user?.id;
 
         if (!userId) {
@@ -159,19 +175,37 @@ router.post('/upgrade-business', authenticate, async (req: AuthenticatedRequest,
             }
         }
 
+        let utilityBillUrl = utilityBill;
+        if (utilityBill && utilityBill.startsWith('data:')) {
+            try {
+                utilityBillUrl = await uploadToCloudinary(utilityBill, `business/${user._id}/utility_bill`);
+            } catch (err) {
+                console.error('Business upgrade utility bill upload error:', err);
+                // Non-blocking but let's try to notify? 
+                // Actually if it's required it should block.
+            }
+        }
+
         user.businessName = businessName;
         user.businessAddress = businessAddress;
         user.businessPhone = businessPhone;
         user.rcNumber = rcNumber;
         user.cacDocumentPath = cacUrl;
-        // Maybe set a flag indicating business upgrade request?
-        // user.upgradeRequest = 'pending'; // If we had such a field
+        if (utilityBillUrl) user.utilityBillPath = utilityBillUrl;
+        
+        // Mark as pending for Payout/Business review
+        user.payoutRequestStatus = 'pending';
+        user.payoutRequestReason = `Business Upgrade: ${businessName}. RC: ${rcNumber}`;
 
         await user.save();
 
         // Notify admins
         emailService.sendKycSubmissionAdminNotification(user, 'Business Upgrade').catch(err =>
             console.error('[KYC] Failed to send admin notification for business upgrade:', err)
+        );
+
+        AdminNotificationService.notifyKycSubmission(user, 3).catch(err =>
+            console.error('[KYC] Failed to create admin notification for business upgrade:', err)
         );
 
         res.json({

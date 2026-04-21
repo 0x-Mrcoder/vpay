@@ -11,7 +11,8 @@ import {
     Search,
     XCircle,
     History,
-    Plus
+    Plus,
+    ShieldAlert
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -285,6 +286,15 @@ export const Payout: React.FC = () => {
         if (name === 'accountNumber') {
             const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
             setTransferData({ ...transferData, [name]: digitsOnly });
+        } else if (name === 'amount') {
+            setTransferData({ ...transferData, [name]: value });
+            const amount = parseFloat(value);
+            const MAX_LIMIT = 299999;
+            if (amount > MAX_LIMIT) {
+                setTransferError(`Maximum payout limit exceeded: ₦${MAX_LIMIT.toLocaleString()}. Please reduce amount or upgrade to Tier 3.`);
+            } else {
+                setTransferError('');
+            }
         } else {
             setTransferData({ ...transferData, [name]: value });
         }
@@ -317,6 +327,13 @@ export const Payout: React.FC = () => {
 
         if (wallet && totalDeducted > wallet.clearedBalanceNaira) {
             setTransferError(`Insufficient balance. Total required: ₦${totalDeducted.toLocaleString()}`);
+            return;
+        }
+
+        // Maximum payout limit check
+        const MAX_PAYOUT_LIMIT = 299999;
+        if (amount > MAX_PAYOUT_LIMIT) {
+            setTransferError(`Maximum payout limit is ₦${MAX_PAYOUT_LIMIT.toLocaleString()}. even if it is 300000.`);
             return;
         }
 
@@ -447,6 +464,22 @@ export const Payout: React.FC = () => {
                             <p className="text-gray-500 text-sm mt-1">Transfer funds to any bank account instantly.</p>
                         </div>
 
+                        {/* Tier Warning */}
+                        {user?.kycLevel && user.kycLevel < 3 && (
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-4 shadow-sm animate-fade-in mb-6">
+                                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 flex-shrink-0">
+                                    <ShieldAlert size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-amber-900 leading-tight">Tier 1 Account Limit Warning</h4>
+                                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                                        As a Tier 1 user, you cannot perform transactions (incoming or payout) over ₦299,999. 
+                                        Please <Link to="/dashboard/verification" className="font-bold underline">Upgrade to Tier 3</Link> to increase your limits and ensure seamless processing.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                             <div className="p-6 md:p-8 space-y-8">
                                 {/* Available Balance Widget */}
@@ -483,7 +516,14 @@ export const Payout: React.FC = () => {
                                 <form onSubmit={handleTransfer} className="space-y-6">
                                     {/* Amount Input */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700">Amount to send</label>
+                                        <div className="flex justify-between items-end">
+                                            <label className="text-sm font-medium text-gray-700">Amount to send</label>
+                                            {parseFloat(transferData.amount) > 299999 && (
+                                                <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100 animate-pulse">
+                                                    MAX LIMIT: ₦299,999
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-xl">₦</span>
                                             <input
@@ -494,7 +534,7 @@ export const Payout: React.FC = () => {
                                                 min="100"
                                                 required
                                                 placeholder="0.00"
-                                                className="w-full pl-10 pr-4 py-4 bg-transparent border border-gray-200 rounded-xl focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all font-semibold text-2xl text-gray-900 placeholder:text-gray-300"
+                                                className={`w-full pl-10 pr-4 py-4 bg-transparent border ${parseFloat(transferData.amount) > 299999 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'} rounded-xl focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all font-semibold text-2xl text-gray-900 placeholder:text-gray-300`}
                                             />
                                         </div>
                                         <div className="flex flex-wrap gap-2">

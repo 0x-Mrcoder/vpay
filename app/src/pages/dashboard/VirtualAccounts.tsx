@@ -175,9 +175,10 @@ export const VirtualAccounts: React.FC = () => {
                         <ShieldAlert size={24} />
                     </div>
                     <div>
-                        <h4 className="text-base font-bold text-amber-900">Verification Required</h4>
+                        <h4 className="text-base font-bold text-amber-900">Tier 1 Account Limit Warning</h4>
                         <p className="text-sm text-amber-800 mt-1 leading-relaxed">
-                            You need to complete Tier 3 verification to create virtual accounts. Please complete your KYC to unlock full features.
+                            As a Tier 1 user, you cannot perform transactions (incoming or payout) over ₦299,999. 
+                            Please complete your Tier 3 verification to unlock higher limits and create new virtual accounts.
                         </p>
                         <Link to="/dashboard/verification" className="inline-flex items-center gap-2 text-xs font-bold text-amber-900 hover:text-amber-700 mt-3 px-4 py-2 bg-white rounded-lg border border-amber-200 transition-colors shadow-sm">
                             Complete Verification

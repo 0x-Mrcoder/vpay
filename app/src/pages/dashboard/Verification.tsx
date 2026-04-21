@@ -7,7 +7,6 @@ import {
     CheckCircle2,
     ShieldCheck,
     Info,
-    Lock,
     User,
     Zap,
     RefreshCw,
@@ -17,18 +16,19 @@ import {
     Hash,
     ChevronRight,
     ChevronLeft,
-    FileText
+    Loader2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { NIGERIAN_STATES } from '../../data/nigeria';
 
 export const Verification: React.FC = () => {
-    const { user, updateUser } = useAuth();
+    const { user, refreshUser } = useAuth();
 
     // Steps: 1 = Personal Info, 2 = Identity, 3 = Documents
     const [step, setStep] = useState(1);
     const [isBusinessUpgrade, setIsBusinessUpgrade] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const [formData, setFormData] = useState({
         // Step 1
@@ -39,11 +39,10 @@ export const Verification: React.FC = () => {
         identityType: user?.identityType || '',
         bvn: user?.bvn || '',
         nin: user?.nin || '',
-        dob: '', // Not strictly needed for backend if we trust NIN/BVN verification, but good for UI
         // Step 3
         idCard: user?.idCardPath || '',
         selfie: user?.selfiePath || '',
-        otherDocs: '',
+        utilityBill: user?.utilityBillPath || '',
 
         // Business Upgrade
         businessName: user?.businessName || '',
@@ -60,11 +59,15 @@ export const Verification: React.FC = () => {
     // Derived state for dropdowns
     const availableLgas = NIGERIAN_STATES.find(s => s.name === formData.state)?.lgas || [];
 
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await refreshUser();
+        setTimeout(() => setIsRefreshing(false), 1000);
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         setError('');
-
-        // Reset LGA if state changes
         if (e.target.name === 'state') {
             setFormData(prev => ({ ...prev, state: e.target.value, lga: '' }));
         }
@@ -95,10 +98,6 @@ export const Verification: React.FC = () => {
                 setError('Please select identity type and enter BVN.');
                 return;
             }
-            if (formData.identityType === 'National ID Card' && !formData.nin) {
-                setError('Please enter your NIN.');
-                return;
-            }
             setStep(3);
         }
     };
@@ -122,20 +121,11 @@ export const Verification: React.FC = () => {
                 nin: formData.nin,
                 identityType: formData.identityType,
                 idCard: formData.idCard,
-                selfie: formData.selfie
+                selfie: formData.selfie,
+                utilityBill: formData.utilityBill
             });
-            if (user) {
-                updateUser({
-                    ...user,
-                    kycLevel: 2,
-                    state: formData.state,
-                    lga: formData.lga,
-                    address: formData.address,
-
-                });
-            }
+            await refreshUser();
         } catch (err: any) {
-            console.error('KYC submission error:', err);
             setError(err.response?.data?.message || 'Failed to submit KYC details.');
         } finally {
             setIsLoading(false);
@@ -154,39 +144,33 @@ export const Verification: React.FC = () => {
                 businessAddress: formData.businessAddress,
                 businessPhone: formData.businessPhone,
                 rcNumber: formData.rcNumber,
-                cacDocument: formData.cacDocument
+                cacDocument: formData.cacDocument,
+                utilityBill: formData.utilityBill
             });
             setSuccessMsg(res.data.message || 'Business upgrade request submitted!');
-            setIsBusinessUpgrade(false); // Close modal/form view
-            if (user) {
-                updateUser({
-                    ...user,
-                    businessName: formData.businessName,
-                    businessAddress: formData.businessAddress,
-                    businessPhone: formData.businessPhone,
-                    rcNumber: formData.rcNumber,
-                    cacDocumentPath: formData.cacDocument
-                });
-            }
+            setIsBusinessUpgrade(false);
+            await refreshUser();
         } catch (err: any) {
-            console.error('Business upgrade error:', err);
             setError(err.response?.data?.message || 'Failed to submit business details.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Render Account Suspended
-    if (user?.status === 'suspended') {
+    // Safety check - if user is not loaded
+    if (!user) return <div className="flex items-center justify-center p-20"><Loader2 className="animate-spin" /></div>;
+
+    // 1. Account Suspended
+    if (user.status === 'suspended') {
         return (
             <div className="max-w-3xl mx-auto p-4 md:p-6 animate-fade-in">
-                <div className="bg-red-50 border border-red-200 rounded-2xl md:rounded-3xl p-6 md:p-10 text-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <AlertCircle size={32} className="text-red-600 md:w-10 md:h-10" />
+                <div className="bg-red-50 border border-red-200 rounded-3xl p-10 text-center">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertCircle size={40} className="text-red-600" />
                     </div>
-                    <h2 className="text-xl md:text-2xl font-black text-red-900 mb-3">Account Suspended</h2>
-                    <p className="text-sm md:text-base text-red-700 max-w-md mx-auto leading-relaxed mb-8">
-                        Your account has been suspended by the administration. You currently have restricted access to VTStack features.
+                    <h2 className="text-2xl font-black text-red-900 mb-3">Account Suspended</h2>
+                    <p className="text-red-700 max-w-md mx-auto leading-relaxed mb-8">
+                        Your account has been suspended by the administration. Please contact support.
                     </p>
                     <Link to="/dashboard/help" className="inline-block px-8 py-3 bg-red-600 text-white rounded-xl font-bold">Contact Support</Link>
                 </div>
@@ -194,170 +178,214 @@ export const Verification: React.FC = () => {
         );
     }
 
-    // Render Verified View (Level 3)
-    if (user?.kycLevel === 3) {
+    // 2. Personal KYC In Review
+    if (user.kyc_status === 'pending' && user.kycLevel < 2) {
+        return (
+            <div className="max-w-3xl mx-auto p-4 md:p-6 animate-fade-in">
+                <div className="bg-white border border-amber-100 rounded-3xl p-12 text-center shadow-xl shadow-amber-50 relative overflow-hidden">
+                    <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Clock size={40} className="text-amber-500" />
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">Verification In Review</h2>
+                    <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                        Our compliance team is reviewing your personal documents. This usually takes 24 hours.
+                    </p>
+                    <div className="bg-gray-50 rounded-xl p-6 text-left max-w-lg mx-auto border border-gray-200">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold text-gray-500 uppercase">Documents Provided</h3>
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">PENDING APPROVAL</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
+                            <div><span className="text-gray-500 block text-xs">ID Type</span> <span className="font-bold">{user.identityType || 'N/A'}</span></div>
+                            <div><span className="text-gray-500 block text-xs">BVN</span> <span className="font-bold">*******{(user.bvn || '').slice(-4)}</span></div>
+                        </div>
+                    </div>
+                    <button onClick={handleRefresh} disabled={isRefreshing} className="mt-6 text-gray-500 text-sm font-bold flex items-center justify-center gap-2 hover:text-gray-700 transition-colors">
+                        <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> {isRefreshing ? 'Checking...' : 'Check Status'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // 3. Fully Verified or Tier 1 Verified
+    if (user.kycLevel >= 2) {
         return (
             <div className="max-w-4xl mx-auto p-4 md:p-8 animate-fade-in space-y-8">
                 {/* Verified Header */}
-                <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-3xl p-8 text-white text-center shadow-xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce-slow border border-white/30">
+                <div className={`rounded-3xl p-8 text-white text-center shadow-xl relative overflow-hidden ${user.kycLevel === 3 ? 'bg-gradient-to-br from-indigo-600 to-indigo-800' : 'bg-gradient-to-br from-primary-600 to-primary-700'}`}>
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6 border border-white/30 shadow-inner">
                         <CheckCircle2 size={40} className="text-white" />
                     </div>
-                    <h2 className="text-3xl font-black mb-2 relative z-10">Verification Complete</h2>
-                    <p className="text-primary-100 max-w-lg mx-auto relative z-10">
-                        Maximize your VTStack experience. You have full access to all features.
+                    <h2 className="text-3xl font-black mb-2 relative z-10">
+                        {user.kycLevel === 3 ? 'Business Verified (T3)' : 'Personal Verified (T1)'}
+                    </h2>
+                    <p className="text-white/80 max-w-lg mx-auto relative z-10 font-medium">
+                        {user.kycLevel === 3 ? 'Your account has full programmatic payout access.' : 'Upgrade to Tier 3 Business to unlock Payout APIs.'}
                     </p>
                 </div>
 
-                {/* Info Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Personal Info Read-only */}
+                    {/* Personal Info */}
                     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <User size={16} /> Personal Information
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <User size={14} /> Personal Information
                         </h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs text-gray-500 font-medium">Full Name</label>
+                                <label className="text-[10px] text-gray-400 font-bold uppercase">Full Name</label>
                                 <p className="font-bold text-gray-900">{user.fullName || `${user.firstName} ${user.lastName}`}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs text-gray-500 font-medium">State</label>
+                                    <label className="text-[10px] text-gray-400 font-bold uppercase">State</label>
                                     <p className="font-bold text-gray-900">{user.state || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-gray-500 font-medium">LGA</label>
+                                    <label className="text-[10px] text-gray-400 font-bold uppercase">LGA</label>
                                     <p className="font-bold text-gray-900">{user.lga || 'N/A'}</p>
                                 </div>
                             </div>
-                            <div>
-                                <label className="text-xs text-gray-500 font-medium">Address</label>
-                                <p className="font-bold text-gray-900">{user.address || 'N/A'}</p>
+                            <div className="pt-2 border-t border-gray-50 flex items-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-widest">
+                                <ShieldCheck size={12} /> Personal Docs Verified
                             </div>
                         </div>
                     </div>
 
-                    {/* Business Info / Upgrade */}
+                    {/* Business Column */}
                     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <Briefcase size={16} /> Business Information
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Briefcase size={14} /> Business Status
                         </h3>
 
-                        {user.businessName ? (
+                        {user.payoutRequestStatus === 'pending' ? (
+                            <div className="flex-1 flex flex-col items-center justify-center text-center py-6 bg-amber-50 rounded-xl border border-amber-100">
+                                <Clock size={40} className="text-amber-400 mb-3 animate-pulse" />
+                                <h4 className="text-amber-900 font-bold text-sm">Business Upgrade Under Review</h4>
+                                <p className="text-amber-700 text-[10px] px-6 mt-1 font-medium leading-relaxed">
+                                    We are verifying your CAC and Business records. Payout access will be enabled once approved.
+                                </p>
+                                <button onClick={handleRefresh} disabled={isRefreshing} className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
+                                    <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} /> Check
+                                </button>
+                            </div>
+                        ) : user.kycLevel === 3 ? (
                             <div className="space-y-4 flex-1">
                                 <div>
-                                    <label className="text-xs text-gray-500 font-medium">Business Name</label>
+                                    <label className="text-[10px] text-gray-400 font-bold uppercase">Business Name</label>
                                     <p className="font-bold text-gray-900">{user.businessName}</p>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-gray-500 font-medium">RC Number</label>
-                                    <p className="font-bold text-gray-900 font-mono">{user.rcNumber}</p>
+                                    <label className="text-[10px] text-gray-400 font-bold uppercase">RC Number</label>
+                                    <p className="font-bold text-gray-900 font-mono italic">{user.rcNumber}</p>
                                 </div>
-                                <div>
-                                    <label className="text-xs text-gray-500 font-medium">Business Address</label>
-                                    <p className="font-bold text-gray-900">{user.businessAddress}</p>
-                                </div>
-                                <div className="pt-4 mt-auto">
-                                    <button
-                                        onClick={() => setIsBusinessUpgrade(true)}
-                                        className="text-primary-600 text-sm font-bold hover:underline flex items-center gap-1"
-                                    >
-                                        Edit Business Details <ChevronRight size={14} />
-                                    </button>
+                                <div className="mt-auto pt-4 flex items-center gap-2 text-indigo-600 text-[10px] font-black uppercase tracking-widest">
+                                    <Zap size={12} /> Payout Access Activated
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
-                                <Building2 size={48} className="text-gray-200 mb-3" />
-                                <p className="text-gray-500 text-sm font-medium mb-4">Upgrade to a business account to increase limits further.</p>
+                            <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
+                                <Building2 size={48} className="text-gray-100 mb-4" />
+                                <p className="text-gray-500 text-sm font-medium mb-6 px-4 leading-relaxed">Accept API payouts and unlock corporate limits.</p>
                                 <button
                                     onClick={() => setIsBusinessUpgrade(true)}
-                                    className="px-6 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-primary-700 transition-colors"
+                                    className="px-8 py-3 bg-primary-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-primary-100 hover:bg-primary-700 transition-all active:scale-95"
                                 >
-                                    Upgrade to Business
+                                    Upgrade to Tier 3
                                 </button>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Business Upgrade Modal */}
+                {/* Business Modal */}
                 {isBusinessUpgrade && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-                        <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                                <h3 className="text-lg font-bold text-gray-900">Business Upgrade</h3>
-                                <button onClick={() => setIsBusinessUpgrade(false)} className="text-gray-400 hover:text-gray-600">
-                                    <span className="text-2xl">&times;</span>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                        <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <div>
+                                    <h3 className="text-lg font-black text-gray-900 tracking-tight">Business Upgrade (T3)</h3>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Corporate verification</p>
+                                </div>
+                                <button onClick={() => setIsBusinessUpgrade(false)} className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 shadow-sm transition-all">
+                                    <span className="text-xl">&times;</span>
                                 </button>
                             </div>
                             <form onSubmit={handleBusinessUpgrade} className="p-6 space-y-5">
                                 {successMsg && (
-                                    <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-center gap-2">
+                                    <div className="p-3 bg-green-50 text-green-700 text-xs rounded-xl flex items-center gap-2">
                                         <CheckCircle2 size={16} /> {successMsg}
                                     </div>
                                 )}
                                 {error && (
-                                    <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-center gap-2">
+                                    <div className="p-3 bg-red-50 text-red-700 text-sm rounded-xl flex items-center gap-2 animate-shake">
                                         <AlertCircle size={16} /> {error}
                                     </div>
                                 )}
 
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Business Name</label>
-                                    <input
-                                        type="text" name="businessName" value={formData.businessName} onChange={handleChange} required
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm"
-                                        placeholder="e.g. VTStack Ventures"
-                                    />
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Registered Business Name</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text" name="businessName" value={formData.businessName} onChange={handleChange} required
+                                            className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm font-medium"
+                                            placeholder="e.g. VTStack Ventures"
+                                        />
+                                        <Building2 size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Based Address</label>
-                                    <textarea
-                                        name="businessAddress" value={formData.businessAddress} onChange={handleChange} required
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm"
-                                        placeholder="Full business address"
-                                        rows={2}
-                                    />
-                                </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Business Phone</label>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">RC Number (CAC)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text" name="rcNumber" value={formData.rcNumber} onChange={handleChange} required
+                                                className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm font-mono font-bold"
+                                                placeholder="RC123456"
+                                            />
+                                            <Hash size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Company Phone</label>
                                         <input
                                             type="tel" name="businessPhone" value={formData.businessPhone} onChange={handleChange} required
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm"
+                                            className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm font-medium"
                                             placeholder="080..."
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 uppercase mb-2">RC Number</label>
-                                        <input
-                                            type="text" name="rcNumber" value={formData.rcNumber} onChange={handleChange} required
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm"
-                                            placeholder="RC123456"
-                                        />
-                                    </div>
                                 </div>
+
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Upload CAC Document</label>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">CAC Certificate (PDF/Image)</label>
                                     <div className="relative">
-                                        <input type="file" name="cacDocument" id="cacDocument" className="hidden" onChange={handleFileChange} accept=".pdf,image/*" />
-                                        <label htmlFor="cacDocument" className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                                        <input type="file" name="cacDocument" id="cacDocument" className="hidden" onChange={handleFileChange} />
+                                        <label htmlFor="cacDocument" className="flex items-center justify-center gap-3 w-full p-4 border-2 border-dashed border-gray-100 rounded-xl hover:bg-slate-50 cursor-pointer transition-all">
                                             {formData.cacDocument && formData.cacDocument.startsWith('data:') ? (
-                                                <div className="w-8 h-8 rounded shrink-0 overflow-hidden">
-                                                    {formData.cacDocument.startsWith('data:image') ? (
-                                                        <img src={formData.cacDocument} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <FileText className="text-primary-600" />
-                                                    )}
-                                                </div>
+                                                <CheckCircle2 className="text-green-500" size={20} />
                                             ) : (
                                                 <Upload size={18} className="text-gray-400" />
                                             )}
-                                            <span className="text-sm text-gray-600 font-medium">
-                                                {formData.cacDocument && formData.cacDocument.startsWith('data:') ? 'Document ready' : 'Click to Upload CAC Cert'}
+                                            <span className="text-xs text-gray-600 font-bold uppercase tracking-wider">
+                                                {formData.cacDocument && formData.cacDocument.startsWith('data:') ? 'CAC Certificate Ready' : 'Upload CAC Document'}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Business Utility Bill</label>
+                                    <div className="relative">
+                                        <input type="file" name="utilityBill" id="bizUtility" className="hidden" onChange={handleFileChange} />
+                                        <label htmlFor="bizUtility" className="flex items-center justify-center gap-3 w-full p-4 border-2 border-dashed border-gray-100 rounded-xl hover:bg-slate-50 cursor-pointer transition-all">
+                                            {formData.utilityBill && formData.utilityBill.startsWith('data:') ? (
+                                                <CheckCircle2 className="text-green-500" size={20} />
+                                            ) : (
+                                                <Upload size={18} className="text-gray-400" />
+                                            )}
+                                            <span className="text-xs text-gray-600 font-bold uppercase tracking-wider">
+                                                {formData.utilityBill && formData.utilityBill.startsWith('data:') ? 'Utility Bill Ready' : 'Upload Utility Bill'}
                                             </span>
                                         </label>
                                     </div>
@@ -365,9 +393,9 @@ export const Verification: React.FC = () => {
 
                                 <button
                                     type="submit" disabled={isLoading}
-                                    className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all shadow-md mt-4"
+                                    className="w-full py-4 bg-gray-900 border-b-4 border-gray-700 text-white rounded-2xl font-black text-sm hover:bg-black transition-all shadow-xl shadow-gray-200 mt-4 active:translate-y-1 active:border-b-0"
                                 >
-                                    {isLoading ? 'Submitting...' : 'Submit Business Details'}
+                                    {isLoading ? 'UPGRADING...' : 'SUBMIT UPGRADE REQUEST'}
                                 </button>
                             </form>
                         </div>
@@ -377,316 +405,165 @@ export const Verification: React.FC = () => {
         );
     }
 
-    // Render KYC Submitted (Level 2)
-    if (user?.kycLevel === 2) {
-        return (
-            <div className="max-w-3xl mx-auto p-4 md:p-6 animate-fade-in">
-                <div className="bg-white border border-amber-100 rounded-2xl md:rounded-3xl p-6 md:p-12 text-center shadow-xl shadow-amber-50 relative overflow-hidden">
-                    <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Clock size={40} className="text-amber-500" />
-                    </div>
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">Verification In Review</h2>
-                    <p className="text-gray-500 mb-8 max-w-md mx-auto">
-                        We are strictly reviewing your documents. This usually takes 24-48 hours. You will be notified once approved.
-                    </p>
-
-                    {/* Read Only Data Preview */}
-                    <div className="bg-gray-50 rounded-xl p-6 text-left max-w-lg mx-auto border border-gray-200">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase">Submitted Information</h3>
-                            <button onClick={() => updateUser({ ...user, kycLevel: 0 })} className="text-xs text-primary-600 font-bold hover:underline">Edit</button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
-                            <div><span className="text-gray-500 block text-xs">Full Name</span> <span className="font-bold">{user.fullName || `${user.firstName} ${user.lastName}`}</span></div>
-                            <div><span className="text-gray-500 block text-xs">State/LGA</span> <span className="font-bold">{user.state} / {user.lga}</span></div>
-                            <div className="col-span-2"><span className="text-gray-500 block text-xs">Address</span> <span className="font-bold">{user.address}</span></div>
-                            <div><span className="text-gray-500 block text-xs">ID Type</span> <span className="font-bold">{user.identityType}</span></div>
-                            <div><span className="text-gray-500 block text-xs">BVN</span> <span className="font-bold">*******{user.bvn?.slice(-4)}</span></div>
-                        </div>
-                    </div>
-                    <button
-                        onClick={async () => {
-                            setIsLoading(true);
-                            try {
-                                const response = await api.get('/auth/profile');
-                                updateUser(response.data.data);
-                            } catch (err) {
-                                console.error('Error refreshing status:', err);
-                            } finally {
-                                setIsLoading(false);
-                            }
-                        }}
-                        className="mt-6 text-gray-500 text-sm font-bold flex items-center justify-center gap-2 hover:text-gray-700"
-                    >
-                        <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Check Status
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // Default: Verification Wizard (Level 0 or 1)
+    // 4. Default: Verification Wizard (Step 1-3)
     return (
-        <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8 pb-10 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-8 pb-20 animate-fade-in">
+            {/* Steps Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+                <div className="absolute right-0 top-0 w-32 h-32 bg-primary-600/5 rounded-full -mr-16 -mt-16"></div>
                 <div>
-                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Complete Your KYC</h1>
-                    <p className="text-sm text-gray-500 mt-1">Unlock higher limits and virtual accounts in 3 simple steps.</p>
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Personal Verification</h1>
+                    <p className="text-sm text-gray-500 mt-1 font-medium italic">Complete Tier 1 verification to unlock Nigerian virtual accounts.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className={`h-2 w-8 rounded-full ${step >= 1 ? 'bg-primary-600' : 'bg-gray-200'}`}></div>
-                    <div className={`h-2 w-8 rounded-full ${step >= 2 ? 'bg-primary-600' : 'bg-gray-200'}`}></div>
-                    <div className={`h-2 w-8 rounded-full ${step >= 3 ? 'bg-primary-600' : 'bg-gray-200'}`}></div>
+                <div className="flex items-center gap-3">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className={`h-2.5 rounded-full transition-all duration-500 ${step >= i ? 'w-10 bg-primary-600 shadow-md shadow-primary-100' : 'w-6 bg-gray-100'}`}></div>
+                    ))}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
-                        {/* Progress Header */}
-                        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-800">
-                                {step === 1 && 'Step 1: Personal Information'}
-                                {step === 2 && 'Step 2: Identity Verification'}
-                                {step === 3 && 'Step 3: Document Upload'}
-                            </h3>
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Step {step} of 3</span>
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/30 flex justify-between items-center font-bold">
+                            <span className="text-gray-900 italic">
+                                {step === 1 && 'Home Address & Location'}
+                                {step === 2 && 'Identity Documents (BVN)'}
+                                {step === 3 && 'Photography & Proof'}
+                            </span>
+                            <span className="text-[10px] text-primary-600 bg-primary-100 px-3 py-1 rounded-full uppercase tracking-tighter">Phase {step}</span>
                         </div>
 
                         <div className="p-8">
                             {error && (
-                                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-fade-in">
-                                    <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
-                                    <p className="text-sm text-red-800 font-bold">{error}</p>
+                                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3 animate-shake">
+                                    <AlertCircle size={20} className="text-red-600 shrink-0" />
+                                    <p className="text-sm text-red-800 font-black">{error}</p>
                                 </div>
                             )}
 
                             <form onSubmit={handleSubmitKYC} className="space-y-6">
-                                {/* STEP 1: Personal Info */}
                                 {step === 1 && (
                                     <div className="space-y-5 animate-fade-in">
                                         <div>
-                                            <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Full Name</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Legal State of Residence</label>
                                             <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={user?.fullName || `${user?.firstName} ${user?.lastName}`}
-                                                    disabled
-                                                    className="w-full pl-12 pr-4 py-3.5 bg-gray-100 rounded-xl border border-gray-200 text-gray-500 font-bold cursor-not-allowed"
-                                                />
-                                                <User className="absolute left-4 top-3.5 text-gray-400" size={18} />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                            <div>
-                                                <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">State of Residence</label>
-                                                <div className="relative">
-                                                    <select
-                                                        name="state"
-                                                        value={formData.state}
-                                                        onChange={handleChange}
-                                                        className="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none appearance-none font-medium text-gray-900"
-                                                    >
-                                                        <option value="">Select State</option>
-                                                        {NIGERIAN_STATES.map(s => (
-                                                            <option key={s.name} value={s.name}>{s.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    <MapPin className="absolute right-4 top-3.5 text-gray-400 pointer-events-none" size={18} />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Local Govt. Area</label>
-                                                <div className="relative">
-                                                    <select
-                                                        name="lga"
-                                                        value={formData.lga}
-                                                        onChange={handleChange}
-                                                        className="w-full pl-4 pr-10 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none appearance-none font-medium text-gray-900"
-                                                        disabled={!formData.state}
-                                                    >
-                                                        <option value="">Select LGA</option>
-                                                        {availableLgas.map(lga => (
-                                                            <option key={lga} value={lga}>{lga}</option>
-                                                        ))}
-                                                    </select>
-                                                    <MapPin className="absolute right-4 top-3.5 text-gray-400 pointer-events-none" size={18} />
-                                                </div>
+                                                <select
+                                                    name="state" value={formData.state} onChange={handleChange}
+                                                    className="w-full pl-4 pr-10 py-4 rounded-2xl border border-gray-100 focus:border-primary-500 outline-none appearance-none font-bold text-gray-900 bg-slate-50 transition-all hover:bg-white"
+                                                >
+                                                    <option value="">Select Resident State</option>
+                                                    {NIGERIAN_STATES.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                                                </select>
+                                                <MapPin className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Residential Address</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Local Government Area (LGA)</label>
+                                            <div className="relative">
+                                                <select
+                                                    name="lga" value={formData.lga} onChange={handleChange}
+                                                    className="w-full pl-4 pr-10 py-4 rounded-2xl border border-gray-100 focus:border-primary-500 outline-none appearance-none font-bold text-gray-900 bg-slate-50 transition-all hover:bg-white"
+                                                    disabled={!formData.state}
+                                                >
+                                                    <option value="">Select LGA</option>
+                                                    {availableLgas.map(lga => <option key={lga} value={lga}>{lga}</option>)}
+                                                </select>
+                                                <MapPin className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Full Residential Address</label>
                                             <textarea
-                                                name="address"
-                                                value={formData.address}
-                                                onChange={handleChange}
-                                                className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary-500 outline-none font-medium text-gray-900 transition-all"
-                                                placeholder="House Number, Street Name"
-                                                rows={3}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">City / Town</label>
-                                            <input
-                                                type="text"
-                                                className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none font-medium text-gray-900"
-                                                placeholder="Enter City"
+                                                name="address" value={formData.address} onChange={handleChange}
+                                                className="w-full p-4 rounded-2xl border border-gray-100 focus:border-primary-500 outline-none font-bold text-gray-900 bg-slate-50 transition-all hover:bg-white placeholder:text-gray-300"
+                                                placeholder="Street Name, Building Number..." rows={3}
                                             />
                                         </div>
                                     </div>
                                 )}
 
-                                {/* STEP 2: Identity */}
                                 {step === 2 && (
-                                    <div className="space-y-5 animate-fade-in">
+                                    <div className="space-y-6 animate-fade-in">
                                         <div>
-                                            <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Identity Type</label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {['National ID Card', 'NIN Slip', 'Voter\'s Card', 'Intl. Passport', 'Driver\'s License'].map(type => (
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">Select Identity Document</label>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {['National ID Card', 'Driver\'s License', 'Voter\'s Card', 'Intl. Passport'].map(type => (
                                                     <label key={type} className={`
-                                                        cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center justify-center text-center text-sm font-bold
-                                                        ${formData.identityType === type
-                                                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                                                            : 'border-gray-100 hover:border-gray-200 text-gray-600'}
+                                                        cursor-pointer p-4 rounded-2xl border-2 flex items-center gap-3 transition-all
+                                                        ${formData.identityType === type ? 'border-primary-600 bg-primary-100 text-primary-900 shadow-md' : 'border-gray-50 hover:border-gray-200 bg-slate-50'}
                                                     `}>
-                                                        <input
-                                                            type="radio"
-                                                            name="identityType"
-                                                            value={type}
-                                                            checked={formData.identityType === type}
-                                                            onChange={handleChange}
-                                                            className="hidden"
-                                                        />
-                                                        {type}
+                                                        <input type="radio" name="identityType" value={type} checked={formData.identityType === type} onChange={handleChange} className="hidden" />
+                                                        <ShieldCheck size={18} className={formData.identityType === type ? 'text-primary-700' : 'text-gray-300'} />
+                                                        <span className="text-xs font-black uppercase">{type}</span>
                                                     </label>
                                                 ))}
                                             </div>
                                         </div>
-
                                         <div>
-                                            <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Bank Verification Number (BVN)</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Bank Verification Number (11-Digits)</label>
                                             <div className="relative">
                                                 <input
-                                                    type="text"
-                                                    name="bvn"
-                                                    value={formData.bvn}
-                                                    onChange={handleChange}
-                                                    placeholder="Enter 11-digit BVN"
-                                                    maxLength={11}
-                                                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none font-mono font-medium"
+                                                    type="text" name="bvn" value={formData.bvn} onChange={handleChange} placeholder="00000000000" maxLength={11}
+                                                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-100 focus:border-primary-500 outline-none font-mono font-black text-lg tracking-widest bg-slate-50"
                                                 />
-                                                <ShieldCheck className="absolute left-4 top-3.5 text-gray-400" size={18} />
+                                                <Hash className="absolute left-4 top-4.5 text-gray-400" size={20} />
                                             </div>
-                                            <p className="text-[10px] text-gray-400 mt-1">We only use this to verify your full name and date of birth.</p>
                                         </div>
-
-                                        {(formData.identityType === 'National ID Card' || formData.identityType === 'NIN Slip') && (
-                                            <div>
-                                                <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">NIN Number</label>
-                                                <div className="relative">
-                                                    <input
-                                                        type="text"
-                                                        name="nin"
-                                                        value={formData.nin}
-                                                        onChange={handleChange}
-                                                        placeholder="Enter 11-digit NIN"
-                                                        maxLength={11}
-                                                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none font-mono font-medium"
-                                                    />
-                                                    <Hash className="absolute left-4 top-3.5 text-gray-400" size={18} />
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
 
-                                {/* STEP 3: Documents */}
                                 {step === 3 && (
                                     <div className="space-y-6 animate-fade-in">
-                                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
-                                            <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={18} />
-                                            <div>
-                                                <h4 className="text-sm font-bold text-blue-900">Document Requirements</h4>
-                                                <ul className="text-xs text-blue-800 mt-1 space-y-1 list-disc pl-4">
-                                                    <li>Upload a clear picture of your {formData.identityType || 'ID Document'}.</li>
-                                                    <li>Ensure all corners are visible.</li>
-                                                    <li>Max file size: 5MB. Formats: JPG, PNG.</li>
-                                                </ul>
-                                            </div>
+                                        <div className="bg-primary-50 border border-primary-100 p-5 rounded-2xl flex items-start gap-4">
+                                            <Info size={24} className="text-primary-600 shrink-0" />
+                                            <p className="text-xs text-primary-900 font-medium leading-relaxed italic">
+                                                "Ensure your selfie matches the ID card you provide. Images must be clear without glare or shadows."
+                                            </p>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Upload {formData.identityType}</label>
-                                            <div className="relative">
-                                                <input type="file" name="idCard" id="idCard" className="hidden" onChange={handleFileChange} accept="image/*" required />
-                                                <label htmlFor="idCard" className="flex flex-col items-center justify-center w-full p-10 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-50 cursor-pointer transition-all">
-                                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                                                        {formData.idCard && formData.idCard.startsWith('data:') ? (
-                                                            <img src={formData.idCard} className="w-full h-full object-cover rounded-full" alt="ID Preview" />
-                                                        ) : (
-                                                            <Upload size={24} className="text-gray-400" />
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm font-bold text-gray-600">
-                                                        {formData.idCard && formData.idCard.startsWith('data:') ? 'Image selected' : 'Click to Upload Image'}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400 mt-1">Supported: JPG, PNG</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Identity Card Image</label>
+                                                <input type="file" name="idCard" id="idCard" className="hidden" onChange={handleFileChange} />
+                                                <label htmlFor="idCard" className="flex flex-col items-center justify-center p-8 bg-slate-50 border-2 border-dashed border-gray-100 rounded-3xl cursor-pointer hover:bg-white transition-all overflow-hidden group">
+                                                    {formData.idCard ? <CheckCircle2 className="text-green-500 mb-2" /> : <Upload className="text-gray-300 mb-2 group-hover:text-primary-400 transition-colors" />}
+                                                    <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500">{formData.idCard ? 'Selected' : 'Click to Upload'}</span>
                                                 </label>
                                             </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Upload Selfie Image</label>
-                                            <div className="relative">
-                                                <input type="file" name="selfie" id="selfie" className="hidden" onChange={handleFileChange} accept="image/*" required />
-                                                <label htmlFor="selfie" className="flex flex-col items-center justify-center w-full p-10 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-50 cursor-pointer transition-all">
-                                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                                                        {formData.selfie && formData.selfie.startsWith('data:') ? (
-                                                            <img src={formData.selfie} className="w-full h-full object-cover rounded-full" alt="Selfie Preview" />
-                                                        ) : (
-                                                            <User size={24} className="text-gray-400" />
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm font-bold text-gray-600">
-                                                        {formData.selfie && formData.selfie.startsWith('data:') ? 'Selfie captured' : 'Click to Upload Selfie'}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400 mt-1">Supported: JPG, PNG</p>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Live Selfie Photo</label>
+                                                <input type="file" name="selfie" id="selfie" className="hidden" onChange={handleFileChange} />
+                                                <label htmlFor="selfie" className="flex flex-col items-center justify-center p-8 bg-slate-50 border-2 border-dashed border-gray-100 rounded-3xl cursor-pointer hover:bg-white transition-all overflow-hidden group">
+                                                    {formData.selfie ? <CheckCircle2 className="text-green-500 mb-2" /> : <User className="text-gray-300 mb-2 group-hover:text-primary-400 transition-colors" />}
+                                                    <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500">{formData.selfie ? 'Selected' : 'Click to Upload'}</span>
                                                 </label>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Navigation Actions */}
-                                <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+                                <div className="pt-8 mt-10 border-t border-gray-50 flex items-center justify-between">
                                     {step > 1 ? (
-                                        <button
-                                            type="button"
-                                            onClick={handleBack}
-                                            className="px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors flex items-center gap-2"
-                                        >
-                                            <ChevronLeft size={18} /> Back
+                                        <button type="button" onClick={handleBack} className="flex items-center gap-2 text-sm font-black text-gray-400 hover:text-gray-900 transition-colors">
+                                            <ChevronLeft size={20} /> PREVIOUS
                                         </button>
-                                    ) : (
-                                        <div></div>
-                                    )}
+                                    ) : <div />}
 
                                     {step < 3 ? (
                                         <button
-                                            type="button"
-                                            onClick={handleNext}
-                                            className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-2"
+                                            type="button" onClick={handleNext}
+                                            className="px-10 py-4 bg-gray-900 border-b-4 border-gray-700 text-white rounded-2xl font-black text-sm hover:shadow-xl transition-all flex items-center gap-3 active:translate-y-1 active:border-b-0"
                                         >
-                                            Next Step <ChevronRight size={18} />
+                                            PROCEED <ChevronRight size={20} />
                                         </button>
                                     ) : (
                                         <button
-                                            type="submit"
-                                            disabled={isLoading || !formData.idCard}
-                                            className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold shadow-lg shadow-green-200 hover:bg-green-700 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                            type="submit" disabled={isLoading || !formData.idCard || !formData.selfie}
+                                            className="px-10 py-4 bg-primary-600 border-b-4 border-primary-800 text-white rounded-2xl font-black text-sm shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 disabled:opacity-50 active:translate-y-1 active:border-b-0"
                                         >
-                                            {isLoading ? <RefreshCw className="animate-spin" /> : <CheckCircle2 />}
-                                            Submit Verification
+                                            {isLoading ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+                                            FINALIZE VERIFICATION
                                         </button>
                                     )}
                                 </div>
@@ -695,30 +572,27 @@ export const Verification: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sidebar Info */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                        <h4 className="font-bold text-gray-900 mb-4">Why Verify?</h4>
-                        <ul className="space-y-4">
-                            <li className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0 text-green-600">
-                                    <Zap size={16} />
-                                </div>
-                                <p className="text-xs text-gray-500 leading-relaxed font-medium">Activate live payments and start accepting real money from customers.</p>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600">
-                                    <Building2 size={16} />
-                                </div>
-                                <p className="text-xs text-gray-500 leading-relaxed font-medium">Create dedicated virtual account numbers for your business.</p>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 text-purple-600">
-                                    <Lock size={16} />
-                                </div>
-                                <p className="text-xs text-gray-500 leading-relaxed font-medium">Remove transaction limits and withdraw funds instantly.</p>
-                            </li>
-                        </ul>
+                {/* Sidebar Column */}
+                <div className="space-y-6">
+                    <div className="bg-indigo-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl">
+                        <Zap className="absolute -right-4 -top-4 text-white/10" size={120} />
+                        <h4 className="text-xl font-black mb-4 flex items-center gap-2">
+                            Full Control
+                        </h4>
+                        <div className="space-y-5">
+                            <div className="flex gap-4">
+                                <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center text-xs font-black">1</div>
+                                <p className="text-xs text-indigo-100 font-medium leading-relaxed italic">"Get unlimited virtual accounts."</p>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center text-xs font-black">2</div>
+                                <p className="text-xs text-indigo-100 font-medium leading-relaxed italic">"Withdraw to 100+ Banks."</p>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center text-xs font-black">3</div>
+                                <p className="text-xs text-indigo-100 font-medium leading-relaxed italic">"Access REST API keys."</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

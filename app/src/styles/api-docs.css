@@ -323,3 +323,56 @@
         gap: 1rem;
     }
 }
+
+/* Step Integration Cards */
+.step-card {
+    position: relative;
+    padding-left: 1rem;
+    border-left: 2px solid var(--docs-border);
+}
+
+.step-card-header {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.step-number {
+    width: 2.75rem;
+    height: 2.75rem;
+    background: var(--docs-sidebar-bg);
+    color: white;
+    font-weight: 900;
+    font-size: 1.125rem;
+    border-radius: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    border: 2px solid white;
+}
+
+.step-card h3 {
+    margin: 0 !important;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--docs-text-heading);
+}
+
+.step-card p {
+    margin-top: 0.35rem !important;
+    margin-bottom: 0 !important;
+    font-size: 0.9375rem;
+    color: var(--docs-text-main);
+    line-height: 1.6;
+}
+
+.step-card:hover {
+    border-left-color: var(--primary-docs);
+}
+
+.step-card .code-block-container {
+    margin-top: 1.5rem;
+}

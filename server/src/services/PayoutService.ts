@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Wallet, Payout, Transaction, User, VirtualAccount, SystemSetting } from '../models';
 import { emailService } from './EmailService';
 import { palmPayService } from './PalmPayService';
+import { AdminNotificationService } from './AdminNotificationService';
 import { logger } from '../utils/logger';
 
 export class PayoutService {
@@ -128,6 +129,10 @@ export class PayoutService {
             // Notify admins
             emailService.sendPayoutRequestAdminNotification(user, payout).catch(err => 
                 logger.error('[PayoutService] Failed to send admin notification:', err)
+            );
+
+            AdminNotificationService.notifyNewPayout(user, totalDeducted).catch(err =>
+                logger.error('[PayoutService] Failed to create admin notification:', err)
             );
 
             // Create Transaction Record (Pending)

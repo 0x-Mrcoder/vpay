@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import crypto from 'crypto';
 import { User, WebhookLog } from '../models';
 import { authenticate, AuthenticatedRequest } from '../middleware';
+import { AdminNotificationService } from '../services';
 import config from '../config';
 
 const router = Router();
@@ -209,6 +210,123 @@ router.get('/webhook/logs', async (req: AuthenticatedRequest, res: Response): Pr
             success: false,
             message: 'Failed to get webhook logs',
         });
+    }
+});
+
+/**
+ * Get Payout API Access Status
+ * GET /api/developer/payout/status
+ */
+router.get('/payout/status', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const user = await User.findById(req.user!.id);
+        if (!user) {
+             res.status(404).json({ success: false, message: 'User not found' });
+             return;
+        }
+
+        res.json({
+            success: true,
+            data: {
+                isPayoutEnabled: user.isPayoutEnabled,
+                payoutRequestStatus: user.payoutRequestStatus,
+                payoutRequestReason: user.payoutRequestReason,
+                payoutIpWhitelist: user.payoutIpWhitelist || [],
+                hasPayoutKey: !!user.payoutSecretKeyHash
+            }
+        });
+    } catch (error) {
+        console.error('Get payout status error:', error);
+        res.status(500).json({ success: false, message: 'Failed to get payout status' });
+    }
+});
+
+/**
+ * Request Payout API Access
+ * POST /api/developer/payout/request
+ */
+router.post('/payout/request', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { reason, ipWhitelist } = req.body;
+        const user = await User.findById(req.user!.id);
+        
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+
+        if (user.kycLevel < 2) {
+            res.status(403).json({ success: false, message: 'Business KYC verification is required to request Payout API access.' });
+            return;
+        }
+
+        if (!reason || !ipWhitelist || !Array.isArray(ipWhitelist) || ipWhitelist.length === 0) {
+            res.status(400).json({ success: false, message: 'Reason and an array of IP addresses are required.' });
+            return;
+        }
+
+        const isAlreadyApproved = user.payoutRequestStatus === 'approved';
+        
+        user.payoutRequestStatus = isAlreadyApproved ? 'approved' : 'pending';
+        user.payoutRequestReason = reason;
+        user.payoutIpWhitelist = ipWhitelist;
+        
+        await user.save();
+
+        if (!isAlreadyApproved) {
+            AdminNotificationService.notifyPayoutAccessRequest(user).catch(err =>
+                console.error('[Developer] Failed to create admin notification for payout access request:', err)
+            );
+        }
+
+        res.json({
+            success: true,
+            message: isAlreadyApproved ? 'Payout settings updated successfully.' : 'Payout API access request submitted successfully. It is now under review.',
+            data: {
+                payoutRequestStatus: user.payoutRequestStatus
+            }
+        });
+    } catch (error) {
+        console.error('Request payout API error:', error);
+        res.status(500).json({ success: false, message: 'Failed to request Payout API access' });
+    }
+});
+
+/**
+ * Generate Payout Secret Key
+ * POST /api/developer/payout/generate-key
+ */
+router.post('/payout/generate-key', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const user = await User.findById(req.user!.id);
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+
+        if (!user.isPayoutEnabled || user.payoutRequestStatus !== 'approved') {
+            res.status(403).json({ success: false, message: 'Payout API access has not been approved for this account.' });
+            return;
+        }
+
+        const rawSecret = crypto.randomBytes(32).toString('hex');
+        const payoutSecretKey = `vt_pout_sec_${rawSecret}`;
+        
+        const secretKeyHash = crypto.createHash('sha256').update(payoutSecretKey).digest('hex');
+        
+        user.payoutSecretKeyHash = secretKeyHash;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Secret key generated. Copy it now, it will never be exactly shown again.',
+            data: {
+                payoutSecretKey 
+            }
+        });
+    } catch (error) {
+        console.error('Generate Payout Key error:', error);
+        res.status(500).json({ success: false, message: 'Failed to generate Payout Secret Key' });
     }
 });
 

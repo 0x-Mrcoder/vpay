@@ -60,6 +60,9 @@ const Dashboard: React.FC = () => {
             style: 'currency',
             currency: 'NGN',
             minimumFractionDigits: 0,
+            maximumFractionDigits: 1,
+            notation: 'compact',
+            compactDisplay: 'short'
         }).format(amount / 100);
     };
 
@@ -102,9 +105,12 @@ const Dashboard: React.FC = () => {
 
                     <button
                         onClick={() => refetch()}
-                        className="flex-1 sm:flex-none px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all text-sm font-bold shadow-md shadow-primary-200 active:scale-95"
+                        className="flex-none p-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md shadow-primary-200 active:scale-95 flex items-center justify-center"
+                        title="Refresh Data"
                     >
-                        Refresh Data
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -157,13 +163,13 @@ const Dashboard: React.FC = () => {
                 {/* Monthly & Yearly Comparison */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Monthly Card */}
-                    <div className="bg-gradient-to-br from-primary-600 to-primary-800 p-6 rounded-[2rem] shadow-xl text-white">
+                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h3 className="text-lg font-bold opacity-90">{months.find(m => m.val === selectedMonth)?.name} {selectedYear}</h3>
-                                <p className="text-xs opacity-70">Filtered monthly performance</p>
+                                <h3 className="text-lg font-bold text-slate-800">{months.find(m => m.val === selectedMonth)?.name} {selectedYear}</h3>
+                                <p className="text-xs text-slate-500 font-medium">Filtered monthly performance</p>
                             </div>
-                            <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md">
+                            <div className="p-2 bg-primary-50 text-primary-600 rounded-xl">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -171,24 +177,24 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-xs font-medium opacity-70 uppercase">Monthly Inflow</p>
-                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.transactions?.monthlyInflow || 0)}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Inflow</p>
+                                <p className="text-2xl font-bold text-primary-600">{formatCurrency(stats?.transactions?.monthlyInflow || 0)}</p>
                             </div>
                             <div>
-                                <p className="text-xs font-medium opacity-70 uppercase">Monthly Outflow</p>
-                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.transactions?.monthlyOutflow || 0)}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Outflow</p>
+                                <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats?.transactions?.monthlyOutflow || 0)}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Yearly Card */}
-                    <div className="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white">
+                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h3 className="text-lg font-bold opacity-90">Annual Summary ({selectedYear})</h3>
-                                <p className="text-xs opacity-50">Year-to-date performance</p>
+                                <h3 className="text-lg font-bold text-slate-800">Annual Summary ({selectedYear})</h3>
+                                <p className="text-xs text-slate-500 font-medium">Year-to-date performance</p>
                             </div>
-                            <div className="p-2 bg-white/5 rounded-xl">
+                            <div className="p-2 bg-slate-50 text-slate-600 rounded-xl">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
@@ -197,12 +203,12 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-xs font-medium opacity-50 uppercase">Annual Inflow</p>
-                                <p className="text-2xl font-bold mt-1 text-primary-400">{formatCurrency(stats?.transactions?.yearlyInflow || 0)}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Annual Inflow</p>
+                                <p className="text-2xl font-bold text-primary-600">{formatCurrency(stats?.transactions?.yearlyInflow || 0)}</p>
                             </div>
                             <div>
-                                <p className="text-xs font-medium opacity-50 uppercase">Annual Outflow</p>
-                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.transactions?.yearlyOutflow || 0)}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Annual Outflow</p>
+                                <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats?.transactions?.yearlyOutflow || 0)}</p>
                             </div>
                         </div>
                     </div>
@@ -357,11 +363,10 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
 
-
-
-                {/* Recent Activity Table (DF Table) */}
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            {/* Recent Activity Table (DF Table) */}
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="p-6 border-b border-slate-50 flex justify-between items-center">
                         <h3 className="text-lg font-bold text-slate-900 tracking-tight">Recent Transactions</h3>
                         <button
@@ -413,7 +418,6 @@ const Dashboard: React.FC = () => {
                         </table>
                     </div>
                 </div>
-            </div>
         </div>
     );
 };

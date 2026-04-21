@@ -20,10 +20,13 @@ import {
     Building,
     Search
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/api-docs.css';
 import vtpayLogo from '../../assets/logo.png';
 
 export const ApiDocs: React.FC = () => {
+    const { user } = useAuth();
+    const canSeePayouts = user?.payoutRequestStatus === 'approved' && user?.isPayoutEnabled;
     const [copied, setCopied] = React.useState('');
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -72,7 +75,7 @@ export const ApiDocs: React.FC = () => {
     const navLinks = [
         { group: 'Getting Started', links: [
             { id: 'introduction', name: 'Introduction', icon: Globe },
-            { id: 'quickstart', name: 'Quick Start', icon: Zap },
+            { id: 'quickstart', name: 'Integration Guide', icon: Zap },
             { id: 'authentication', name: 'Authentication', icon: Lock },
             { id: 'base-url', name: 'Base URL', icon: Server },
         ]},
@@ -81,10 +84,11 @@ export const ApiDocs: React.FC = () => {
             { id: 'list-accounts', name: 'Fetch Accounts', icon: Layout },
             { id: 'get-balance', name: 'Fetch Balance', icon: RefreshCcw },
         ]},
-        { group: 'Bank Verification', links: [
+        { group: 'Payouts & Banking', links: [
             { id: 'list-banks', name: 'List Banks', icon: Building },
             { id: 'verify-bank', name: 'Verify Account', icon: Search },
-        ]},
+            ...(canSeePayouts ? [{ id: 'secure-payouts', name: 'Secure Payouts', icon: Shield }] : []),
+        ].filter(Boolean)},
         { group: 'Lifecycle', links: [
             { id: 'webhooks', name: 'Webhooks', icon: Bell },
             { id: 'errors', name: 'Errors & Retries', icon: AlertCircle },
@@ -180,26 +184,114 @@ export const ApiDocs: React.FC = () => {
                             </div>
                         </section>
 
-                        {/* Quick Start */}
+                        {/* Quick Start / Integration Guide */}
                         <section id="quickstart" className="api-docs-section">
-                            <h2>Quick Start</h2>
-                            <p>Go from integration to production in 4 simple steps.</p>
+                            <h2>The Integration Path</h2>
+                            <p>Follow these 5 steps to go from zero to live transactions on VTStack. Each step is designed to ensure maximum security and reliability.</p>
                             
-                            <div className="grid gap-6 mt-10">
-                                {[
-                                    { step: '01', title: 'Get API Keys', desc: 'Create a developer account and generate your Secret Keys in the dashboard.' },
-                                    { step: '02', title: 'Configure Webhooks', desc: 'Set your webhook URL to receive instant notifications for every deposit.' },
-                                    { step: '03', title: 'Create Virtual Account', desc: 'Use the SDK or API to create accounts for your customers instantly.' },
-                                    { step: '04', title: 'Scale', desc: 'Monitor your transactions and manage your funds via our robust dashboard.' }
-                                ].map((s, idx) => (
-                                    <div key={idx} className="flex gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-primary-docs/30 transition-all">
-                                        <div className="text-2xl font-black text-gray-200 leading-none">{s.step}</div>
+                            <div className="space-y-16 mt-12">
+                                {/* Step 1 */}
+                                <div className="step-card">
+                                    <div className="step-card-header">
+                                        <div className="step-number">01</div>
                                         <div>
-                                            <h4 className="font-bold text-gray-900 mb-1">{s.title}</h4>
-                                            <p className="text-sm text-gray-500 mb-0">{s.desc}</p>
+                                            <h3>Authentication & Identification</h3>
+                                            <p>Generate your API keys in the Developer dashboard. Use <code>x-api-key</code> for standard requests.</p>
                                         </div>
                                     </div>
-                                ))}
+                                    <CodeBlock 
+                                        id="step-1-code"
+                                        code={`// Header for all requests\nx-api-key: sk_live_xxxxxxxxxxxx`}
+                                    />
+                                </div>
+
+                                {/* Step 2 */}
+                                <div className="step-card">
+                                    <div className="step-card-header">
+                                        <div className="step-number">02</div>
+                                        <div>
+                                            <h3>Provision Virtual Accounts</h3>
+                                            <p>Create dedicated PalmPay accounts for your users. Each account acts as a permanent funding source.</p>
+                                        </div>
+                                    </div>
+                                    <CodeBlock 
+                                        id="step-2-code"
+                                        method="POST"
+                                        path="/virtual-accounts"
+                                        code={`curl -X POST https://api.vtstack.com.ng/api/virtual-accounts \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -d '{
+    "firstName": "Hassan",
+    "lastName": "Ibrahim",
+    "email": "hassan@example.com",
+    "phone": "08012345678",
+    "bvn": "22123456789",
+    "reference": "user_102_fund_acc"
+  }'`}
+                                    />
+                                </div>
+
+                                {/* Step 3 */}
+                                <div className="step-card">
+                                    <div className="step-card-header">
+                                        <div className="step-number">03</div>
+                                        <div>
+                                            <h3>Setup Webhooks</h3>
+                                            <p>Configuring a Webhook URL is mandatory to receive real-time funding notifications.</p>
+                                        </div>
+                                    </div>
+                                    <CodeBlock 
+                                        id="step-3-code"
+                                        code={`// Example Webhook Response (POST)
+{
+  "event": "transaction.deposit",
+  "data": {
+    "accountNumber": "8102345678",
+    "amount": 5000,
+    "reference": "VT-DEP-721",
+    "status": "success"
+  }
+}`}
+                                    />
+                                </div>
+
+                                {/* Step 4 */}
+                                <div className="step-card">
+                                    <div className="step-card-header">
+                                        <div className="step-number">04</div>
+                                        <div>
+                                            <h3>Name Enquiry (Verification)</h3>
+                                            <p>Before sending money out, always verify the recipient's bank details to avoid lost funds.</p>
+                                        </div>
+                                    </div>
+                                    <CodeBlock 
+                                        id="step-4-code"
+                                        method="GET"
+                                        path="/banks/verify?bankCode=044&accountNumber=0123456789"
+                                        code={`// Returns verified account name
+{
+  "success": true,
+  "data": { "accountName": "HASSAN IBRAHIM" }
+}`}
+                                    />
+                                </div>
+
+                                {canSeePayouts && (
+                                    <div className="step-card">
+                                        <div className="step-card-header">
+                                            <div className="step-number">05</div>
+                                            <div>
+                                                <h3>Secure Payouts</h3>
+                                                <p>Initiate transfers using Tier 3 high-security signing. Requires HMACS256 Payload signing.</p>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 bg-primary-50 rounded-xl border border-primary-100 flex items-center gap-3 mb-4">
+                                            <Shield size={18} className="text-primary-docs" />
+                                            <span className="text-xs font-bold text-primary-docs uppercase">Requires Tier 3 Verification</span>
+                                        </div>
+                                        <a href="#secure-payouts" className="text-sm font-bold text-primary-docs hover:underline">View Payout Security Specs →</a>
+                                    </div>
+                                )}
                             </div>
                         </section>
 
@@ -234,11 +326,15 @@ export const ApiDocs: React.FC = () => {
                         {/* Base URL */}
                         <section id="base-url" className="api-docs-section">
                             <h2>Base URL</h2>
-                            <p>Our production API endpoint is available at:</p>
+                            <p>All API requests should be made to the following base URL:</p>
                             <CodeBlock 
                                 id="base-url-code"
                                 code={`https://api.vtstack.com.ng/api`}
                             />
+                            <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-3">
+                                <Server size={18} className="text-gray-400" />
+                                <p className="text-xs text-gray-500 m-0">Standard APIs use the base path, while Secure Payouts use the <code>/v1</code> prefix as shown in the examples.</p>
+                            </div>
                         </section>
 
                         {/* Endpoints */}
@@ -456,51 +552,112 @@ export const ApiDocs: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Code Examples */}
-                            <div className="mt-20">
-                                <h3 className="font-black tracking-tight mb-6">Full Integration Example</h3>
-                                <p className="mb-6">Here's a complete Node.js example showing how to verify a bank account before initiating a payout:</p>
-                                <CodeBlock 
-                                    id="verify-bank-full-example"
-                                    code={`const axios = require('axios');
+                        </section>
+                        {/* Secure Payouts (Internal/Tier 3) */}
+                        {canSeePayouts && (
+                            <section id="secure-payouts" className="api-docs-section">
+                                <div className="flex items-center gap-2 mb-4 text-indigo-600">
+                                    <Lock size={20} />
+                                    <span className="font-bold text-sm tracking-wide uppercase">Enterprise Security</span>
+                                </div>
+                                <h2>Secure Payouts (Tier 3)</h2>
+                                <p>
+                                    Payouts are the most sensitive operations on VTStack. To protect your funds, we enforce multi-layer security:
+                                    1. <strong>IP Whitelisting:</strong> Requests are only accepted from your pre-configured server IPs.
+                                    2. <strong>HMAC Payload Signing:</strong> Every request must include a cryptographic signature.
+                                    3. <strong>Idempotency:</strong> Prevents duplicate transfers on network retries.
+                                </p>
 
-const API_KEY = 'sk_live_xxxxxxxxxxxx';
-const BASE_URL = 'https://api.vtstack.com.ng/api';
+                                <div className="info-box border-indigo-200 bg-indigo-50/50">
+                                    <div className="info-box-icon text-indigo-600">
+                                        <Shield size={24} />
+                                    </div>
+                                    <div className="info-box-content">
+                                        <h4 className="text-indigo-900">Payout Key vs API Key</h4>
+                                        <p className="text-indigo-800 text-xs">Payouts use a dedicated <strong>Payout Secret Key</strong> (starts with <code>vt_pout_sec_</code>) which is different from your standard API Key. Never expose this key.</p>
+                                    </div>
+                                </div>
 
-// Step 1: Get list of supported banks
-async function listBanks() {
-  const { data } = await axios.get(BASE_URL + '/banks', {
-    headers: { 'x-api-key': API_KEY }
-  });
-  console.log('Banks:', data.data);
-  return data.data;
-}
+                                <div className="mt-12">
+                                    <h3 className="text-lg font-black mb-4">Required Headers</h3>
+                                    <div className="docs-table-wrapper">
+                                        <table className="docs-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Header</th>
+                                                    <th>Description</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td className="font-mono font-bold text-primary-docs">Authorization</td>
+                                                    <td><code>Bearer YOUR_PAYOUT_SECRET_KEY</code></td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="font-mono font-bold text-primary-docs">x-signature</td>
+                                                    <td>HMAC-SHA256 signature of <code>timestamp + JSON.stringify(body)</code></td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="font-mono font-bold text-primary-docs">x-timestamp</td>
+                                                    <td>Current Unix timestamp in milliseconds.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="font-mono font-bold text-primary-docs">x-idempotency-key</td>
+                                                    <td>A unique string for this specific payout (e.g. UUID).</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
 
-// Step 2: Verify a bank account
-async function verifyAccount(bankCode, accountNumber) {
-  const { data } = await axios.get(BASE_URL + '/banks/verify', {
-    params: { bankCode, accountNumber },
-    headers: { 'x-api-key': API_KEY }
-  });
+                                <div className="mt-12">
+                                    <h3 className="text-lg font-black mb-6">Integration Example (Node.js)</h3>
+                                    <CodeBlock 
+                                        id="payout-signing-example"
+                                        code={`const axios = require('axios');
+const crypto = require('crypto');
 
-  if (data.success) {
-    console.log('Account Name:', data.data.accountName);
-    return data.data;
-  } else {
-    throw new Error(data.message);
+async function sendPayout(payload) {
+  const PAYOUT_KEY = 'vt_pout_sec_xxxxxxxxxxxx';
+  const BASE_URL = 'https://api.vtstack.com.ng/api/v1/payouts';
+  const timestamp = Date.now().toString();
+  const idempotencyKey = crypto.randomUUID();
+
+  // Create Signature: HMAC-SHA256(key, timestamp + stringified_body)
+  const signature = crypto.createHmac('sha256', PAYOUT_KEY)
+    .update(timestamp + JSON.stringify(payload))
+    .digest('hex');
+
+  try {
+    const { data } = await axios.post(BASE_URL + '/request', payload, {
+      headers: {
+        'Authorization': \`Bearer \${PAYOUT_KEY}\`,
+        'x-signature': signature,
+        'x-timestamp': timestamp,
+        'x-idempotency-key': idempotencyKey,
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('Payout Accepted:', data.data.payoutId);
+  } catch (error) {
+    console.error('Payout Failed:', error.response.data.message);
   }
 }
 
 // Usage
-(async () => {
-  const banks = await listBanks();
-  // Verify an Access Bank account
-  const account = await verifyAccount('044', '0123456789');
-  console.log('Verified:', account.accountName);
-})();`}
-                                />
-                            </div>
-                        </section>
+sendPayout({
+  amount: 5000,
+  bankCode: "044",
+  accountNumber: "0123456789",
+  accountName: "HASSAN IBRAHIM",
+  narration: "Vendor payment"
+});`}
+                                    />
+                                </div>
+                            </section>
+                        )}
+
+                        <div className="h-20" />
 
                         {/* Webhooks */}
                         <section id="webhooks" className="api-docs-section">

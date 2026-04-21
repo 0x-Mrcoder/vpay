@@ -1,6 +1,6 @@
 import { Router, Response, Request } from 'express';
 import mongoose from 'mongoose';
-import { User, VirtualAccount, Wallet, Transaction, WebhookLog, FeeRule, RiskRule, SystemSetting, Communication, Dispute } from '../models';
+import { User, VirtualAccount, Wallet, Transaction, WebhookLog, FeeRule, RiskRule, SystemSetting, Communication, Dispute, Notification } from '../models';
 import { authenticate, AuthenticatedRequest, generateToken, requireAdmin, auditMiddleware } from '../middleware';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -87,6 +87,9 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
                     last_name: user.lastName,
                     phone: user.phone,
                     kycLevel: user.kycLevel,
+                    kyc_status: user.kyc_status,
+                    payoutRequestStatus: user.payoutRequestStatus,
+                    isPayoutEnabled: user.isPayoutEnabled,
                     status: user.status,
                     role: user.role,
                 },
@@ -719,15 +722,25 @@ router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response
             return;
         }
 
-        const kycLevel = status === 'verified' ? 3 : (status === 'rejected' ? 0 : 2);
+        const currentUser = await User.findById(id);
+        if (!currentUser) {
+            res.status(404).json({
+                success: false,
+                message: 'Tenant not found',
+            });
+            return;
+        }
 
-        const user = await User.findByIdAndUpdate(
+        // status 'verified' from T1 submission sets level 2 (Fully Verified T1)
+        const kycLevel: number = status === 'verified' ? 2 : (status === 'rejected' ? 0 : currentUser.kycLevel || 1);
+
+        const updatedUser = await User.findByIdAndUpdate(
             id,
             { kyc_status: status, kycLevel },
             { new: true }
         ).select('-passwordHash');
 
-        if (!user) {
+        if (!updatedUser) {
             res.status(404).json({
                 success: false,
                 message: 'Tenant not found',
@@ -737,15 +750,14 @@ router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response
 
         // If KYC is verified, also activate the account if it's not already active
         if (status === 'verified') {
-            if (user.status !== 'active') {
-                user.status = 'active';
-                await user.save();
+            if (updatedUser.status !== 'active') {
+                updatedUser.status = 'active';
+                await updatedUser.save();
             }
-            await activateUserAccount(user);
+            await activateUserAccount(updatedUser);
         }
 
-        // Fetch the latest user data
-        const updatedUser = await User.findById(id).select('-passwordHash');
+        // We already have the updatedUser from findByIdAndUpdate
 
         res.json({
             success: true,
@@ -2140,6 +2152,120 @@ router.patch('/dispute/:id', async (req: AuthenticatedRequest, res: Response): P
     } catch (error) {
         console.error('Update dispute error:', error);
         res.status(500).json({ success: false, message: 'Failed to update dispute' });
+    }
+});
+
+/**
+ * Approve Payout API Request
+ * POST /api/admin/payout/approve/:userId
+ */
+router.post('/payout/approve/:userId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.params;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+
+        user.payoutRequestStatus = 'approved';
+        user.isPayoutEnabled = true;
+        user.kycLevel = 3; // Fully Verified Tier 3
+        user.kyc_status = 'verified'; // Ensure KYC status is also verified
+        await user.save();
+
+        const html = `
+            <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+                <h3>Payout API Approved</h3>
+                <p>Hello ${user.firstName},</p>
+                <p>Your request to access the Private Payout API has been approved.</p>
+                <p>Please log in to your developer dashboard to generate your high-security Payout Secret Key. <strong>Remember to copy it immediately as it will never be displayed again.</strong></p>
+            </div>
+        `;
+        if (typeof emailService !== 'undefined') {
+            await emailService.sendEmail(user.email, 'VTStack Payout API - Approved', html).catch((err: any) => console.error('Email failed', err));
+        }
+
+        res.json({ success: true, message: 'Payout API request approved successfully' });
+    } catch (error) {
+        console.error('Approve payout error:', error);
+        res.status(500).json({ success: false, message: 'Failed to approve payout request' });
+    }
+});
+
+/**
+ * Reject Payout API Request
+ * POST /api/admin/payout/reject/:userId
+ */
+router.post('/payout/reject/:userId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.params;
+        const { reason } = req.body;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+
+        user.payoutRequestStatus = 'rejected';
+        user.payoutRequestReason = reason || 'Rejected due to compliance policies.';
+        user.isPayoutEnabled = false;
+        await user.save();
+
+        res.json({ success: true, message: 'Payout API request rejected successfully' });
+    } catch (error) {
+        console.error('Reject payout error:', error);
+        res.status(500).json({ success: false, message: 'Failed to reject payout request' });
+    }
+});
+
+/**
+ * Get system notifications
+ * GET /api/admin/notifications
+ */
+router.get('/notifications', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const notifications = await Notification.find()
+            .populate('userId', 'firstName lastName email')
+            .sort({ createdAt: -1 })
+            .limit(100);
+
+        res.json({
+            success: true,
+            data: notifications,
+        });
+    } catch (error) {
+        console.error('Get notifications error:', error);
+        res.status(500).json({ success: false, message: 'Failed to get notifications' });
+    }
+});
+
+/**
+ * Mark all notifications as read
+ * PATCH /api/admin/notifications/read-all
+ */
+router.patch('/notifications/read-all', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        await Notification.updateMany({ isRead: false }, { isRead: true });
+        res.json({ success: true, message: 'All notifications marked as read' });
+    } catch (error) {
+        console.error('Mark all notifications read error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update notifications' });
+    }
+});
+
+/**
+ * Mark a single notification as read
+ * PATCH /api/admin/notifications/:id/read
+ */
+router.patch('/notifications/:id/read', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
+        res.json({ success: true, message: 'Notification marked as read' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to update notification' });
     }
 });
 

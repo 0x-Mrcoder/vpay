@@ -40,6 +40,7 @@ const WalletSchema = new Schema<IWalletDocument>(
     },
     {
         timestamps: true,
+        optimisticConcurrency: true,
     }
 );
 

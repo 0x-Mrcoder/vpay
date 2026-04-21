@@ -314,7 +314,6 @@ const SettingsPage: React.FC = () => {
     const [showApiKey, setShowApiKey] = useState(false);
     const [showEmailPass, setShowEmailPass] = useState(false);
     const [banks, setBanks] = useState<any[]>([]);
-    const [isVerifying, setIsVerifying] = useState(false);
 
     // Settings state
     const [settings, setSettings] = useState({
@@ -401,32 +400,7 @@ const SettingsPage: React.FC = () => {
         }
     };
 
-    const handleVerifyAccount = async () => {
-        const { bankCode, accountNumber } = settings.parentAccount;
-        if (!bankCode || !accountNumber) {
-            toast.error('Please select a bank and enter account number');
-            return;
-        }
 
-        try {
-            setIsVerifying(true);
-            const data = await adminApi.verifyAccount(bankCode, accountNumber);
-            if (data && data.accountName) {
-                setSettings({
-                    ...settings,
-                    parentAccount: {
-                        ...settings.parentAccount,
-                        accountName: data.accountName
-                    }
-                });
-                toast.success('Account verified successfully');
-            }
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to verify account');
-        } finally {
-            setIsVerifying(false);
-        }
-    };
 
     const fetchSettings = async () => {
         try {
@@ -779,91 +753,7 @@ const SettingsPage: React.FC = () => {
 
     const renderPayoutSettings = () => (
         <div className="space-y-6">
-            {/* Parent Account Configuration */}
-            <div className="bg-white p-6 rounded-lg border border-slate-200">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex-shrink-0 flex items-center justify-center text-purple-600 font-bold">
-                        PA
-                    </div>
-                    <div>
-                        <h3 className="text-base md:text-lg font-medium text-slate-900">Parent Account</h3>
-                        <p className="text-xs md:text-sm text-slate-500">Configure the source account for payouts</p>
-                    </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Select Bank</label>
-                        <select
-                            value={settings.parentAccount?.bankCode || ''}
-                            onChange={(e) => setSettings({
-                                ...settings,
-                                parentAccount: { ...settings.parentAccount, bankCode: e.target.value }
-                            })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        >
-                            <option value="">Select a bank</option>
-                            {banks.map((bank: any) => (
-                                <option key={bank.code} value={bank.code}>
-                                    {bank.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Account Number</label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={settings.parentAccount?.accountNumber || ''}
-                                onChange={(e) => setSettings({
-                                    ...settings,
-                                    parentAccount: { ...settings.parentAccount, accountNumber: e.target.value }
-                                })}
-                                className="flex-1 px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                placeholder="10-digit account number"
-                                maxLength={10}
-                            />
-                            <button
-                                onClick={handleVerifyAccount}
-                                disabled={isVerifying || !settings.parentAccount.bankCode || settings.parentAccount.accountNumber.length !== 10}
-                                className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
-                            >
-                                {isVerifying ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Verifying...
-                                    </>
-                                ) : 'Verify'}
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Account Name (Verified)</label>
-                        <input
-                            type="text"
-                            value={settings.parentAccount?.accountName || ''}
-                            readOnly
-                            className="w-full px-4 py-2 border border-slate-300 bg-slate-50 text-slate-600 rounded-lg focus:outline-none cursor-not-allowed"
-                            placeholder="Verified account name will appear here"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                        <select
-                            value={settings.parentAccount?.status || 'ACTIVE'}
-                            onChange={(e) => setSettings({
-                                ...settings,
-                                parentAccount: { ...settings.parentAccount, status: e.target.value as 'ACTIVE' | 'INACTIVE' }
-                            })}
-                            className="w-full px-4 py-2 border border-slate-300 bg-white text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        >
-                            <option value="ACTIVE">Active</option>
-                            <option value="INACTIVE">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
 
             {/* Global Settlement Configuration */}
             <SettlementManagementPanel

@@ -12,7 +12,7 @@ const TransactionsPage = lazy(() => import('./pages/transactions/TransactionsPag
 const WebhooksPage = lazy(() => import('./pages/webhooks/WebhooksPage'));
 const SettlementsPage = lazy(() => import('./pages/settlements/SettlementsPage'));
 const FeesPage = lazy(() => import('./pages/fees/FeesPage'));
-const RiskPage = lazy(() => import('./pages/risk/RiskPage'));
+const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const ApiKeysPage = lazy(() => import('./pages/api-keys/ApiKeysPage'));
 const CommunicationsPage = lazy(() => import('./pages/communications/CommunicationsPage'));
@@ -68,7 +68,7 @@ function AppRoutes() {
         <Route path="/webhooks" element={<ProtectedRoute><Layout><WebhooksPage /></Layout></ProtectedRoute>} />
         <Route path="/api-keys" element={<ProtectedRoute><Layout><ApiKeysPage /></Layout></ProtectedRoute>} />
         <Route path="/fees" element={<ProtectedRoute><Layout><FeesPage /></Layout></ProtectedRoute>} />
-        <Route path="/risk" element={<ProtectedRoute><Layout><RiskPage /></Layout></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Layout><NotificationsPage /></Layout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><Layout><HelpMessages /></Layout></ProtectedRoute>} />

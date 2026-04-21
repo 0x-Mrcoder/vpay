@@ -5,3 +5,4 @@ export * from './PalmPayService';
 export * from './PayoutService';
 export * from './WalletService';
 export * from './WebhookService';
+export * from './AdminNotificationService';
