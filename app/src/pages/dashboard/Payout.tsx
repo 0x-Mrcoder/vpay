@@ -60,7 +60,7 @@ export const Payout: React.FC = () => {
     const [fees, setFees] = useState<any>(null);
     const [isCalculatingFees, setIsCalculatingFees] = useState(false);
 
-    const isVerified = (user?.kycLevel ?? 0) >= 3;
+    const isVerified = (user?.kycLevel ?? 0) >= 1;
 
     useEffect(() => {
         if (isVerified) {
@@ -720,8 +720,8 @@ export const Payout: React.FC = () => {
                                     payoutHistory.slice(0, 8).map((payout) => (
                                         <div key={payout._id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${payout.status === 'success' ? 'bg-green-100 text-green-600' :
-                                                    payout.status === 'failed' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${payout.status?.toUpperCase() === 'SUCCESS' ? 'bg-green-100 text-green-600' :
+                                                    payout.status?.toUpperCase() === 'FAILED' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'
                                                     }`}>
                                                     <ArrowUpRight size={14} />
                                                 </div>
@@ -732,8 +732,8 @@ export const Payout: React.FC = () => {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-gray-900">-{formatCurrency(payout.amount)}</p>
-                                                <p className={`text-[10px] font-bold uppercase ${payout.status === 'success' ? 'text-green-600' :
-                                                    payout.status === 'failed' ? 'text-red-600' : 'text-yellow-600'
+                                                <p className={`text-[10px] font-bold uppercase ${payout.status?.toUpperCase() === 'SUCCESS' ? 'text-green-600' :
+                                                    payout.status?.toUpperCase() === 'FAILED' ? 'text-red-600' : 'text-yellow-600'
                                                     }`}>{payout.status}</p>
                                             </div>
                                         </div>

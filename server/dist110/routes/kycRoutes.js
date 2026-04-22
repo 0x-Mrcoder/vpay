@@ -227,5 +227,29 @@ router.get('/status', auth_1.authenticate, async (req, res) => {
         });
     }
 });
+/**
+ * Upload general document
+ * POST /api/kyc/upload
+ */
+router.post('/upload', auth_1.authenticate, async (req, res) => {
+    try {
+        const { file, folder } = req.body;
+        const userId = req.user?.id;
+        if (!file) {
+            res.status(400).json({ success: false, message: 'No file provided' });
+            return;
+        }
+        const uploadFolder = folder || `temp/${userId}`;
+        const url = await (0, cloudinary_1.uploadToCloudinary)(file, uploadFolder);
+        res.json({
+            success: true,
+            url
+        });
+    }
+    catch (error) {
+        console.error('[KYC Upload] Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to upload document' });
+    }
+});
 exports.default = router;
 //# sourceMappingURL=kycRoutes.js.map

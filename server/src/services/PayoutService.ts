@@ -78,9 +78,9 @@ export class PayoutService {
             throw new Error('Your account is pending verification.');
         }
 
-        // KYC Check (Level 2 or 3 required for payouts)
-        if (user.kycLevel < 2) {
-            throw new Error('Please complete your KYC verification to enable withdrawals.');
+        // KYC Check (Level 1, 2 or 3 allowed for payouts as per user request for "any tier")
+        if (user.kycLevel < 1) {
+            throw new Error('Please verify your email to enable withdrawals.');
         }
 
         // 2. Minimum payout check (dynamic from system settings)
@@ -225,9 +225,10 @@ export class PayoutService {
      * Handle Payout Success
      */
     async handlePayoutSuccess(payout: any): Promise<void> {
-        if (payout.status === 'COMPLETED') return;
+        if (payout.status === 'SUCCESS') return;
 
-        payout.status = 'COMPLETED';
+        payout.status = 'SUCCESS';
+        payout.completedAt = new Date();
         await payout.save();
 
         // Update Transaction Record
@@ -275,7 +276,7 @@ export class PayoutService {
             }
         }
 
-        logger.info(`Payout ${payout.reference} marked as COMPLETED`);
+        logger.info(`Payout ${payout.reference} marked as SUCCESS`);
     }
 
     /**

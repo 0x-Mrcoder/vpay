@@ -23,7 +23,7 @@ export const Wallet: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if ((user?.kycLevel ?? 0) >= 3) {
+        if ((user?.kycLevel ?? 0) >= 1) {
             fetchData();
         } else {
             setIsLoading(false);
@@ -75,7 +75,7 @@ export const Wallet: React.FC = () => {
     }
 
     const pendingBalance = (wallet?.balanceNaira || 0) - (wallet?.clearedBalanceNaira || 0) - (wallet?.lockedBalanceNaira || 0);
-    const isVerified = (user?.kycLevel ?? 0) >= 3;
+    const isVerified = (user?.kycLevel ?? 0) >= 1;
 
     return (
         <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">

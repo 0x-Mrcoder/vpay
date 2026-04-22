@@ -73,15 +73,29 @@ export const Verification: React.FC = () => {
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        const fieldName = e.target.name;
         if (file) {
+            setIsLoading(true);
+            setError('');
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({ ...formData, [e.target.name]: reader.result as string });
+            reader.onloadend = async () => {
+                try {
+                    const base64 = reader.result as string;
+                    const res = await api.post('/kyc/upload', {
+                        file: base64,
+                        folder: isBusinessUpgrade ? `business/${user?.id}/${fieldName}` : `kyc/${user?.id}/${fieldName}`
+                    });
+                    setFormData(prev => ({ ...prev, [fieldName]: res.data.url }));
+                } catch (err: any) {
+                    setError('Failed to upload document. Please check your connection.');
+                    console.error('Upload error:', err);
+                } finally {
+                    setIsLoading(false);
+                }
             };
             reader.readAsDataURL(file);
-            setError('');
         }
     };
 
@@ -374,6 +388,18 @@ export const Verification: React.FC = () => {
                                     </div>
                                 </div>
 
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Business Physical Address</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text" name="businessAddress" value={formData.businessAddress} onChange={handleChange} required
+                                            className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-primary-500 outline-none transition-all text-sm font-medium"
+                                            placeholder="Full business address"
+                                        />
+                                        <MapPin size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">RC Number (CAC)</label>
@@ -579,6 +605,15 @@ export const Verification: React.FC = () => {
                                                 </label>
                                             </div>
                                         </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Utility Bill (Proof of Address)</label>
+                                            <input type="file" name="utilityBill" id="personalUtility" className="hidden" onChange={handleFileChange} />
+                                            <label htmlFor="personalUtility" className="flex flex-col items-center justify-center p-8 bg-slate-50 border-2 border-dashed border-gray-100 rounded-3xl cursor-pointer hover:bg-white transition-all overflow-hidden group">
+                                                {formData.utilityBill ? <CheckCircle2 className="text-green-500 mb-2" /> : <MapPin className="text-gray-300 mb-2 group-hover:text-primary-400 transition-colors" />}
+                                                <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500">{formData.utilityBill ? 'Selected' : 'Click to Upload'}</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 )}
 
@@ -598,7 +633,7 @@ export const Verification: React.FC = () => {
                                         </button>
                                     ) : (
                                         <button
-                                            type="submit" disabled={isLoading || !formData.idCard || !formData.selfie}
+                                            type="submit" disabled={isLoading || !formData.idCard || !formData.selfie || !formData.utilityBill}
                                             className="px-10 py-4 bg-primary-600 border-b-4 border-primary-800 text-white rounded-2xl font-black text-sm shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 disabled:opacity-50 active:translate-y-1 active:border-b-0"
                                         >
                                             {isLoading ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
