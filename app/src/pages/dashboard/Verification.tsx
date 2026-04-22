@@ -212,10 +212,12 @@ export const Verification: React.FC = () => {
                         <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
                             <div><span className="text-gray-500 block text-xs">ID Type</span> <span className="font-bold">{user.identityType || 'N/A'}</span></div>
                             <div><span className="text-gray-500 block text-xs">BVN</span> <span className="font-bold">*******{(user.bvn || '').slice(-4)}</span></div>
+                            <div><span className="text-gray-500 block text-xs">State</span> <span className="font-bold">{user.state || 'Processing...'}</span></div>
+                            <div><span className="text-gray-500 block text-xs">LGA</span> <span className="font-bold">{user.lga || 'Processing...'}</span></div>
                         </div>
                     </div>
-                    <button onClick={handleRefresh} disabled={isRefreshing} className="mt-6 text-gray-500 text-sm font-bold flex items-center justify-center gap-2 hover:text-gray-700 transition-colors">
-                        <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> {isRefreshing ? 'Checking...' : 'Check Status'}
+                    <button onClick={handleRefresh} disabled={isRefreshing} className="mt-6 text-gray-500 text-sm font-bold flex items-center justify-center gap-2 hover:text-gray-700 transition-colors mx-auto">
+                        <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> {isRefreshing ? 'Checking...' : 'Refresh Status'}
                     </button>
                 </div>
             </div>
@@ -302,11 +304,18 @@ export const Verification: React.FC = () => {
                                     <Clock size={32} className="text-amber-500 animate-pulse" />
                                 </div>
                                 <h4 className="text-amber-900 font-black text-sm uppercase tracking-tight">Upgrade Under Review</h4>
-                                <p className="text-amber-700/70 text-[10px] px-8 mt-2 font-bold uppercase leading-relaxed tracking-wider">
-                                    Verifying CAC & Business records.
-                                </p>
+                                <div className="mt-4 text-left w-full px-6 space-y-3">
+                                    <div>
+                                        <label className="text-[10px] text-amber-600 font-bold uppercase block">Business Name</label>
+                                        <p className="text-xs font-black text-slate-800">{user.businessName}</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-amber-600 font-bold uppercase block">RC Number</label>
+                                        <p className="text-xs font-black text-slate-800">{user.rcNumber}</p>
+                                    </div>
+                                </div>
                                 <button onClick={handleRefresh} disabled={isRefreshing} className="mt-6 px-8 py-3 bg-white border-2 border-amber-200 text-amber-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-amber-50 transition-all">
-                                    <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} /> {isRefreshing ? 'Verifying...' : 'Check Status'}
+                                    <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} /> {isRefreshing ? 'Verifying...' : 'Refresh Status'}
                                 </button>
                             </div>
                         ) : isT3 ? (

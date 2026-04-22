@@ -4,7 +4,7 @@ export interface ITransactionDocument extends Document {
     walletId: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     type: 'credit' | 'debit';
-    category: 'deposit' | 'transfer' | 'withdrawal' | 'refund' | 'fee' | 'settlement';
+    category: 'deposit' | 'transfer' | 'withdrawal' | 'refund' | 'fee' | 'settlement' | 'adjustment';
     amount: number;
     fee: number;
     balanceBefore: number;
@@ -39,7 +39,7 @@ const TransactionSchema = new Schema<ITransactionDocument>(
         },
         category: {
             type: String,
-            enum: ['deposit', 'transfer', 'withdrawal', 'refund', 'fee', 'settlement'],
+            enum: ['deposit', 'transfer', 'withdrawal', 'refund', 'fee', 'settlement', 'adjustment'],
             required: true,
         },
         amount: {

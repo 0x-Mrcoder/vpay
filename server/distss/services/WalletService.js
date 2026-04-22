@@ -1,14 +1,19 @@
-import mongoose from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
-import { Wallet, Transaction, VirtualAccount, IWalletDocument, ITransactionDocument } from '../models';
-
-export class WalletService {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.walletService = exports.WalletService = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
+const uuid_1 = require("uuid");
+const models_1 = require("../models");
+class WalletService {
     /**
      * Create a new wallet for a user
      */
-    async createWallet(userId: string): Promise<IWalletDocument> {
-        const wallet = new Wallet({
-            userId: new mongoose.Types.ObjectId(userId),
+    async createWallet(userId) {
+        const wallet = new models_1.Wallet({
+            userId: new mongoose_1.default.Types.ObjectId(userId),
             balance: 0,
             clearedBalance: 0,
             lockedBalance: 0,
@@ -17,18 +22,16 @@ export class WalletService {
         await wallet.save();
         return wallet;
     }
-
     /**
      * Get wallet by user ID
      */
-    async getWalletByUserId(userId: string): Promise<IWalletDocument | null> {
-        return Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+    async getWalletByUserId(userId) {
+        return models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
     }
-
     /**
      * Get wallet balance
      */
-    async getBalance(userId: string): Promise<{ balance: number; clearedBalance: number; lockedBalance: number; availableBalance: number; pendingBalance: number }> {
+    async getBalance(userId) {
         const wallet = await this.getWalletByUserId(userId);
         if (!wallet) {
             throw new Error('Wallet not found');
@@ -41,49 +44,34 @@ export class WalletService {
             pendingBalance: wallet.balance - wallet.clearedBalance,
         };
     }
-
     /**
      * Credit wallet (add funds)
      */
-    async creditWallet(
-        userId: string,
-        amount: number,
-        category: 'deposit' | 'refund',
-        narration: string,
-        externalRef?: string,
-        metadata?: Record<string, any>,
-        customerReference?: string,
-        fee: number = 0,
-        isCleared: boolean = true,
-        clearedAt?: Date
-    ): Promise<ITransactionDocument> {
+    async creditWallet(userId, amount, category, narration, externalRef, metadata, customerReference, fee = 0, isCleared = true, clearedAt) {
         try {
-            const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+            const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
             if (!wallet) {
                 throw new Error('Wallet not found');
             }
-
             const balanceBefore = wallet.balance;
             const balanceAfter = balanceBefore + amount;
-
             // Update wallet balance
             wallet.balance = balanceAfter;
             if (isCleared) {
                 wallet.clearedBalance += amount;
             }
             await wallet.save();
-
             // Create transaction record
-            const transaction = new Transaction({
+            const transaction = new models_1.Transaction({
                 walletId: wallet._id,
-                userId: new mongoose.Types.ObjectId(userId),
+                userId: new mongoose_1.default.Types.ObjectId(userId),
                 type: 'credit',
                 category,
                 amount,
                 fee,
                 balanceBefore,
                 balanceAfter,
-                reference: `TXN-${uuidv4()}`,
+                reference: `TXN-${(0, uuid_1.v4)()}`,
                 externalRef,
                 narration,
                 status: 'success',
@@ -93,59 +81,44 @@ export class WalletService {
                 clearedAt: isCleared ? new Date() : clearedAt
             });
             await transaction.save();
-
             return transaction;
-        } catch (error) {
+        }
+        catch (error) {
             throw error;
         }
     }
-
     /**
      * Debit wallet (remove funds)
      */
-    async debitWallet(
-        userId: string,
-        amount: number,
-        fee: number,
-        category: 'transfer' | 'withdrawal',
-        narration: string,
-        externalRef?: string,
-        metadata?: Record<string, any>,
-        customerReference?: string
-    ): Promise<ITransactionDocument> {
+    async debitWallet(userId, amount, fee, category, narration, externalRef, metadata, customerReference) {
         try {
-            const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+            const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
             if (!wallet) {
                 throw new Error('Wallet not found');
             }
-
             const totalDebit = amount + fee;
             // Only cleared balance can be withdrawn/transferred
             const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
-
             if (availableBalance < totalDebit) {
                 throw new Error('Insufficient cleared balance');
             }
-
             const balanceBefore = wallet.balance;
             const balanceAfter = balanceBefore - totalDebit;
-
             // Update wallet balance
             wallet.balance = balanceAfter;
             wallet.clearedBalance -= totalDebit;
             await wallet.save();
-
             // Create transaction record
-            const transaction = new Transaction({
+            const transaction = new models_1.Transaction({
                 walletId: wallet._id,
-                userId: new mongoose.Types.ObjectId(userId),
+                userId: new mongoose_1.default.Types.ObjectId(userId),
                 type: 'debit',
                 category,
                 amount,
                 fee,
                 balanceBefore,
                 balanceAfter,
-                reference: `TXN-${uuidv4()}`,
+                reference: `TXN-${(0, uuid_1.v4)()}`,
                 externalRef,
                 narration,
                 status: 'success',
@@ -155,129 +128,100 @@ export class WalletService {
                 clearedAt: new Date()
             });
             await transaction.save();
-
             return transaction;
-        } catch (error) {
+        }
+        catch (error) {
             throw error;
         }
     }
-
     /**
      * Lock funds in wallet
      */
-    async lockFunds(userId: string, amount: number): Promise<void> {
+    async lockFunds(userId, amount) {
         const wallet = await this.getWalletByUserId(userId);
         if (!wallet) {
             throw new Error('Wallet not found');
         }
-
         const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
         if (availableBalance < amount) {
             throw new Error('Insufficient cleared balance to lock');
         }
-
         wallet.lockedBalance += amount;
         await wallet.save();
     }
-
     /**
      * Unlock funds in wallet
      */
-    async unlockFunds(userId: string, amount: number): Promise<void> {
+    async unlockFunds(userId, amount) {
         const wallet = await this.getWalletByUserId(userId);
         if (!wallet) {
             throw new Error('Wallet not found');
         }
-
         if (wallet.lockedBalance < amount) {
             throw new Error('Locked balance is less than amount to unlock');
         }
-
         wallet.lockedBalance -= amount;
         await wallet.save();
     }
-
     /**
      * Get transaction history
      */
-    async getTransactionHistory(
-        userId: string,
-        options: {
-            limit?: number;
-            offset?: number;
-            type?: 'credit' | 'debit';
-            category?: string;
-            startDate?: Date;
-            endDate?: Date;
-        } = {}
-    ): Promise<{ transactions: ITransactionDocument[]; total: number }> {
+    async getTransactionHistory(userId, options = {}) {
         const { limit = 20, offset = 0, type, category, startDate, endDate } = options;
-
-        const query: any = { 
-            userId: new mongoose.Types.ObjectId(userId),
+        const query = {
+            userId: new mongoose_1.default.Types.ObjectId(userId),
             category: { $ne: 'adjustment' } // Hide manual adjustments from tenants
         };
-
-        if (type) query.type = type;
-        if (category) query.category = category;
+        if (type)
+            query.type = type;
+        if (category)
+            query.category = category;
         if (startDate || endDate) {
             query.createdAt = {};
-            if (startDate) query.createdAt.$gte = startDate;
-            if (endDate) query.createdAt.$lte = endDate;
+            if (startDate)
+                query.createdAt.$gte = startDate;
+            if (endDate)
+                query.createdAt.$lte = endDate;
         }
-
         const [transactions, total] = await Promise.all([
-            Transaction.find(query)
+            models_1.Transaction.find(query)
                 .sort({ createdAt: -1 })
                 .skip(offset)
                 .limit(limit),
-            Transaction.countDocuments(query),
+            models_1.Transaction.countDocuments(query),
         ]);
-
         return { transactions, total };
     }
-
     /**
      * Get transaction by reference
      */
-    async getTransactionByReference(reference: string): Promise<ITransactionDocument | null> {
-        return Transaction.findOne({ reference });
+    async getTransactionByReference(reference) {
+        return models_1.Transaction.findOne({ reference });
     }
-
     /**
      * Get transaction by external reference
      */
-    async getTransactionByExternalRef(externalRef: string): Promise<ITransactionDocument | null> {
-        return Transaction.findOne({ externalRef });
+    async getTransactionByExternalRef(externalRef) {
+        return models_1.Transaction.findOne({ externalRef });
     }
-
     /**
      * Create pending transaction (for transfers that need verification)
      */
-    async createPendingTransaction(
-        userId: string,
-        amount: number,
-        fee: number,
-        category: 'transfer' | 'withdrawal',
-        narration: string,
-        externalRef?: string,
-        metadata?: Record<string, any>
-    ): Promise<ITransactionDocument> {
+    async createPendingTransaction(userId, amount, fee, category, narration, externalRef, metadata) {
         const wallet = await this.getWalletByUserId(userId);
         if (!wallet) {
             throw new Error('Wallet not found');
         }
-
-        const transaction = new Transaction({
+        const transaction = new models_1.Transaction({
             walletId: wallet._id,
-            userId: new mongoose.Types.ObjectId(userId),
+            userId: new mongoose_1.default.Types.ObjectId(userId),
             type: 'debit',
             category,
             amount,
             fee,
             balanceBefore: wallet.balance,
             balanceAfter: wallet.balance, // Will be updated on success
-            reference: `TXN-${uuidv4()}`,
+            reference: `TXN-${(0, uuid_1.v4)()}`,
             externalRef,
             narration,
             status: 'pending',
@@ -287,33 +231,23 @@ export class WalletService {
         await transaction.save();
         return transaction;
     }
-
     /**
      * Update transaction status
      */
-    async updateTransactionStatus(
-        reference: string,
-        status: 'success' | 'failed',
-        metadata?: Record<string, any>
-    ): Promise<ITransactionDocument | null> {
-        return Transaction.findOneAndUpdate(
-            { reference },
-            {
-                status,
-                ...(metadata && { $set: { metadata } }),
-            },
-            { new: true }
-        );
+    async updateTransactionStatus(reference, status, metadata) {
+        return models_1.Transaction.findOneAndUpdate({ reference }, {
+            status,
+            ...(metadata && { $set: { metadata } }),
+        }, { new: true });
     }
-
     /**
      * Get balance by customer reference
      */
-    async getBalanceByReference(userId: string, customerReference: string): Promise<number> {
-        const result = await Transaction.aggregate([
+    async getBalanceByReference(userId, customerReference) {
+        const result = await models_1.Transaction.aggregate([
             {
                 $match: {
-                    userId: new mongoose.Types.ObjectId(userId),
+                    userId: new mongoose_1.default.Types.ObjectId(userId),
                     customerReference: customerReference,
                     status: 'success',
                 },
@@ -339,17 +273,16 @@ export class WalletService {
                 },
             },
         ]);
-
         return result.length > 0 ? result[0].balance : 0;
     }
     /**
      * Get transaction statistics for a user
      */
-    async getTransactionStats(userId: string): Promise<{ totalInflow: number; totalOutflow: number; count: number }> {
-        const result = await Transaction.aggregate([
+    async getTransactionStats(userId) {
+        const result = await models_1.Transaction.aggregate([
             {
                 $match: {
-                    userId: new mongoose.Types.ObjectId(userId),
+                    userId: new mongoose_1.default.Types.ObjectId(userId),
                     status: 'success',
                 },
             },
@@ -370,7 +303,6 @@ export class WalletService {
                 },
             },
         ]);
-
         if (result.length > 0) {
             return {
                 totalInflow: result[0].totalInflow,
@@ -378,34 +310,25 @@ export class WalletService {
                 count: result[0].count,
             };
         }
-
         return { totalInflow: 0, totalOutflow: 0, count: 0 };
     }
-
     /**
      * Get comprehensive dashboard statistics
      */
-    async getDashboardStats(userId: string): Promise<{
-        totalInflow: number;
-        totalOutflow: number;
-        transactionCount: number;
-        activeVirtualAccounts: number;
-        pendingSettlementsCount: number;
-    }> {
+    async getDashboardStats(userId) {
         const [transactionStats, activeVirtualAccounts, pendingSettlementsCount] = await Promise.all([
             this.getTransactionStats(userId),
-            VirtualAccount.countDocuments({
-                userId: new mongoose.Types.ObjectId(userId),
+            models_1.VirtualAccount.countDocuments({
+                userId: new mongoose_1.default.Types.ObjectId(userId),
                 status: 'active'
             }),
-            Transaction.countDocuments({
-                userId: new mongoose.Types.ObjectId(userId),
+            models_1.Transaction.countDocuments({
+                userId: new mongoose_1.default.Types.ObjectId(userId),
                 type: 'credit',
                 status: 'success',
                 isCleared: false
             })
         ]);
-
         return {
             totalInflow: transactionStats.totalInflow,
             totalOutflow: transactionStats.totalOutflow,
@@ -414,49 +337,39 @@ export class WalletService {
             pendingSettlementsCount
         };
     }
-
     /**
      * Manual adjustment of wallet balance (Admin only)
      */
-    async manualAdjustment(
-        userId: string,
-        amount: number,
-        type: 'credit' | 'debit',
-        narration: string,
-        adminId: string
-    ): Promise<ITransactionDocument> {
+    async manualAdjustment(userId, amount, type, narration, adminId) {
         try {
-            const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+            const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
             if (!wallet) {
                 throw new Error('Wallet not found');
             }
-
             const balanceBefore = wallet.balance;
-            let balanceAfter: number;
-
+            let balanceAfter;
             if (type === 'credit') {
                 balanceAfter = balanceBefore + amount;
                 wallet.balance = balanceAfter;
                 wallet.clearedBalance += amount;
-            } else {
+            }
+            else {
                 balanceAfter = balanceBefore - amount;
                 wallet.balance = balanceAfter;
                 wallet.clearedBalance -= amount;
             }
-
             await wallet.save();
-
             // Create transaction record
-            const transaction = new Transaction({
+            const transaction = new models_1.Transaction({
                 walletId: wallet._id,
-                userId: new mongoose.Types.ObjectId(userId),
+                userId: new mongoose_1.default.Types.ObjectId(userId),
                 type,
                 category: 'adjustment',
                 amount,
                 fee: 0,
                 balanceBefore,
                 balanceAfter,
-                reference: `ADJ-${uuidv4().substring(0, 8).toUpperCase()}`,
+                reference: `ADJ-${(0, uuid_1.v4)().substring(0, 8).toUpperCase()}`,
                 narration,
                 status: 'success',
                 metadata: {
@@ -467,13 +380,14 @@ export class WalletService {
                 clearedAt: new Date()
             });
             await transaction.save();
-
             return transaction;
-        } catch (error) {
+        }
+        catch (error) {
             throw error;
         }
     }
 }
-
-export const walletService = new WalletService();
-export default walletService;
+exports.WalletService = WalletService;
+exports.walletService = new WalletService();
+exports.default = exports.walletService;
+//# sourceMappingURL=WalletService.js.map

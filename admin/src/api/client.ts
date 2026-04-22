@@ -43,6 +43,8 @@ export interface Tenant {
     kyc_status: 'pending' | 'verified' | 'rejected';
     kyc_tier: 't1' | 't2' | 't3' | 'none';
     status: 'active' | 'inactive' | 'suspended';
+    state?: string;
+    lga?: string;
     webhookUrl?: string;
     isPayoutEnabled?: boolean;
     payoutRequestStatus?: 'none' | 'pending' | 'approved' | 'rejected';
@@ -134,6 +136,10 @@ export const adminApi = {
     },
     fundTenantWallet: async (id: string, amount: number, reason?: string): Promise<any> => {
         const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/fund`, { amount, reason });
+        return response.data;
+    },
+    adjustTenantWallet: async (id: string, data: { amount: number; type: 'credit' | 'debit'; narration: string }): Promise<any> => {
+        const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/adjust-wallet`, data);
         return response.data;
     },
 

@@ -27,6 +27,8 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
     onSendMessage
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc' | 'payout'>('overview');
+    const [isAdjusting, setIsAdjusting] = useState(false);
+    const [adjustmentData, setAdjustmentData] = useState({ amount: '', type: 'debit' as 'credit' | 'debit', narration: '' });
 
     // Fetch full tenant details (including wallet and stats)
     const { data: detailData, isLoading: loadingDetail } = useQuery({
@@ -79,6 +81,36 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
             }
         } catch (error) {
             toast.error('Failed to reject payout request');
+        }
+    };
+    
+    const handleManualAdjustment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!adjustmentData.amount || !adjustmentData.narration) {
+            toast.error('Please enter amount and narration');
+            return;
+        }
+
+        const amountNum = parseFloat(adjustmentData.amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+            toast.error('Please enter a valid amount');
+            return;
+        }
+
+        try {
+            setIsAdjusting(true);
+            await adminApi.adjustTenantWallet(fullTenant._id, {
+                amount: amountNum,
+                type: adjustmentData.type,
+                narration: adjustmentData.narration
+            });
+            toast.success(`Wallet ${adjustmentData.type}ed successfully`);
+            setAdjustmentData({ amount: '', type: 'debit', narration: '' });
+            // Refresh detail data
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to adjust wallet');
+        } finally {
+            setIsAdjusting(false);
         }
     };
 
@@ -163,6 +195,76 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 )}
                             </div>
 
+                            {/* Manual Adjustment Section */}
+                            <div className="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary-600/20 transition-all duration-700"></div>
+                                <h3 className="text-xs font-black text-primary-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse"></div>
+                                    Manual Wallet Correction
+                                </h3>
+                                
+                                <form onSubmit={handleManualAdjustment} className="space-y-4 relative z-10">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-1">Type</label>
+                                            <select 
+                                                value={adjustmentData.type}
+                                                onChange={(e) => setAdjustmentData({...adjustmentData, type: e.target.value as any})}
+                                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                            >
+                                                <option value="debit">DEBIT (-) 🩸</option>
+                                                <option value="credit">CREDIT (+) 🍀</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-1">Amount (₦)</label>
+                                            <input 
+                                                type="number" 
+                                                placeholder="0.00"
+                                                value={adjustmentData.amount}
+                                                onChange={(e) => setAdjustmentData({...adjustmentData, amount: e.target.value})}
+                                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-600"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-1">Adjustment Narration</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="e.g. Failed payout recovery reversal..."
+                                            value={adjustmentData.narration}
+                                            onChange={(e) => setAdjustmentData({...adjustmentData, narration: e.target.value})}
+                                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-600"
+                                        />
+                                    </div>
+
+                                    <button 
+                                        type="submit"
+                                        disabled={isAdjusting}
+                                        className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
+                                            adjustmentData.type === 'debit' 
+                                            ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-900/20' 
+                                            : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'
+                                        }`}
+                                    >
+                                        {isAdjusting ? (
+                                            <>
+                                                <RefreshCw size={14} className="animate-spin" />
+                                                PROCESSING...
+                                            </>
+                                        ) : (
+                                            <>
+                                                {adjustmentData.type === 'debit' ? 'EXECUTE DEBIT' : 'EXECUTE CREDIT'}
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                                <p className="mt-3 text-[9px] text-slate-500 font-medium italic text-center">
+                                    ⚠️ This action will reflect in the ledger but is hidden from the tenant's view.
+                                </p>
+                            </div>
+
                             {/* Payout Access Alert (If Pending) */}
                             {fullTenant.payoutRequestStatus === 'pending' && (
                                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center justify-between gap-4 animate-pulse">
@@ -209,6 +311,10 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">Joined Date</p>
                                         <p className="text-sm font-medium text-slate-900 mt-1">{new Date(fullTenant.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide">Location (State / LGA)</p>
+                                        <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.state || 'N/A'} / {fullTenant.lga || 'N/A'}</p>
                                     </div>
                                 </div>
                             </div>
