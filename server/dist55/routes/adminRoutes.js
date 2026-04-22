@@ -151,8 +151,6 @@ const activateUserAccount = async (user) => {
     // 2. Ensure user is fully verified and has API key
     try {
         const updateData = {
-            kycLevel: 3,
-            kyc_status: 'verified',
             status: 'active'
         };
         if (!user.apiKey) {

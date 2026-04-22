@@ -108,6 +108,7 @@ router.post('/submit', auth_1.authenticate, async (req, res) => {
         if (nin)
             user.nin = nin;
         user.kyc_status = 'pending';
+        user.kycLevel = 1;
         await user.save();
         // Notify admins
         services_1.emailService.sendKycSubmissionAdminNotification(user, 'KYC').catch(err => console.error('[KYC] Failed to send admin notification:', err));

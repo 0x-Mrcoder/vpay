@@ -112,6 +112,7 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
         if (nin) user.nin = nin;
 
         user.kyc_status = 'pending';
+        user.kycLevel = 1;
 
         await user.save();
 

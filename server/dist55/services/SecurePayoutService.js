@@ -15,6 +15,9 @@ const connection = {
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
 };
 exports.payoutQueue = new bullmq_1.Queue('secure-payouts', { connection });
+exports.payoutQueue.on('error', (err) => {
+    console.error('[BullMQ] Queue Error:', err);
+});
 class SecurePayoutService {
     /**
      * POST /payouts/request logic
@@ -162,6 +165,9 @@ exports.payoutWorker = new bullmq_1.Worker('secure-payouts', async (job) => {
         await finalizePayoutReversal(payout);
     }
 }, { connection });
+exports.payoutWorker.on('error', (err) => {
+    console.error('[BullMQ] Worker Error:', err);
+});
 // Success finalization helper
 async function finalizePayoutSuccess(payout) {
     const session = await mongoose_1.default.startSession();

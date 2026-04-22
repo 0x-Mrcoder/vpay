@@ -12,6 +12,10 @@ const connection = {
 
 export const payoutQueue = new Queue('secure-payouts', { connection });
 
+payoutQueue.on('error', (err) => {
+    console.error('[BullMQ] Queue Error:', err);
+});
+
 export class SecurePayoutService {
 
     /**
@@ -183,6 +187,10 @@ export const payoutWorker = new Worker('secure-payouts', async (job: Job) => {
         await finalizePayoutReversal(payout);
     }
 }, { connection });
+
+payoutWorker.on('error', (err) => {
+    console.error('[BullMQ] Worker Error:', err);
+});
 
 // Success finalization helper
 async function finalizePayoutSuccess(payout: any) {
