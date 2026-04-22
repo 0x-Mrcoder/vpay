@@ -110,9 +110,16 @@ export const Overview: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-                    <p className="text-gray-500 mt-1">
-                        Overview of your account activity
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <p className="text-gray-500">Overview of your account activity</p>
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black tracking-widest uppercase border ${
+                            user?.kyc_tier === 't3' ? 'bg-amber-50 text-amber-600 border-amber-200' : 
+                            user?.kyc_tier === 't2' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 
+                            'bg-slate-50 text-slate-500 border-slate-200'
+                        }`}>
+                            {user?.kyc_tier?.toUpperCase() || (user?.kycLevel === 1 ? 'T1' : user?.kycLevel === 2 ? 'T2' : user?.kycLevel === 3 ? 'T3' : 'T0')}
+                        </span>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <button

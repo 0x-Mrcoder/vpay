@@ -177,6 +177,11 @@ const UserSchema = new mongoose_1.Schema({
         enum: ['pending', 'verified', 'rejected'],
         default: 'pending',
     },
+    kyc_tier: {
+        type: String,
+        enum: ['t1', 't2', 't3', 'none'],
+        default: 'none',
+    },
     role: {
         type: String,
         enum: ['user', 'admin'],

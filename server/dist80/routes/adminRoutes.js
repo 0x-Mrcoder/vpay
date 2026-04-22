@@ -684,7 +684,11 @@ router.patch('/tenants/:id/kyc', async (req, res) => {
         }
         // status 'verified' from T1 submission sets level 2 (Fully Verified T1)
         const kycLevel = status === 'verified' ? 2 : (status === 'rejected' ? 0 : currentUser.kycLevel || 1);
-        const updatedUser = await models_1.User.findByIdAndUpdate(id, { kyc_status: status, kycLevel }, { new: true }).select('-passwordHash');
+        const updatedUser = await models_1.User.findByIdAndUpdate(id, {
+            kyc_status: status,
+            kycLevel,
+            kyc_tier: status === 'verified' ? 't2' : currentUser.kyc_tier
+        }, { new: true }).select('-passwordHash');
         if (!updatedUser) {
             res.status(404).json({
                 success: false,
@@ -2001,6 +2005,7 @@ router.post('/payout/approve/:userId', async (req, res) => {
         user.payoutRequestStatus = 'approved';
         user.isPayoutEnabled = true;
         user.kycLevel = 3; // Fully Verified Tier 3
+        user.kyc_tier = 't3';
         user.kyc_status = 'verified'; // Ensure KYC status is also verified
         await user.save();
         const html = `

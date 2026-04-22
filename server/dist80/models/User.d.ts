@@ -34,6 +34,7 @@ export interface IUserDocument extends Document {
     profilePicture?: string;
     kycLevel: number;
     kyc_status: 'pending' | 'verified' | 'rejected';
+    kyc_tier: 't1' | 't2' | 't3' | 'none';
     role: 'user' | 'admin';
     status: 'active' | 'suspended' | 'pending';
     savedBankDetails?: {

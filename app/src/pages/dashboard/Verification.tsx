@@ -208,14 +208,15 @@ export const Verification: React.FC = () => {
         );
     }
 
-    // 3. Fully Verified or Tier 1 Verified
-    if (user.kycLevel >= 2) {
-        const isT3 = user.kycLevel === 3;
+    // 3. Fully Verified or Tier 2/T3 Verified
+    if (user.kycLevel >= 2 || user.kyc_tier === 't2' || user.kyc_tier === 't3') {
+        const isT3 = user.kyc_tier === 't3';
+        const isT2 = user.kyc_tier === 't2';
 
         return (
             <div className="max-w-4xl mx-auto p-4 md:p-8 animate-fade-in space-y-8">
                 {/* Verified Header */}
-                <div className={`rounded-[2.5rem] p-10 text-white text-center shadow-2xl relative overflow-hidden transition-all duration-700 ${isT3 ? 'bg-slate-950 border-b-8 border-slate-800' : 'bg-primary-600 border-b-8 border-primary-800'}`}>
+                <div className={`rounded-[2.5rem] p-10 text-white text-center shadow-2xl relative overflow-hidden transition-all duration-700 ${isT3 ? 'bg-slate-950 border-b-8 border-slate-800' : isT2 ? 'bg-primary-600 border-b-8 border-primary-800' : 'bg-indigo-600 border-b-8 border-indigo-800'}`}>
                     {/* Background decorative elements */}
                     <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
@@ -226,10 +227,10 @@ export const Verification: React.FC = () => {
 
                     <div className="relative z-10">
                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 inline-block ${isT3 ? 'bg-amber-400 text-slate-950' : 'bg-white text-primary-600'}`}>
-                            {isT3 ? 'Corporate Tier' : 'Personnel Tier'}
+                            {isT3 ? 'Corporate Tier' : isT2 ? 'Personnel Tier' : 'Standard Tier'}
                         </span>
                         <h2 className="text-4xl font-black mb-3 tracking-tight">
-                            {isT3 ? 'Business Verified (T3)' : 'Personal Verified (T1)'}
+                            {isT3 ? 'Business Verified (T3)' : 'Personal Verified (T2)'}
                         </h2>
                         <p className={`max-w-lg mx-auto font-medium text-lg ${isT3 ? 'text-slate-400' : 'text-white/80'}`}>
                             {isT3 ? 'Your account has full programmatic payout access.' : 'Upgrade to Tier 3 Business to unlock Payout APIs.'}
@@ -451,7 +452,7 @@ export const Verification: React.FC = () => {
                 <div className="absolute right-0 top-0 w-32 h-32 bg-primary-600/5 rounded-full -mr-16 -mt-16"></div>
                 <div>
                     <h1 className="text-3xl font-black text-gray-900 tracking-tight">Personal Verification</h1>
-                    <p className="text-sm text-gray-500 mt-1 font-medium italic">Complete Tier 1 verification to unlock Nigerian virtual accounts.</p>
+                    <p className="text-sm text-gray-500 mt-1 font-medium italic">Complete Tier 2 verification to unlock Nigerian virtual accounts and higher limits.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {[1, 2, 3].map(i => (

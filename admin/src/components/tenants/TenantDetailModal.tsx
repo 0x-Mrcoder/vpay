@@ -236,6 +236,14 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                             </Badge>
                                         </div>
                                     </div>
+                                    <div className="flex justify-between items-center sm:block">
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide">Verification Tier</p>
+                                        <div className="mt-1">
+                                            <Badge variant={fullTenant.kyc_tier === 't3' ? 'success' : fullTenant.kyc_tier === 't2' ? 'info' : 'neutral'}>
+                                                {(fullTenant.kyc_tier || 't1').toUpperCase()}
+                                            </Badge>
+                                        </div>
+                                    </div>
                                     {fullTenant.webhookUrl && (
                                         <div className="sm:col-span-2">
                                             <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Webhook URL</p>

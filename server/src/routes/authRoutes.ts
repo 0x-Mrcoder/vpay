@@ -154,6 +154,7 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
 
         // Update user status
         user.kycLevel = 1; // 1: Email Verified
+        user.kyc_tier = 't1';
         user.verificationToken = undefined;
         await user.save();
 

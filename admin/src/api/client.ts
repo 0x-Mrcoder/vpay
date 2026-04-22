@@ -41,6 +41,7 @@ export interface Tenant {
     cacDocumentPath?: string;
     kycLevel: number;
     kyc_status: 'pending' | 'verified' | 'rejected';
+    kyc_tier: 't1' | 't2' | 't3' | 'none';
     status: 'active' | 'inactive' | 'suspended';
     webhookUrl?: string;
     isPayoutEnabled?: boolean;

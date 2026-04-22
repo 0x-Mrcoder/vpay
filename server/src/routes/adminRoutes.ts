@@ -734,7 +734,11 @@ router.patch('/tenants/:id/kyc', async (req: AuthenticatedRequest, res: Response
 
         const updatedUser = await User.findByIdAndUpdate(
             id,
-            { kyc_status: status, kycLevel },
+            { 
+                kyc_status: status, 
+                kycLevel,
+                kyc_tier: status === 'verified' ? 't2' : currentUser.kyc_tier
+            },
             { new: true }
         ).select('-passwordHash');
 
@@ -2170,6 +2174,7 @@ router.post('/payout/approve/:userId', async (req: AuthenticatedRequest, res: Re
         user.payoutRequestStatus = 'approved';
         user.isPayoutEnabled = true;
         user.kycLevel = 3; // Fully Verified Tier 3
+        user.kyc_tier = 't3';
         user.kyc_status = 'verified'; // Ensure KYC status is also verified
         await user.save();
 

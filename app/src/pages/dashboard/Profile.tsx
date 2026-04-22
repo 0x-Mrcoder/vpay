@@ -190,8 +190,8 @@ export const Profile: React.FC = () => {
                             <h2 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">{user?.firstName} {user?.lastName}</h2>
                             <p className="text-sm text-gray-500 mb-6 font-medium">{user?.email}</p>
                             <div className="flex items-center justify-center gap-3">
-                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${user?.kycLevel === 3 ? 'bg-green-100 text-green-700' : 'bg-primary-100 text-primary-700'}`}>
-                                    {user?.kycLevel === 3 ? 'Verified' : 'Pending'}
+                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${user?.kyc_tier === 't3' ? 'bg-amber-100 text-amber-700' : user?.kyc_tier === 't2' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-700'}`}>
+                                    {user?.kyc_tier?.toUpperCase() || (user?.kycLevel === 1 ? 'T1' : user?.kycLevel === 2 ? 'T2' : user?.kycLevel === 3 ? 'T3' : 'T0')}
                                 </span>
                                 <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-600">
                                     User
@@ -212,8 +212,8 @@ export const Profile: React.FC = () => {
                                             <ShieldAlert size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-red-900">Unverified</p>
-                                            <p className="text-xs text-red-700">Account limits applied</p>
+                                            <p className="text-sm font-bold text-red-900">Tier 1 (Basic)</p>
+                                            <p className="text-xs text-red-700">Level 2 ID verification required</p>
                                         </div>
                                     </div>
                                     <button
@@ -223,15 +223,15 @@ export const Profile: React.FC = () => {
                                         Complete Verification <ChevronRight size={14} />
                                     </button>
                                 </div>
-                            ) : (user?.kycLevel === 2) ? (
+                            ) : (user?.kycLevel === 2 && user?.kyc_status === 'pending') ? (
                                 <div className="bg-primary-50 rounded-xl p-4 border border-primary-100">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="bg-white p-2 rounded-lg text-primary-600 shadow-sm">
                                             <Loader2 size={20} className="animate-spin" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-primary-900">In Review</p>
-                                            <p className="text-xs text-primary-700">We are checking your docs</p>
+                                            <p className="text-sm font-bold text-primary-900">T2 In Review</p>
+                                            <p className="text-xs text-primary-700">Verifying documents...</p>
                                         </div>
                                     </div>
                                     <button
@@ -248,8 +248,8 @@ export const Profile: React.FC = () => {
                                             <Award size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-green-900">Verified</p>
-                                            <p className="text-xs text-green-700">All features unlocked</p>
+                                            <p className="text-sm font-bold text-green-900">{user?.kyc_tier === 't3' ? 'Tier 3 Verified' : 'Tier 2 Verified'}</p>
+                                            <p className="text-xs text-green-700">{user?.kyc_tier === 't3' ? 'Full Business Access' : 'Personal Verified'}</p>
                                         </div>
                                     </div>
                                     <button

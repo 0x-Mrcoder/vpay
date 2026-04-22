@@ -410,7 +410,7 @@ const TenantsPage: React.FC = () => {
                                         Business
                                     </th>
                                     <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                        KYC Level
+                                        Verification Tier
                                     </th>
                                     <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                         Status
@@ -447,8 +447,11 @@ const TenantsPage: React.FC = () => {
                                         <td className="hidden lg:table-cell px-4 md:px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-slate-900">{tenant.businessName || 'N/A'}</div>
                                         </td>
-                                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                                        <td className="px-4 md:px-6 py-4 whitespace-nowrap space-x-2">
                                             {getKycStatusBadge(tenant.kyc_status)}
+                                            <Badge variant={tenant.kyc_tier === 't3' ? 'success' : tenant.kyc_tier === 't2' ? 'info' : 'neutral'}>
+                                                {(tenant.kyc_tier || 't1').toUpperCase()}
+                                            </Badge>
                                         </td>
                                         <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                                             {getStatusBadge(tenant.status)}
