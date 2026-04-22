@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-    Zap, 
-    ShieldCheck, 
-    ShieldAlert, 
-    Copy, 
-    RefreshCw, 
-    Save, 
-    Loader2, 
+import {
+    Zap,
+    ShieldCheck,
+    ShieldAlert,
+    Copy,
+    RefreshCw,
+    Save,
+    Loader2,
     ExternalLink,
     Clock,
     Code,
@@ -15,7 +15,6 @@ import {
     Key,
     BookOpen,
     Info,
-    ArrowRight,
     AlertCircle,
     X,
     Eye,
@@ -45,7 +44,7 @@ export const Developer: React.FC = () => {
     const [hasPayoutKey, setHasPayoutKey] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    
+
     // Tab State
     const [activeSection, setActiveSection] = useState<'keys' | 'docs'>('keys');
 
@@ -176,7 +175,7 @@ export const Developer: React.FC = () => {
             setShowConfirmModal(true);
             return;
         }
-        
+
         setShowConfirmModal(false);
         setIsGeneratingPayoutKey(true);
         try {
@@ -236,13 +235,13 @@ export const Developer: React.FC = () => {
                                     This action will <span className="text-red-600 font-bold underline">permanently disable</span> your current payout secret key. Any existing integrations using the old key will stop working immediately.
                                 </p>
                                 <div className="flex gap-3">
-                                    <button 
+                                    <button
                                         onClick={() => setShowConfirmModal(false)}
                                         className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
                                     >
                                         Cancel
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={handleGeneratePayoutKey}
                                         className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-200"
                                     >
@@ -255,9 +254,8 @@ export const Developer: React.FC = () => {
 
                     {/* Notification Banner */}
                     {notification && (
-                        <div className={`fixed top-24 right-8 z-[1000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border animate-slide-in pointer-events-auto ${
-                            notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'
-                        }`}>
+                        <div className={`fixed top-24 right-8 z-[1000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border animate-slide-in pointer-events-auto ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'
+                            }`}>
                             {notification.type === 'success' ? <ShieldCheck size={20} /> : <AlertCircle size={20} />}
                             <span className="font-bold text-sm tracking-tight">{notification.message}</span>
                             <button onClick={() => setNotification(null)} className="ml-4 opacity-50 hover:opacity-100">
@@ -265,10 +263,10 @@ export const Developer: React.FC = () => {
                             </button>
                         </div>
                     )}
-                    
+
                     {/* Sub-navigation */}
                     <div className="flex p-1 bg-gray-100 rounded-xl w-fit">
-                        <button 
+                        <button
                             onClick={() => setActiveSection('keys')}
                             className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeSection === 'keys' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                         >
@@ -276,7 +274,7 @@ export const Developer: React.FC = () => {
                                 <Key size={14} /> API Keys
                             </div>
                         </button>
-                        <button 
+                        <button
                             onClick={() => setActiveSection('docs')}
                             className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeSection === 'docs' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                         >
@@ -291,7 +289,7 @@ export const Developer: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Main Settings Column */}
                         <div className="lg:col-span-2 space-y-8">
-                            
+
                             {/* API Key Card */}
                             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -316,14 +314,14 @@ export const Developer: React.FC = () => {
                                                 placeholder="Not generated yet"
                                             />
                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                                <button 
+                                                <button
                                                     onClick={() => setShowKey(!showKey)}
                                                     className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
                                                     title={showKey ? "Hide key" : "Show key"}
                                                 >
                                                     {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => apiKey && copyToClipboard(apiKey)}
                                                     className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
                                                     title="Copy to clipboard"
@@ -514,8 +512,8 @@ export const Developer: React.FC = () => {
                                                                 readOnly
                                                                 className="w-full pl-4 pr-12 py-5 bg-white border-2 border-red-200 rounded-xl font-mono text-xs text-red-900 font-bold selection:bg-red-200"
                                                             />
-                                                            <button 
-                                                                onClick={() => copyToClipboard(payoutSecretKey)} 
+                                                            <button
+                                                                onClick={() => copyToClipboard(payoutSecretKey)}
                                                                 className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                                                             >
                                                                 <Copy size={18} />
@@ -593,7 +591,7 @@ export const Developer: React.FC = () => {
                                         <div className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</div>
                                         <p className="text-xs text-gray-300">Whitelist your production server IPs for secure payout execution.</p>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => setActiveSection('docs')}
                                         className="block w-full text-center py-3 bg-white text-gray-900 rounded-xl text-xs font-bold mt-4 hover:bg-gray-100 transition-colors"
                                     >
@@ -623,149 +621,87 @@ export const Developer: React.FC = () => {
                             </div>
                             <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-[10px] font-black uppercase tracking-widest">v1.2.0</span>
                         </div>
-                        
+
                         <div className="p-8 space-y-12">
-                            {/* Standard API Docs */}
+                            {/* Payout API Docs */}
                             <section>
-                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2 mb-6">
-                                    <div className="w-1.5 h-6 bg-primary-500 rounded-full"></div>
-                                    Standard Payment API
-                                </h4>
-                                <p className="text-sm text-gray-600 mb-6 font-medium">Use these endpoints to manage virtual accounts and receive payment notifications.</p>
-                                
-                                <div className="space-y-6">
-                                    <div className="bg-slate-900 rounded-2xl p-6 text-slate-300 font-mono text-xs overflow-x-auto shadow-inner group">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-blue-400 font-bold uppercase tracking-tighter bg-blue-400/10 px-1 rounded">GET</span>
-                                                <span className="text-slate-100 font-bold">/v1/virtual-accounts</span>
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    const code = `curl -X GET https://api.vtstack.com.ng/api/v1/virtual-accounts \\\n  -H "Authorization: Bearer ${apiKey || 'sk_live_...'}"`;
-                                                    copyToClipboard(code);
-                                                    showNotification('Curl command copied');
-                                                }}
-                                                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-lg transition-all"
-                                            >
-                                                <Copy size={14} />
-                                            </button>
-                                        </div>
-                                        <p className="text-slate-500 italic"># List all your virtual accounts</p>
-                                        <div className="mt-4">
-                                            <span className="text-slate-500">Authorization:</span> Bearer <span className="text-primary-400">{apiKey || 'sk_live_...'}</span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-900 rounded-2xl p-6 text-slate-300 font-mono text-xs overflow-x-auto shadow-inner group">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-emerald-400 font-bold uppercase tracking-tighter bg-emerald-400/10 px-1 rounded">POST</span>
-                                                <span className="text-slate-100 font-bold">/v1/virtual-accounts</span>
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    const code = `curl -X POST https://api.vtstack.com.ng/api/v1/virtual-accounts \\\n  -H "Authorization: Bearer ${apiKey || 'sk_live_...'}" \\\n  -d '{"customer": {"first_name": "John", ...}}'`;
-                                                    copyToClipboard(code);
-                                                    showNotification('Curl command copied');
-                                                }}
-                                                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-lg transition-all"
-                                            >
-                                                <Copy size={14} />
-                                            </button>
-                                        </div>
-                                        <p className="text-slate-500 italic"># Create a new virtual account for a customer</p>
-                                        <pre className="mt-4 text-emerald-300 leading-relaxed">
-{`{
-  "customer": {
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john@example.com"
-  },
-  "amount": 50000 
-}`}
-                                        </pre>
+                                <div className="flex items-center justify-between mb-8">
+                                    <h4 className="text-sm font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
+                                        <div className="w-1.5 h-6 bg-purple-500 rounded-full"></div>
+                                        Secure Payout API (Premium)
+                                    </h4>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${payoutStatus === 'approved' && user?.isPayoutEnabled ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                        {payoutStatus === 'approved' && user?.isPayoutEnabled ? 'AUTHORIZED' : 'UPGRADE REQUIRED'}
+                                    </span>
+                                </div>
+
+                                <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100 mb-8 flex items-start gap-4">
+                                    <Info className="text-purple-600 flex-shrink-0 mt-0.5" size={20} />
+                                    <div className="text-xs text-purple-800 font-medium leading-relaxed">
+                                        <p className="font-bold text-sm mb-1">Advanced Security Protocol</p>
+                                        Payout requests require an HMAC-SHA256 signature hashed with your Payout Secret Key.
+                                        Requests must originate from your whitelisted IPs: <span className="font-bold">{payoutIps || 'None set'}</span>.
                                     </div>
                                 </div>
-                            </section>
 
-                            {/* Payout API Docs - EXCLUSIVE TO T3 */}
-                            {payoutStatus === 'approved' && user?.isPayoutEnabled ? (
-                                <section className="pt-12 border-t border-gray-100">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <h4 className="text-sm font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
-                                            <div className="w-1.5 h-6 bg-purple-500 rounded-full"></div>
-                                            Secure Payout API (Premium)
-                                        </h4>
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">AUTHORIZED</span>
-                                    </div>
-                                    
-                                    <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100 mb-8 flex items-start gap-4">
-                                        <Info className="text-purple-600 flex-shrink-0 mt-0.5" size={20} />
-                                        <div className="text-xs text-purple-800 font-medium leading-relaxed">
-                                            <p className="font-bold text-sm mb-1">Advanced Security Protocol</p>
-                                            Payout requests require an HMAC-SHA256 signature hashed with your Payout Secret Key. 
-                                            Requests must originate from your whitelisted IPs: <span className="font-bold">{payoutIps || 'None set'}</span>.
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-8">
-                                        <div className="bg-slate-900 rounded-2xl p-6 text-slate-300 font-mono text-xs overflow-x-auto shadow-xl group">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-purple-400 font-bold uppercase tracking-tighter bg-purple-400/10 px-1 rounded">POST</span>
-                                                    <span className="text-slate-100 font-bold">/v1/payout/secure/request</span>
-                                                </div>
-                                                <button 
-                                                    onClick={() => {
-                                                        const code = `curl -X POST https://api.vtstack.com.ng/api/v1/payout/secure/request \\\n  -H "Authorization: Bearer <PAYOUT_SECRET_KEY>" \\\n  -H "X-Timestamp: ${Date.now()}" \\\n  -H "X-Signature: <SIGNATURE>" \\\n  -d '{"amount": 250000, "bankCode": "999", "accountNumber": "0123456789", "accountName": "John Payout", "narration": "Invoicing #456"}'`;
-                                                        copyToClipboard(code);
-                                                        showNotification('Curl command copied');
-                                                    }}
-                                                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-lg transition-all"
-                                                >
-                                                    <Copy size={14} />
-                                                </button>
+                                <div className="space-y-8">
+                                    <div className="bg-slate-900 rounded-2xl p-6 text-slate-300 font-mono text-xs overflow-x-auto shadow-xl group">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-purple-400 font-bold uppercase tracking-tighter bg-purple-400/10 px-1 rounded">POST</span>
+                                                <span className="text-slate-100 font-bold">/v1/payout/secure/request</span>
                                             </div>
-                                            
-                                            <div className="mt-6 space-y-4">
-                                                <div>
-                                                    <span className="text-slate-500 block mb-1 font-bold uppercase tracking-tighter text-[10px]">Headers</span>
-                                                    <div className="grid grid-cols-[140px,1fr] gap-x-4 gap-y-1 ml-4 opacity-80">
-                                                        <span className="text-slate-400">Authorization:</span>
-                                                        <span className="text-purple-400 font-bold">Bearer <span className="italic">&lt;PAYOUT_SECRET_KEY&gt;</span></span>
-                                                        
-                                                        <span className="text-slate-400">X-Timestamp:</span>
-                                                        <span className="text-emerald-400">1713280000 </span>
-                                                        
-                                                        <span className="text-slate-400">X-Signature:</span>
-                                                        <span className="text-amber-400">hash(timestamp + body)</span>
+                                            <button
+                                                onClick={() => {
+                                                    const code = `curl -X POST https://api.vtstack.com.ng/api/v1/payout/secure/request \\\n  -H "Authorization: Bearer <PAYOUT_SECRET_KEY>" \\\n  -H "X-Timestamp: ${Date.now()}" \\\n  -H "X-Signature: <SIGNATURE>" \\\n  -d '{"amount": 250000, "bankCode": "999", "accountNumber": "0123456789", "accountName": "John Payout", "narration": "Invoicing #456"}'`;
+                                                    copyToClipboard(code);
+                                                    showNotification('Curl command copied');
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-lg transition-all"
+                                            >
+                                                <Copy size={14} />
+                                            </button>
+                                        </div>
 
-                                                        <span className="text-slate-400">X-Idempotency-Key:</span>
-                                                        <span className="text-blue-400">unique_string_123</span>
-                                                    </div>
+                                        <div className="mt-6 space-y-4">
+                                            <div>
+                                                <span className="text-slate-500 block mb-1 font-bold uppercase tracking-tighter text-[10px]">Headers</span>
+                                                <div className="grid grid-cols-[140px,1fr] gap-x-4 gap-y-1 ml-4 opacity-80">
+                                                    <span className="text-slate-400">Authorization:</span>
+                                                    <span className="text-purple-400 font-bold">Bearer <span className="italic">&lt;PAYOUT_SECRET_KEY&gt;</span></span>
+
+                                                    <span className="text-slate-400">X-Timestamp:</span>
+                                                    <span className="text-emerald-400">1713280000 </span>
+
+                                                    <span className="text-slate-400">X-Signature:</span>
+                                                    <span className="text-amber-400">hash(timestamp + body)</span>
+
+                                                    <span className="text-slate-400">X-Idempotency-Key:</span>
+                                                    <span className="text-blue-400">unique_string_123</span>
                                                 </div>
+                                            </div>
 
-                                                <div className="pt-4 mt-4 border-t border-slate-800">
-                                                    <span className="text-slate-500 block mb-2 font-bold uppercase tracking-tighter text-[10px]">Payload Body</span>
-                                                    <pre className="text-emerald-300 leading-relaxed ml-4">
-{`{
+                                            <div className="pt-4 mt-4 border-t border-slate-800">
+                                                <span className="text-slate-500 block mb-2 font-bold uppercase tracking-tighter text-[10px]">Payload Body</span>
+                                                <pre className="text-emerald-300 leading-relaxed ml-4">
+                                                    {`{
   "amount": 250000, 
   "bankCode": "999",
   "accountNumber": "0123456789",
   "accountName": "John Payout",
   "narration": "Invoicing #456"
 }`}
-                                                    </pre>
-                                                </div>
+                                                </pre>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 relative group">
-                                            <h5 className="text-xs font-black text-slate-800 uppercase mb-4 flex items-center gap-2">
-                                                <Terminal size={14} /> Signature Generation Example (Node.js)
-                                            </h5>
-                                            <pre className="text-[10px] font-mono text-slate-700 bg-white p-4 rounded-xl border border-slate-100 overflow-x-auto leading-relaxed">
-{`const crypto = require('crypto');
+                                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 relative group">
+                                        <h5 className="text-xs font-black text-slate-800 uppercase mb-4 flex items-center gap-2">
+                                            <Terminal size={14} /> Signature Generation Example (Node.js)
+                                        </h5>
+                                        <pre className="text-[10px] font-mono text-slate-700 bg-white p-4 rounded-xl border border-slate-100 overflow-x-auto leading-relaxed">
+                                            {`const crypto = require('crypto');
 
 const secret = 'vt_pout_sec_...';
 const timestamp = Date.now().toString();
@@ -774,42 +710,22 @@ const body = JSON.stringify({ amount: 1000, ... });
 const signature = crypto.createHmac('sha256', secret)
   .update(timestamp + body)
   .digest('hex');`}
-                                            </pre>
-                                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all">
-                                                <button 
-                                                    onClick={() => {
-                                                        const code = `const crypto = require('crypto');\n\nconst secret = 'vt_pout_sec_...';\nconst timestamp = Date.now().toString();\nconst body = JSON.stringify({ amount: 1000 });\n\nconst signature = crypto.createHmac('sha256', secret)\n  .update(timestamp + body)\n  .digest('hex');`;
-                                                        copyToClipboard(code);
-                                                        showNotification('Code snippet copied');
-                                                    }}
-                                                    className="p-1.5 bg-white shadow-sm border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-                                                >
-                                                    <Copy size={14} />
-                                                </button>
-                                            </div>
+                                        </pre>
+                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all">
+                                            <button
+                                                onClick={() => {
+                                                    const code = `const crypto = require('crypto');\n\nconst secret = 'vt_pout_sec_...';\nconst timestamp = Date.now().toString();\nconst body = JSON.stringify({ amount: 1000 });\n\nconst signature = crypto.createHmac('sha256', secret)\n  .update(timestamp + body)\n  .digest('hex');`;
+                                                    copyToClipboard(code);
+                                                    showNotification('Code snippet copied');
+                                                }}
+                                                className="p-1.5 bg-white shadow-sm border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                                            >
+                                                <Copy size={14} />
+                                            </button>
                                         </div>
                                     </div>
-                                </section>
-                            ) : (
-                                <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center gap-4 group hover:border-primary-300 transition-all">
-                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 shadow-sm group-hover:text-primary-500 transition-colors">
-                                        <ShieldAlert size={32} />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900 text-lg">Payout API Docs Locked</h4>
-                                        <p className="text-sm text-slate-500 mt-2 max-w-sm font-medium">
-                                            Access to the Secure Payout API is restricted to Business (T3) verified tenants. 
-                                            Upgrade your account to unlock documentation and programmatic payout capabilities.
-                                        </p>
-                                    </div>
-                                    <button 
-                                        onClick={() => setActiveSection('keys')}
-                                        className="mt-2 px-8 py-3 bg-white border border-slate-200 text-slate-900 rounded-xl text-xs font-bold hover:shadow-lg transition-all flex items-center gap-2"
-                                    >
-                                        Check Eligibility <ArrowRight size={14} />
-                                    </button>
                                 </div>
-                            )}
+                            </section>
                         </div>
                     </div>
                 )}

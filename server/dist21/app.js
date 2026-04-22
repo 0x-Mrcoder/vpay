@@ -12,10 +12,8 @@ const securePayoutRoutes_1 = __importDefault(require("./routes/securePayoutRoute
 const config_1 = __importDefault(require("./config"));
 const logger_1 = require("./utils/logger");
 const app = (0, express_1.default)();
-// Security middleware
-app.use((0, helmet_1.default)());
-// CORS configuration
-app.use((0, cors_1.default)({
+// CORS configuration — must come BEFORE helmet so headers are not stripped
+const corsOptions = {
     origin: [
         'https://vtstack.com.ng',
         'https://admin.vtstack.com.ng',
@@ -26,7 +24,13 @@ app.use((0, cors_1.default)({
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-palm-signature', 'x-api-key'],
-}));
+    credentials: true,
+};
+// Handle preflight (OPTIONS) requests immediately before any other middleware
+app.options('*', (0, cors_1.default)(corsOptions));
+app.use((0, cors_1.default)(corsOptions));
+// Security middleware
+app.use((0, helmet_1.default)());
 // Rate limiting removed as per user request
 // const limiter = rateLimit({
 //     windowMs: 15 * 60 * 1000, // 15 minutes

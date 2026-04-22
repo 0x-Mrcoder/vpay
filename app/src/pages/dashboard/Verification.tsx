@@ -210,88 +210,126 @@ export const Verification: React.FC = () => {
 
     // 3. Fully Verified or Tier 1 Verified
     if (user.kycLevel >= 2) {
+        const isT3 = user.kycLevel === 3;
+
         return (
             <div className="max-w-4xl mx-auto p-4 md:p-8 animate-fade-in space-y-8">
                 {/* Verified Header */}
-                <div className={`rounded-3xl p-8 text-white text-center shadow-xl relative overflow-hidden ${user.kycLevel === 3 ? 'bg-gradient-to-br from-indigo-600 to-indigo-800' : 'bg-gradient-to-br from-primary-600 to-primary-700'}`}>
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6 border border-white/30 shadow-inner">
-                        <CheckCircle2 size={40} className="text-white" />
+                <div className={`rounded-[2.5rem] p-10 text-white text-center shadow-2xl relative overflow-hidden transition-all duration-700 ${isT3 ? 'bg-slate-950 border-b-8 border-slate-800' : 'bg-primary-600 border-b-8 border-primary-800'}`}>
+                    {/* Background decorative elements */}
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+
+                    <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-white/20 shadow-2xl backdrop-blur-md transition-transform hover:scale-110 duration-500 ${isT3 ? 'bg-amber-400/20 text-amber-400 border-amber-400/30' : 'bg-white/20 text-white border-white/30'}`}>
+                        {isT3 ? <ShieldCheck size={48} /> : <CheckCircle2 size={48} />}
                     </div>
-                    <h2 className="text-3xl font-black mb-2 relative z-10">
-                        {user.kycLevel === 3 ? 'Business Verified (T3)' : 'Personal Verified (T1)'}
-                    </h2>
-                    <p className="text-white/80 max-w-lg mx-auto relative z-10 font-medium">
-                        {user.kycLevel === 3 ? 'Your account has full programmatic payout access.' : 'Upgrade to Tier 3 Business to unlock Payout APIs.'}
-                    </p>
+
+                    <div className="relative z-10">
+                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 inline-block ${isT3 ? 'bg-amber-400 text-slate-950' : 'bg-white text-primary-600'}`}>
+                            {isT3 ? 'Corporate Tier' : 'Personnel Tier'}
+                        </span>
+                        <h2 className="text-4xl font-black mb-3 tracking-tight">
+                            {isT3 ? 'Business Verified (T3)' : 'Personal Verified (T1)'}
+                        </h2>
+                        <p className={`max-w-lg mx-auto font-medium text-lg ${isT3 ? 'text-slate-400' : 'text-white/80'}`}>
+                            {isT3 ? 'Your account has full programmatic payout access.' : 'Upgrade to Tier 3 Business to unlock Payout APIs.'}
+                        </p>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Personal Info */}
-                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <User size={14} /> Personal Information
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] text-gray-400 font-bold uppercase">Full Name</label>
-                                <p className="font-bold text-gray-900">{user.fullName || `${user.firstName} ${user.lastName}`}</p>
+                    <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-xl shadow-gray-100/50 hover:shadow-2xl hover:shadow-gray-200/50 transition-all group">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <User size={16} className="text-primary-500" /> Personal Information
+                            </h3>
+                            <CheckCircle2 size={18} className="text-green-500" />
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-gray-50 group-hover:bg-white group-hover:border-primary-100 transition-all">
+                                <label className="text-[10px] text-gray-400 font-black uppercase tracking-tighter block mb-1">Legal Full Name</label>
+                                <p className="font-black text-gray-900 text-lg uppercase">{user.fullName || `${user.firstName} ${user.lastName}`}</p>
                             </div>
+
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] text-gray-400 font-bold uppercase">State</label>
-                                    <p className="font-bold text-gray-900">{user.state || 'N/A'}</p>
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-gray-50 group-hover:bg-white group-hover:border-primary-100 transition-all">
+                                    <label className="text-[10px] text-gray-400 font-black uppercase tracking-tighter block mb-1">State</label>
+                                    <p className="font-black text-gray-900">{user.state || 'N/A'}</p>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] text-gray-400 font-bold uppercase">LGA</label>
-                                    <p className="font-bold text-gray-900">{user.lga || 'N/A'}</p>
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-gray-50 group-hover:bg-white group-hover:border-primary-100 transition-all">
+                                    <label className="text-[10px] text-gray-400 font-black uppercase tracking-tighter block mb-1">LGA</label>
+                                    <p className="font-black text-gray-900">{user.lga || 'N/A'}</p>
                                 </div>
                             </div>
-                            <div className="pt-2 border-t border-gray-50 flex items-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-widest">
+
+                            <div className="pt-4 border-t border-gray-100 flex items-center justify-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-[0.2em] bg-green-50/50 py-2 rounded-xl">
                                 <ShieldCheck size={12} /> Personal Docs Verified
                             </div>
                         </div>
                     </div>
 
                     {/* Business Column */}
-                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Briefcase size={14} /> Business Status
-                        </h3>
+                    <div className={`rounded-3xl border p-8 shadow-xl transition-all group relative overflow-hidden flex flex-col ${isT3 ? 'bg-white border-amber-100 shadow-amber-50' : 'bg-white border-gray-100 shadow-gray-100/50'}`}>
+                        {isT3 && <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400/5 rounded-full -mr-12 -mt-12"></div>}
+
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Briefcase size={16} className={isT3 ? 'text-amber-500' : 'text-gray-400'} /> Business Status
+                            </h3>
+                            {isT3 && <Zap size={18} className="text-amber-500 fill-amber-500" />}
+                        </div>
 
                         {user.payoutRequestStatus === 'pending' ? (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center py-6 bg-amber-50 rounded-xl border border-amber-100">
-                                <Clock size={40} className="text-amber-400 mb-3 animate-pulse" />
-                                <h4 className="text-amber-900 font-bold text-sm">Business Upgrade Under Review</h4>
-                                <p className="text-amber-700 text-[10px] px-6 mt-1 font-medium leading-relaxed">
-                                    We are verifying your CAC and Business records. Payout access will be enabled once approved.
+                            <div className="flex-1 flex flex-col items-center justify-center text-center py-6 bg-amber-50/50 rounded-2xl border border-amber-100/50">
+                                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                                    <Clock size={32} className="text-amber-500 animate-pulse" />
+                                </div>
+                                <h4 className="text-amber-900 font-black text-sm uppercase tracking-tight">Upgrade Under Review</h4>
+                                <p className="text-amber-700/70 text-[10px] px-8 mt-2 font-bold uppercase leading-relaxed tracking-wider">
+                                    Verifying CAC & Business records.
                                 </p>
-                                <button onClick={handleRefresh} disabled={isRefreshing} className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
-                                    <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} /> Check
+                                <button onClick={handleRefresh} disabled={isRefreshing} className="mt-6 px-8 py-3 bg-white border-2 border-amber-200 text-amber-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-amber-50 transition-all">
+                                    <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} /> {isRefreshing ? 'Verifying...' : 'Check Status'}
                                 </button>
                             </div>
-                        ) : user.kycLevel === 3 ? (
-                            <div className="space-y-4 flex-1">
-                                <div>
-                                    <label className="text-[10px] text-gray-400 font-bold uppercase">Business Name</label>
-                                    <p className="font-bold text-gray-900">{user.businessName}</p>
+                        ) : isT3 ? (
+                            <div className="space-y-6 flex-1 flex flex-col">
+                                <div className="p-4 bg-amber-50/30 rounded-2xl border border-amber-50 group-hover:bg-amber-50/50 group-hover:border-amber-100 transition-all">
+                                    <label className="text-[10px] text-amber-600 font-black uppercase tracking-tighter block mb-1">Registered Business Name</label>
+                                    <p className="font-black text-slate-900 text-lg uppercase">{user.businessName}</p>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] text-gray-400 font-bold uppercase">RC Number</label>
-                                    <p className="font-bold text-gray-900 font-mono italic">{user.rcNumber}</p>
+
+                                <div className="p-4 bg-amber-50/30 rounded-2xl border border-amber-50 group-hover:bg-amber-50/50 group-hover:border-amber-100 transition-all">
+                                    <label className="text-[10px] text-amber-600 font-black uppercase tracking-tighter block mb-1">RC Number / Registration</label>
+                                    <p className="font-black text-slate-900 font-mono text-lg tracking-widest">{user.rcNumber}</p>
                                 </div>
-                                <div className="mt-auto pt-4 flex items-center gap-2 text-indigo-600 text-[10px] font-black uppercase tracking-widest">
-                                    <Zap size={12} /> Payout Access Activated
+
+                                <div className="mt-auto pt-6 flex items-center justify-center gap-3 text-amber-600 bg-amber-50 rounded-2xl py-4 border border-amber-100/50">
+                                    <div className="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center shadow-lg shadow-amber-200">
+                                        <Zap size={18} className="text-slate-900 fill-slate-900" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Payout Access</p>
+                                        <p className="text-[10px] font-bold uppercase text-amber-600">ACTIVATED & PROGRAMMATIC</p>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
-                                <Building2 size={48} className="text-gray-100 mb-4" />
-                                <p className="text-gray-500 text-sm font-medium mb-6 px-4 leading-relaxed">Accept API payouts and unlock corporate limits.</p>
+                            <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+                                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <Building2 size={40} className="text-gray-200" />
+                                </div>
+                                <h4 className="text-gray-900 font-black text-lg mb-2">Corporate Upgrade</h4>
+                                <p className="text-gray-400 text-xs font-medium mb-8 px-6 leading-relaxed">
+                                    Accept massive API payouts and unlock corporate-scale limits for your business.
+                                </p>
                                 <button
                                     onClick={() => setIsBusinessUpgrade(true)}
-                                    className="px-8 py-3 bg-primary-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-primary-100 hover:bg-primary-700 transition-all active:scale-95"
+                                    className="w-full py-4 bg-primary-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-primary-100 hover:bg-primary-700 transition-all hover:-translate-y-1 active:translate-y-0"
                                 >
-                                    Upgrade to Tier 3
+                                    GET TIER 3 ACCESS
                                 </button>
                             </div>
                         )}
