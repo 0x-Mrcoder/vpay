@@ -126,6 +126,7 @@ const AdminsPage: React.FC = () => {
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Email</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Phone</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Role</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Joined Date</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-600 uppercase tracking-wider text-right">Actions</th>
@@ -138,6 +139,7 @@ const AdminsPage: React.FC = () => {
                                         <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-32"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-48"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
+                                        <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16"></div></td>
                                         <td className="px-6 py-4"><div className="h-6 bg-slate-200 rounded-full w-16"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
                                         <td className="px-6 py-4 text-right"><div className="h-4 bg-slate-200 rounded w-12 ml-auto"></div></td>
@@ -156,6 +158,7 @@ const AdminsPage: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{admin.email}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{admin.phone}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium capitalize">{admin.role || 'admin'}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${admin.status === 'active' ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'
                                                 }`}>
@@ -281,6 +284,21 @@ const AdminsPage: React.FC = () => {
                                     />
                                 </div>
                                 {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Role</label>
+                                <div className="relative">
+                                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <select
+                                        {...register('role')}
+                                        className={`w-full pl-10 pr-4 py-2 border ${errors.role ? 'border-red-500' : 'border-slate-200'} rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm bg-white`}
+                                    >
+                                        <option value="admin">Admin</option>
+                                        <option value="subadmin">Sub-Admin</option>
+                                    </select>
+                                </div>
+                                {errors.role && <p className="text-red-500 text-xs">{errors.role.message}</p>}
                             </div>
 
                             <div className="pt-4">

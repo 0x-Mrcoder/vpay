@@ -152,9 +152,9 @@ const Dashboard: React.FC = () => {
                             </h3>
                         </div>
                         <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
-                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">System Load</p>
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Today's Fee</p>
                             <h3 className="text-2xl font-bold text-blue-600 mt-2">
-                                {stats?.webhooks?.total || 0} <span className="text-xs font-normal text-slate-400">events/day</span>
+                                {formatCurrency(stats?.transactions?.dailyFee || 0)}
                             </h3>
                         </div>
                     </div>
@@ -383,6 +383,7 @@ const Dashboard: React.FC = () => {
                                     <th className="hidden md:table-cell px-4 md:px-6 py-3 text-xs font-semibold text-slate-600 uppercase">Reference</th>
                                     <th className="px-4 md:px-6 py-3 text-xs font-semibold text-slate-600 uppercase">Type</th>
                                     <th className="px-4 md:px-6 py-3 text-xs font-semibold text-slate-600 uppercase">Amount</th>
+                                    <th className="px-4 md:px-6 py-3 text-xs font-semibold text-slate-600 uppercase">Fee</th>
                                     <th className="px-4 md:px-6 py-3 text-xs font-semibold text-slate-600 uppercase">Status</th>
                                     <th className="px-4 md:px-6 py-3 text-xs font-semibold text-slate-600 uppercase">Date</th>
                                 </tr>
@@ -394,6 +395,7 @@ const Dashboard: React.FC = () => {
                                             <td className="hidden md:table-cell px-4 md:px-6 py-4 text-sm font-medium text-slate-900 font-mono">{txn.reference}</td>
                                             <td className="px-4 md:px-6 py-4 text-sm text-slate-600 capitalize">{txn.category}</td>
                                             <td className="px-4 md:px-6 py-4 text-sm font-semibold text-slate-900">{formatCurrency(txn.amount)}</td>
+                                            <td className="px-4 md:px-6 py-4 text-sm font-semibold text-purple-600">{formatCurrency(txn.fee || 0)}</td>
                                             <td className="px-4 md:px-6 py-4">
                                                 <Badge variant={
                                                     txn.status === 'success' ? 'success' :
@@ -409,7 +411,7 @@ const Dashboard: React.FC = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                                             No recent transactions found.
                                         </td>
                                     </tr>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import {
     LayoutDashboard,
     Users,
@@ -106,9 +107,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen, isDesk
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
     const navigate = useNavigate();
     const location = useLocation();
+    const { user, logout } = useAuth();
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken');
+        logout();
         navigate('/login');
     };
 
@@ -125,6 +127,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen, isDesk
                 : [...prev, label]
         );
     };
+
+    const filteredNavItems = navItems.filter((item) => {
+        if (user?.role === 'subadmin') {
+            if (item.label === 'Admin Management' || item.label === 'System Settings') {
+                return false;
+            }
+        }
+        return true;
+    });
 
     return (
         <>
@@ -183,7 +194,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, setIsMobileOpen, isDesk
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
                     <ul className="space-y-1.5">
-                        {navItems.map((item) => (
+                        {filteredNavItems.map((item) => (
                             <li key={item.label}>
                                 {item.children ? (
                                     <>

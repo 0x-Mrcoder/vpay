@@ -128,7 +128,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
             isOpen={isOpen}
             onClose={onClose}
             title={`${tenant.firstName} ${tenant.lastName}`}
-            maxWidth="3xl"
+            maxWidth="5xl"
         >
             <div className="flex flex-col h-full">
                 {/* Tabs Header */}
@@ -196,71 +196,69 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                             </div>
 
                             {/* Manual Adjustment Section */}
-                            <div className="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-2xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary-600/20 transition-all duration-700"></div>
-                                <h3 className="text-xs font-black text-primary-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse"></div>
+                            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group">
+                                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
                                     Manual Wallet Correction
                                 </h3>
                                 
                                 <form onSubmit={handleManualAdjustment} className="space-y-4 relative z-10">
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-1">Type</label>
+                                            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Type</label>
                                             <select 
                                                 value={adjustmentData.type}
                                                 onChange={(e) => setAdjustmentData({...adjustmentData, type: e.target.value as any})}
-                                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                                className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                             >
-                                                <option value="debit">DEBIT (-) 🩸</option>
-                                                <option value="credit">CREDIT (+) 🍀</option>
+                                                <option value="debit">Debit Amount (-)</option>
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-1">Amount (₦)</label>
+                                            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Amount (₦)</label>
                                             <input 
                                                 type="number" 
                                                 placeholder="0.00"
                                                 value={adjustmentData.amount}
                                                 onChange={(e) => setAdjustmentData({...adjustmentData, amount: e.target.value})}
-                                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-600"
+                                                className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-400"
                                             />
                                         </div>
                                     </div>
                                     
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-1">Adjustment Narration</label>
+                                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Adjustment Narration</label>
                                         <input 
                                             type="text" 
                                             placeholder="e.g. Failed payout recovery reversal..."
                                             value={adjustmentData.narration}
                                             onChange={(e) => setAdjustmentData({...adjustmentData, narration: e.target.value})}
-                                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-600"
+                                            className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-400"
                                         />
                                     </div>
 
                                     <button 
                                         type="submit"
                                         disabled={isAdjusting}
-                                        className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
+                                        className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                                             adjustmentData.type === 'debit' 
-                                            ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-900/20' 
-                                            : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'
+                                            ? 'bg-red-50 text-red-600 hover:bg-red-100' 
+                                            : 'bg-green-50 text-green-600 hover:bg-green-100'
                                         }`}
                                     >
                                         {isAdjusting ? (
                                             <>
-                                                <RefreshCw size={14} className="animate-spin" />
-                                                PROCESSING...
+                                                <RefreshCw size={16} className="animate-spin" />
+                                                Processing...
                                             </>
                                         ) : (
                                             <>
-                                                {adjustmentData.type === 'debit' ? 'EXECUTE DEBIT' : 'EXECUTE CREDIT'}
+                                                {adjustmentData.type === 'debit' ? 'Execute Debit' : 'Execute Credit'}
                                             </>
                                         )}
                                     </button>
                                 </form>
-                                <p className="mt-3 text-[9px] text-slate-500 font-medium italic text-center">
+                                <p className="mt-3 text-xs text-slate-500 font-medium italic text-center">
                                     ⚠️ This action will reflect in the ledger but is hidden from the tenant's view.
                                 </p>
                             </div>

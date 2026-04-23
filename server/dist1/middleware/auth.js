@@ -1,31 +1,22 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import config from '../config';
-import { User } from '../models';
-
-export interface AuthenticatedRequest extends Request {
-    user?: {
-        id: string;
-        email: string;
-        role: 'user' | 'admin' | 'subadmin';
-    };
-}
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.optionalAuth = exports.generateToken = exports.requireSuperAdmin = exports.requireAdmin = exports.authenticate = void 0;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const config_1 = __importDefault(require("../config"));
+const models_1 = require("../models");
 /**
  * JWT Authentication Middleware
  */
-export const authenticate = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
+const authenticate = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
-        const apiKey = req.headers['x-api-key'] as string;
-
+        const apiKey = req.headers['x-api-key'];
         // 1. Check for API Key first
         if (apiKey) {
-            const user = await User.findOne({ apiKey });
+            const user = await models_1.User.findOne({ apiKey });
             if (!user) {
                 res.status(401).json({
                     success: false,
@@ -33,7 +24,6 @@ export const authenticate = async (
                 });
                 return;
             }
-
             if (user.status !== 'active') {
                 res.status(403).json({
                     success: false,
@@ -41,7 +31,6 @@ export const authenticate = async (
                 });
                 return;
             }
-
             req.user = {
                 id: user._id.toString(),
                 email: user.email,
@@ -50,7 +39,6 @@ export const authenticate = async (
             next();
             return;
         }
-
         // 2. Check for Bearer Token
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             res.status(401).json({
@@ -59,14 +47,11 @@ export const authenticate = async (
             });
             return;
         }
-
         const token = authHeader.split(' ')[1];
-
         try {
-            const decoded = jwt.verify(token, config.jwt.secret) as { id: string; email: string };
-
+            const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt.secret);
             // Verify user still exists and is active
-            const user = await User.findById(decoded.id);
+            const user = await models_1.User.findById(decoded.id);
             if (!user) {
                 res.status(401).json({
                     success: false,
@@ -74,7 +59,6 @@ export const authenticate = async (
                 });
                 return;
             }
-
             if (user.status !== 'active') {
                 res.status(403).json({
                     success: false,
@@ -82,22 +66,22 @@ export const authenticate = async (
                 });
                 return;
             }
-
             req.user = {
                 id: decoded.id,
                 email: decoded.email,
                 role: user.role,
             };
-
             next();
-        } catch (jwtError) {
+        }
+        catch (jwtError) {
             res.status(401).json({
                 success: false,
                 message: 'Invalid token',
             });
             return;
         }
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Authentication error:', error);
         res.status(500).json({
             success: false,
@@ -105,15 +89,11 @@ export const authenticate = async (
         });
     }
 };
-
+exports.authenticate = authenticate;
 /**
  * Admin Authorization Middleware (Allows both 'admin' and 'subadmin')
  */
-export const requireAdmin = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
+const requireAdmin = async (req, res, next) => {
     try {
         if (!req.user) {
             res.status(401).json({
@@ -122,7 +102,6 @@ export const requireAdmin = async (
             });
             return;
         }
-
         if (req.user.role !== 'admin' && req.user.role !== 'subadmin') {
             res.status(403).json({
                 success: false,
@@ -130,9 +109,9 @@ export const requireAdmin = async (
             });
             return;
         }
-
         next();
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Admin authorization error:', error);
         res.status(500).json({
             success: false,
@@ -140,15 +119,11 @@ export const requireAdmin = async (
         });
     }
 };
-
+exports.requireAdmin = requireAdmin;
 /**
  * Super Admin Authorization Middleware (Strictly 'admin' only)
  */
-export const requireSuperAdmin = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
+const requireSuperAdmin = async (req, res, next) => {
     try {
         if (!req.user) {
             res.status(401).json({
@@ -157,7 +132,6 @@ export const requireSuperAdmin = async (
             });
             return;
         }
-
         if (req.user.role !== 'admin') {
             res.status(403).json({
                 success: false,
@@ -165,9 +139,9 @@ export const requireSuperAdmin = async (
             });
             return;
         }
-
         next();
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Super Admin authorization error:', error);
         res.status(500).json({
             success: false,
@@ -175,40 +149,29 @@ export const requireSuperAdmin = async (
         });
     }
 };
-
+exports.requireSuperAdmin = requireSuperAdmin;
 /**
  * Generate JWT token
  */
-export const generateToken = (userId: string, email: string): string => {
-    return jwt.sign(
-        { id: userId, email },
-        config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn as any }
-    );
+const generateToken = (userId, email) => {
+    return jsonwebtoken_1.default.sign({ id: userId, email }, config_1.default.jwt.secret, { expiresIn: config_1.default.jwt.expiresIn });
 };
-
+exports.generateToken = generateToken;
 /**
  * Optional authentication - doesn't fail if no token
  */
-export const optionalAuth = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
+const optionalAuth = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
-
         if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.split(' ')[1];
-
             try {
-                const decoded = jwt.verify(token, config.jwt.secret) as { id: string; email: string };
+                const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt.secret);
                 // We need to fetch the user to get the role if we want consistency, 
                 // but for optional auth maybe just id/email is enough or we fetch user if needed.
                 // For now, let's keep it simple and just decode.
                 // If role is needed in optional auth routes, we should fetch user.
-
-                const user = await User.findById(decoded.id);
+                const user = await models_1.User.findById(decoded.id);
                 if (user) {
                     req.user = {
                         id: decoded.id,
@@ -216,16 +179,17 @@ export const optionalAuth = async (
                         role: user.role
                     };
                 }
-
-            } catch {
+            }
+            catch {
                 // Token invalid, but continue without user
             }
         }
-
         next();
-    } catch (error) {
+    }
+    catch (error) {
         next();
     }
 };
-
-export default authenticate;
+exports.optionalAuth = optionalAuth;
+exports.default = exports.authenticate;
+//# sourceMappingURL=auth.js.map
