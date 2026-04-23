@@ -29,6 +29,7 @@ export const Verification: React.FC = () => {
     const [step, setStep] = useState(1);
     const [isBusinessUpgrade, setIsBusinessUpgrade] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [kycSubmitted, setKycSubmitted] = useState(false); // optimistic: flip to Under Review immediately after submit
 
     const [formData, setFormData] = useState({
         // Step 1
@@ -139,6 +140,8 @@ export const Verification: React.FC = () => {
                 selfie: formData.selfie,
                 utilityBill: formData.utilityBill
             });
+            // Mark submitted immediately so UI transitions to Under Review
+            setKycSubmitted(true);
             await refreshUser();
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to submit KYC details.');
@@ -193,8 +196,8 @@ export const Verification: React.FC = () => {
         );
     }
 
-    // 2. Personal KYC In Review
-    if (user.kyc_status === 'pending' && user.kycLevel < 2 && user.bvn) {
+    // 2. Personal KYC In Review — either already submitted (has bvn) or just submitted this session
+    if ((user.kyc_status === 'pending' && user.kycLevel < 2 && user.bvn) || kycSubmitted) {
         return (
             <div className="max-w-3xl mx-auto p-4 md:p-6 animate-fade-in">
                 <div className="bg-white border border-amber-100 rounded-3xl p-12 text-center shadow-xl shadow-amber-50 relative overflow-hidden">
