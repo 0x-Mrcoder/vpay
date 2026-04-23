@@ -37,6 +37,7 @@ export const Verification: React.FC = () => {
         address: user?.address || '',
         // Step 2
         identityType: user?.identityType || '',
+        idNumber: user?.nin || '', // NIN / Voter Card No / License No / Passport No
         bvn: user?.bvn || '',
         nin: user?.nin || '',
         // Step 3
@@ -132,7 +133,7 @@ export const Verification: React.FC = () => {
                 lga: formData.lga,
                 address: formData.address,
                 bvn: formData.bvn,
-                nin: formData.nin,
+                nin: formData.idNumber,  // maps idNumber → nin on backend
                 identityType: formData.identityType,
                 idCard: formData.idCard,
                 selfie: formData.selfie,
@@ -592,8 +593,37 @@ export const Verification: React.FC = () => {
                                                 ))}
                                             </div>
                                         </div>
+
+                                        {/* Dynamic ID Number Field based on identity type */}
+                                        {formData.identityType && (
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">
+                                                    {formData.identityType === 'National ID Card' ? 'National Identification Number (NIN)' :
+                                                     formData.identityType === 'Driver\'s License' ? "Driver's License Number" :
+                                                     formData.identityType === 'Voter\'s Card' ? 'Voter Registration Number (VIN)' :
+                                                     formData.identityType === 'Intl. Passport' ? 'Passport Number' : 'ID Number'}
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        name="idNumber"
+                                                        value={formData.idNumber}
+                                                        onChange={handleChange}
+                                                        placeholder={
+                                                            formData.identityType === 'National ID Card' ? 'Enter your 11-digit NIN' :
+                                                            formData.identityType === 'Driver\'s License' ? 'Enter license number (e.g. AAA00000AA00)' :
+                                                            formData.identityType === 'Voter\'s Card' ? 'Enter Voter ID Number (VIN)' :
+                                                            formData.identityType === 'Intl. Passport' ? 'Enter passport number (e.g. A12345678)' : 'Enter ID number'
+                                                        }
+                                                        className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-100 focus:border-primary-500 outline-none font-mono font-bold tracking-wider bg-slate-50"
+                                                    />
+                                                    <Hash className="absolute left-4 top-4 text-gray-400" size={20} />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div>
-                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Bank Verification Number (11-Digits)</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Bank Verification Number (BVN — 11 Digits)</label>
                                             <div className="relative">
                                                 <input
                                                     type="text" name="bvn" value={formData.bvn} onChange={handleChange} placeholder="00000000000" maxLength={11}

@@ -47,8 +47,7 @@ router.post('/submit', authenticate, async (req: AuthenticatedRequest, res: Resp
         if (!idCard) missingFields.push('ID Document');
         if (!selfie) missingFields.push('Selfie');
         if (!utilityBill) missingFields.push('Utility Bill (Proof of Address)');
-        // NIN might be optional if they chose Voter/Passport, but let's keep it if they chose NIN
-        if (identityType === 'National ID Card' && !nin) missingFields.push('NIN');
+        // NIN is always optional — the frontend form does not collect it as a required field
 
         if (missingFields.length > 0) {
             res.status(400).json({
