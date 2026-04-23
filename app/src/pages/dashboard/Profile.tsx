@@ -205,22 +205,41 @@ export const Profile: React.FC = () => {
                         <div className="p-6">
                             <h3 className="text-xs font-black text-gray-400 mb-4 uppercase tracking-widest">Verification Status</h3>
 
-                            {(user?.kycLevel || 0) < 2 ? (
-                                <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+                            {/* T1: Email verified, T2 not yet submitted */}
+                            {(user?.kyc_tier === 't1' || (user?.kycLevel === 1 && !user?.bvn)) && !user?.bvn ? (
+                                <div className="bg-green-50 rounded-xl p-4 border border-green-100">
                                     <div className="flex items-center gap-3 mb-3">
-                                        <div className="bg-white p-2 rounded-lg text-red-600 shadow-sm">
-                                            <ShieldAlert size={20} />
+                                        <div className="bg-white p-2 rounded-lg text-green-600 shadow-sm">
+                                            <CheckCircle size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-red-900">Tier 1 (Basic)</p>
-                                            <p className="text-xs text-red-700">Level 2 ID verification required</p>
+                                            <p className="text-sm font-bold text-green-900">Tier 1 Approved ✓</p>
+                                            <p className="text-xs text-green-700">Submit Tier 2 details to unlock more</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => navigate('/dashboard/verification')}
-                                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+                                        className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-green-200 flex items-center justify-center gap-2"
                                     >
-                                        Complete Verification <ChevronRight size={14} />
+                                        Verify Tier 2 <ChevronRight size={14} />
+                                    </button>
+                                </div>
+                            ) : (user?.kycLevel || 0) < 2 && user?.bvn ? (
+                                <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="bg-white p-2 rounded-lg text-amber-600 shadow-sm">
+                                            <ShieldAlert size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-amber-900">T2 Under Review</p>
+                                            <p className="text-xs text-amber-700">Compliance team reviewing docs</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate('/dashboard/verification')}
+                                        className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-amber-200 flex items-center justify-center gap-2"
+                                    >
+                                        View Status <ChevronRight size={14} />
                                     </button>
                                 </div>
                             ) : (user?.kycLevel === 2 && user?.kyc_status === 'pending') ? (

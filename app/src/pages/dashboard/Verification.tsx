@@ -193,7 +193,7 @@ export const Verification: React.FC = () => {
     }
 
     // 2. Personal KYC In Review
-    if (user.kyc_status === 'pending' && user.kycLevel < 2) {
+    if (user.kyc_status === 'pending' && user.kycLevel < 2 && user.bvn) {
         return (
             <div className="max-w-3xl mx-auto p-4 md:p-6 animate-fade-in">
                 <div className="bg-white border border-amber-100 rounded-3xl p-12 text-center shadow-xl shadow-amber-50 relative overflow-hidden">
@@ -482,6 +482,24 @@ export const Verification: React.FC = () => {
     // 4. Default: Verification Wizard (Step 1-3)
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-8 pb-20 animate-fade-in">
+            {/* T1 Verified Banner */}
+            {(user.kycLevel === 1 || user.kyc_tier === 't1') && (
+                <div className="bg-green-50 border border-green-200 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-fade-in">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={24} className="text-green-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-green-900 font-black text-lg tracking-tight">Tier 1 (T1) Approved</h3>
+                            <p className="text-green-700 text-sm font-medium mt-1">Your email is verified. Please submit your Tier 2 details below for review.</p>
+                        </div>
+                    </div>
+                    <span className="px-4 py-1.5 bg-green-200 text-green-800 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0">
+                        T1 Active
+                    </span>
+                </div>
+            )}
+
             {/* Steps Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
                 <div className="absolute right-0 top-0 w-32 h-32 bg-primary-600/5 rounded-full -mr-16 -mt-16"></div>
