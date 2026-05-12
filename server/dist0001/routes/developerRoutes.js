@@ -1,24 +1,25 @@
-import { Router, Response } from 'express';
-import crypto from 'crypto';
-import { User, WebhookLog } from '../models';
-import { authenticate, AuthenticatedRequest } from '../middleware';
-import { AdminNotificationService } from '../services';
-import config from '../config';
-
-const router = Router();
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const crypto_1 = __importDefault(require("crypto"));
+const models_1 = require("../models");
+const middleware_1 = require("../middleware");
+const services_1 = require("../services");
+const config_1 = __importDefault(require("../config"));
+const router = (0, express_1.Router)();
 // All routes require authentication
-router.use(authenticate);
-
+router.use(middleware_1.authenticate);
 /**
  * Get current API Key
  * GET /api/developer/apikey
  */
-router.get('/apikey', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/apikey', async (req, res) => {
     try {
-        const userId = req.user!.id;
-        const user = await User.findById(userId);
-
+        const userId = req.user.id;
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -26,14 +27,14 @@ router.get('/apikey', async (req: AuthenticatedRequest, res: Response): Promise<
             });
             return;
         }
-
         res.json({
             success: true,
             data: {
                 apiKey: user.apiKey || null,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get API key error:', error);
         res.status(500).json({
             success: false,
@@ -41,17 +42,15 @@ router.get('/apikey', async (req: AuthenticatedRequest, res: Response): Promise<
         });
     }
 });
-
 /**
  * Generate/Regenerate API Key
  * POST /api/developer/apikey
  */
-router.post('/apikey', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/apikey', async (req, res) => {
     try {
-        const userId = req.user!.id;
+        const userId = req.user.id;
         // Check if user exists (already mostly handled by auth middleware but good specific check)
-        const user = await User.findById(userId);
-
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -59,19 +58,14 @@ router.post('/apikey', async (req: AuthenticatedRequest, res: Response): Promise
             });
             return;
         }
-
-
-
         // Generate a new API key
-        const randomPart = crypto.randomBytes(24).toString('hex');
+        const randomPart = crypto_1.default.randomBytes(24).toString('hex');
         // Always generate a live API key as per requirements (no testing keys)
         // Allowing level 1 and above to have programmatic access
         const prefix = 'sk_live_';
         const newApiKey = `${prefix}${randomPart}`;
-
         user.apiKey = newApiKey;
         await user.save();
-
         res.json({
             success: true,
             message: 'API key generated successfully',
@@ -79,7 +73,8 @@ router.post('/apikey', async (req: AuthenticatedRequest, res: Response): Promise
                 apiKey: newApiKey,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Generate API key error:', error);
         res.status(500).json({
             success: false,
@@ -87,16 +82,14 @@ router.post('/apikey', async (req: AuthenticatedRequest, res: Response): Promise
         });
     }
 });
-
 /**
  * Get Webhook URL
  * GET /api/developer/webhook
  */
-router.get('/webhook', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/webhook', async (req, res) => {
     try {
-        const userId = req.user!.id;
-        const user = await User.findById(userId);
-
+        const userId = req.user.id;
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -104,14 +97,14 @@ router.get('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
             });
             return;
         }
-
         res.json({
             success: true,
             data: {
                 webhookUrl: user.webhookUrl || null,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get webhook URL error:', error);
         res.status(500).json({
             success: false,
@@ -119,28 +112,25 @@ router.get('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
         });
     }
 });
-
 /**
  * Update Webhook URL
  * PUT /api/developer/webhook
  */
-router.put('/webhook', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/webhook', async (req, res) => {
     try {
-        const userId = req.user!.id;
+        const userId = req.user.id;
         const { webhookUrl } = req.body;
-
         // Validate webhook URL if provided
         if (webhookUrl) {
             // Prevent recursive webhooks (User setting VTPay server as their webhook)
             if (webhookUrl.includes('vtpayapi.vtfree.com.ng') ||
-                (config.webhookBaseUrl && webhookUrl.includes(config.webhookBaseUrl))) {
+                (config_1.default.webhookBaseUrl && webhookUrl.includes(config_1.default.webhookBaseUrl))) {
                 res.status(400).json({
                     success: false,
                     message: 'Invalid Webhook URL: You cannot use the VTPay server URL as your notification endpoint. Please use your own server URL.',
                 });
                 return;
             }
-
             // Basic URL validation
             try {
                 const url = new URL(webhookUrl);
@@ -151,7 +141,8 @@ router.put('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
                     });
                     return;
                 }
-            } catch (error) {
+            }
+            catch (error) {
                 res.status(400).json({
                     success: false,
                     message: 'Invalid webhook URL format',
@@ -159,9 +150,7 @@ router.put('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
                 return;
             }
         }
-
-        const user = await User.findById(userId);
-
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -169,10 +158,8 @@ router.put('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
             });
             return;
         }
-
         user.webhookUrl = webhookUrl || undefined;
         await user.save();
-
         res.json({
             success: true,
             message: webhookUrl ? 'Webhook URL updated successfully' : 'Webhook URL removed successfully',
@@ -180,7 +167,8 @@ router.put('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
                 webhookUrl: user.webhookUrl || null,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update webhook URL error:', error);
         res.status(500).json({
             success: false,
@@ -188,24 +176,23 @@ router.put('/webhook', async (req: AuthenticatedRequest, res: Response): Promise
         });
     }
 });
-
 /**
  * Get Webhook Logs for the current developer user
  * GET /api/developer/webhook/logs
  */
-router.get('/webhook/logs', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/webhook/logs', async (req, res) => {
     try {
-        const userId = req.user!.id;
-        const logs = await WebhookLog.find({ userId })
+        const userId = req.user.id;
+        const logs = await models_1.WebhookLog.find({ userId })
             .select('-__v')
             .sort({ createdAt: -1 })
             .limit(50);
-            
         res.json({
             success: true,
             data: logs,
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get webhook logs error:', error);
         res.status(500).json({
             success: false,
@@ -213,19 +200,17 @@ router.get('/webhook/logs', async (req: AuthenticatedRequest, res: Response): Pr
         });
     }
 });
-
 /**
  * Get Payout API Access Status
  * GET /api/developer/payout/status
  */
-router.get('/payout/status', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/payout/status', async (req, res) => {
     try {
-        const user = await User.findById(req.user!.id);
+        const user = await models_1.User.findById(req.user.id);
         if (!user) {
-             res.status(404).json({ success: false, message: 'User not found' });
-             return;
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
         }
-
         res.json({
             success: true,
             data: {
@@ -236,50 +221,40 @@ router.get('/payout/status', async (req: AuthenticatedRequest, res: Response): P
                 hasPayoutKey: !!user.payoutSecretKeyHash
             }
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Get payout status error:', error);
         res.status(500).json({ success: false, message: 'Failed to get payout status' });
     }
 });
-
 /**
  * Request Payout API Access
  * POST /api/developer/payout/request
  */
-router.post('/payout/request', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/payout/request', async (req, res) => {
     try {
         const { reason, ipWhitelist } = req.body;
-        const user = await User.findById(req.user!.id);
-        
+        const user = await models_1.User.findById(req.user.id);
         if (!user) {
             res.status(404).json({ success: false, message: 'User not found' });
             return;
         }
-
         if (user.kycLevel < 2) {
             res.status(403).json({ success: false, message: 'Business KYC verification is required to request Payout API access.' });
             return;
         }
-
         if (!reason || !ipWhitelist || !Array.isArray(ipWhitelist) || ipWhitelist.length === 0) {
             res.status(400).json({ success: false, message: 'Reason and an array of IP addresses are required.' });
             return;
         }
-
         const isAlreadyApproved = user.payoutRequestStatus === 'approved';
-        
         user.payoutRequestStatus = isAlreadyApproved ? 'approved' : 'pending';
         user.payoutRequestReason = reason;
         user.payoutIpWhitelist = ipWhitelist;
-        
         await user.save();
-
         if (!isAlreadyApproved) {
-            AdminNotificationService.notifyPayoutAccessRequest(user).catch(err =>
-                console.error('[Developer] Failed to create admin notification for payout access request:', err)
-            );
+            services_1.AdminNotificationService.notifyPayoutAccessRequest(user).catch(err => console.error('[Developer] Failed to create admin notification for payout access request:', err));
         }
-
         res.json({
             success: true,
             message: isAlreadyApproved ? 'Payout settings updated successfully.' : 'Payout API access request submitted successfully. It is now under review.',
@@ -287,48 +262,44 @@ router.post('/payout/request', async (req: AuthenticatedRequest, res: Response):
                 payoutRequestStatus: user.payoutRequestStatus
             }
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Request payout API error:', error);
         res.status(500).json({ success: false, message: 'Failed to request Payout API access' });
     }
 });
-
 /**
  * Generate Payout Secret Key
  * POST /api/developer/payout/generate-key
  */
-router.post('/payout/generate-key', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/payout/generate-key', async (req, res) => {
     try {
-        const user = await User.findById(req.user!.id);
+        const user = await models_1.User.findById(req.user.id);
         if (!user) {
             res.status(404).json({ success: false, message: 'User not found' });
             return;
         }
-
         if (!user.isPayoutEnabled || user.payoutRequestStatus !== 'approved') {
             res.status(403).json({ success: false, message: 'Payout API access has not been approved for this account.' });
             return;
         }
-
-        const rawSecret = crypto.randomBytes(32).toString('hex');
+        const rawSecret = crypto_1.default.randomBytes(32).toString('hex');
         const payoutSecretKey = `vt_pout_sec_${rawSecret}`;
-        
-        const secretKeyHash = crypto.createHash('sha256').update(payoutSecretKey).digest('hex');
-        
+        const secretKeyHash = crypto_1.default.createHash('sha256').update(payoutSecretKey).digest('hex');
         user.payoutSecretKeyHash = secretKeyHash;
         await user.save();
-
         res.json({
             success: true,
             message: 'Secret key generated. Copy it now, it will never be exactly shown again.',
             data: {
-                payoutSecretKey 
+                payoutSecretKey
             }
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Generate Payout Key error:', error);
         res.status(500).json({ success: false, message: 'Failed to generate Payout Secret Key' });
     }
 });
-
-export default router;
+exports.default = router;
+//# sourceMappingURL=developerRoutes.js.map

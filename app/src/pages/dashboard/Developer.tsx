@@ -585,7 +585,7 @@ export const Developer: React.FC = () => {
                                     </div>
                                     <div className="flex gap-3">
                                         <div className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</div>
-                                        <p className="text-xs text-gray-300">Use <code className="bg-gray-800 px-1 rounded text-primary-400">sk_test_...</code> for development testing.</p>
+                                        <p className="text-xs text-gray-300">Use <code className="bg-gray-800 px-1 rounded text-primary-400">sk_live_...</code> for all integrations.</p>
                                     </div>
                                     <div className="flex gap-3">
                                         <div className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</div>

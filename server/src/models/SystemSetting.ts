@@ -104,7 +104,7 @@ const SystemSettingSchema = new Schema<ISystemSettingDocument>(
         },
         globalSettlement: {
             status: { type: Boolean, default: false },
-            weekendSettlementEnabled: { type: Boolean, default: true },
+            weekendSettlementEnabled: { type: Boolean, default: false },
             scheduleType: { type: String, enum: ['T1', 'T7', 'T30'], default: 'T1' },
             schedulePeriod: { type: String, default: 'Daily' },
             settlementAccounts: [

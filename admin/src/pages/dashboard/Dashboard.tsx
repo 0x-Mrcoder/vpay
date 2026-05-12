@@ -358,8 +358,12 @@ const Dashboard: React.FC = () => {
                             <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{stats?.tenants?.admins || 0}</span>
                         </div>
                         <div className="flex justify-between items-center px-2">
-                            <span className="text-sm text-slate-500">Pending</span>
+                            <span className="text-sm text-slate-500">Pending Approvals</span>
                             <span className="text-sm font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">{stats?.tenants?.pending || 0}</span>
+                        </div>
+                        <div className="flex justify-between items-center px-2 border-t border-slate-50 pt-2">
+                            <span className="text-sm text-slate-500">Virtual Accounts</span>
+                            <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{stats?.tenants?.virtualAccounts || 0}</span>
                         </div>
                     </div>
                 </div>
