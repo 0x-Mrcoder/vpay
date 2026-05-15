@@ -21,6 +21,7 @@ const HelpMessages = lazy(() => import('./pages/help/HelpMessages'));
 const AdminsPage = lazy(() => import('./pages/admins/AdminsPage'));
 
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage'));
+const VirtualAccountsPage = lazy(() => import('./pages/virtual-accounts/VirtualAccountsPage'));
 const Login = lazy(() => import('./pages/auth/Login'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -62,6 +63,7 @@ function AppRoutes() {
         <Route path="/communications" element={<ProtectedRoute><Layout><CommunicationsPage /></Layout></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
         <Route path="/tenants" element={<ProtectedRoute><Layout><TenantsPage /></Layout></ProtectedRoute>} />
+        <Route path="/virtual-accounts" element={<ProtectedRoute><Layout><VirtualAccountsPage /></Layout></ProtectedRoute>} />
 
         <Route path="/transactions" element={<ProtectedRoute><Layout><TransactionsPage /></Layout></ProtectedRoute>} />
         <Route path="/settlements" element={<ProtectedRoute><Layout><SettlementsPage /></Layout></ProtectedRoute>} />

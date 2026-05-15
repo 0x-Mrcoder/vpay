@@ -143,6 +143,19 @@ export const adminApi = {
         return response.data;
     },
 
+    // Virtual Accounts
+    getAllVirtualAccounts: async (): Promise<any[]> => {
+        const response = await api.get<ApiResponse<any[]>>('/admin/virtual-accounts');
+        return response.data.data || [];
+    },
+    getVirtualAccountById: async (id: string): Promise<any> => {
+        const response = await api.get<ApiResponse<any>>(`/admin/virtual-accounts/${id}`);
+        return response.data.data;
+    },
+    updateVirtualAccountStatus: async (id: string, status: 'active' | 'frozen'): Promise<void> => {
+        await api.patch(`/admin/virtual-accounts/${id}/status`, { status });
+    },
+
     getStats: async (params?: any): Promise<any> => {
         const response = await api.get<ApiResponse<any>>('/admin/stats', { params });
         return response.data.data;

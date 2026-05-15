@@ -26,12 +26,12 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
     onDelete,
     onSendMessage
 }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc' | 'payout'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc' | 'payout' | 'virtual-accounts'>('overview');
     const [isAdjusting, setIsAdjusting] = useState(false);
     const [adjustmentData, setAdjustmentData] = useState({ amount: '', type: 'debit' as 'credit' | 'debit', narration: '' });
 
     // Fetch full tenant details (including wallet and stats)
-    const { data: detailData, isLoading: loadingDetail } = useQuery({
+    const { data: detailData, isLoading: loadingDetail, refetch: refetchDetail } = useQuery({
         queryKey: ['tenant-detail', tenant._id],
         queryFn: () => adminApi.getTenantById(tenant._id),
         enabled: isOpen,
@@ -40,6 +40,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
     const fullTenant = detailData?.user || tenant;
     const wallet = detailData?.wallet;
     const stats = detailData?.stats;
+    const virtualAccounts = detailData?.virtualAccounts || [];
 
     // Fetch transactions for this tenant
     const { data: transactions, isLoading: loadingTxns } = useQuery({
@@ -51,9 +52,20 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
     const tabs = [
         { id: 'overview', label: 'Overview', icon: User },
         { id: 'transactions', label: 'Transactions', icon: CreditCard },
+        { id: 'virtual-accounts', label: 'Virtual Accounts', icon: CreditCard },
         { id: 'kyc', label: 'KYC & Documents', icon: Shield },
         { id: 'payout', label: 'Payout Access', icon: Zap },
     ] as const;
+
+    const handleAccountStatusChange = async (accountId: string, newStatus: 'active' | 'frozen') => {
+        try {
+            await adminApi.updateVirtualAccountStatus(accountId, newStatus);
+            toast.success(`Account ${newStatus === 'frozen' ? 'frozen' : 'unfrozen'} successfully`);
+            refetchDetail();
+        } catch (error) {
+            toast.error('Failed to update account status');
+        }
+    };
 
     const handleApprovePayout = async () => {
         try {
@@ -397,6 +409,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
 
                     {activeTab === 'transactions' && (
                         <div className="space-y-4 animate-fade-in">
+                            {/* ... existing transaction table ... */}
                             {loadingTxns ? (
                                 <div className="flex items-center justify-center py-12">
                                     <RefreshCw className="animate-spin text-primary-600" size={24} />
@@ -443,6 +456,61 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                                     <FileText className="mx-auto text-slate-400 mb-2" size={32} />
                                     <p className="text-slate-500">No transactions found for this tenant.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'virtual-accounts' && (
+                        <div className="space-y-4 animate-fade-in">
+                            {loadingDetail ? (
+                                <div className="flex justify-center py-12">
+                                    <RefreshCw className="animate-spin text-primary-600" size={24} />
+                                </div>
+                            ) : virtualAccounts.length > 0 ? (
+                                <div className="grid gap-4">
+                                    {virtualAccounts.map((acc: any) => (
+                                        <div key={acc._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:border-primary-200 transition-colors">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center text-primary-600 group-hover:scale-110 transition-transform">
+                                                    <CreditCard size={24} />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold text-slate-900">{acc.bankName}</span>
+                                                        <Badge variant={acc.status === 'active' ? 'success' : 'error'}>
+                                                            {acc.status.toUpperCase()}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-lg font-mono font-black text-slate-800 tracking-tighter mt-0.5">{acc.accountNumber}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{acc.accountName}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Received</p>
+                                                    <p className="text-lg font-black text-slate-900">₦{(acc.totalVolume / 100).toLocaleString()}</p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleAccountStatusChange(acc._id, acc.status === 'frozen' ? 'active' : 'frozen')}
+                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                        acc.status === 'frozen' 
+                                                        ? 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white' 
+                                                        : 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white'
+                                                    }`}
+                                                >
+                                                    {acc.status === 'frozen' ? 'UNFREEZE ACCOUNT' : 'FREEZE ACCOUNT'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                                    <CreditCard className="mx-auto text-slate-300 mb-3" size={48} />
+                                    <h4 className="text-slate-900 font-bold">No Virtual Accounts</h4>
+                                    <p className="text-slate-500 text-sm mt-1 max-w-xs mx-auto">This tenant doesn't have any virtual accounts assigned yet.</p>
                                 </div>
                             )}
                         </div>

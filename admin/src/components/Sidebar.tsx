@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     LayoutDashboard,
     Users,
+    CreditCard,
     History,
     DollarSign,
     Webhook,
@@ -38,6 +39,11 @@ const navItems: NavItem[] = [
         to: '/tenants',
         label: 'Tenants',
         icon: <Users size={20} />,
+    },
+    {
+        to: '/virtual-accounts',
+        label: 'Virtual Accounts',
+        icon: <CreditCard size={20} />,
     },
     {
         to: '/admins',
