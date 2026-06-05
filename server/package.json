@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && cp src/config/*.pem dist/config/",
+    "build": "tsc && mkdir -p dist/config && cp src/config/*.pem dist/config/",
     "start": "node dist/server.js",
     "create-admin": "tsx src/scripts/create-admin.ts",
     "change-email": "tsx src/scripts/change-email.ts",
