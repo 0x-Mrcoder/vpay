@@ -18,6 +18,41 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { VerificationAlert } from '../../components/dashboard/VerificationAlert';
 
+const SettlementCountdown: React.FC<{ clearanceDate: string }> = ({ clearanceDate }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        const target = new Date(clearanceDate).getTime();
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const difference = target - now;
+
+            if (difference <= 0) {
+                setTimeLeft('Settling now...');
+                return;
+            }
+
+            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+            setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, [clearanceDate]);
+
+    return (
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 mt-1.5 w-fit shadow-sm">
+            <Clock size={10} className="animate-pulse" />
+            Clearance in: {timeLeft}
+        </div>
+    );
+};
+
 export const Transactions: React.FC = () => {
     const { user } = useAuth();
     const [transactions, setTransactions] = useState<any[]>([]);
@@ -261,9 +296,14 @@ export const Transactions: React.FC = () => {
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <div className={status.className}>
-                                                            {status.icon}
-                                                            {txn.status}
+                                                        <div className="flex flex-col items-start">
+                                                            <div className={status.className}>
+                                                                {status.icon}
+                                                                {txn.status}
+                                                            </div>
+                                                            {txn.status === 'pending' && txn.metadata?.clearanceDate && !txn.isCleared && (
+                                                                <SettlementCountdown clearanceDate={txn.metadata.clearanceDate} />
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
@@ -342,8 +382,13 @@ export const Transactions: React.FC = () => {
                                                     <p className={`text-sm font-bold ${txn.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
                                                         {txn.type === 'credit' ? '+' : '-'}{formatCurrency(txn.amountNaira)}
                                                     </p>
-                                                    <div className={`${status.className} mt-1 !py-0.5 !px-2 !text-[10px] inline-flex`}>
-                                                        {txn.status}
+                                                    <div className="flex flex-col items-end">
+                                                        <div className={`${status.className} mt-1 !py-0.5 !px-2 !text-[10px] inline-flex`}>
+                                                            {txn.status}
+                                                        </div>
+                                                        {txn.status === 'pending' && txn.metadata?.clearanceDate && !txn.isCleared && (
+                                                            <SettlementCountdown clearanceDate={txn.metadata.clearanceDate} />
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -424,6 +469,11 @@ export const Transactions: React.FC = () => {
                                 {getStatusStyles(selectedTransaction.status).icon}
                                 <span className="uppercase tracking-wide">{selectedTransaction.status}</span>
                             </div>
+                            {selectedTransaction.status === 'pending' && selectedTransaction.metadata?.clearanceDate && !selectedTransaction.isCleared && (
+                                <div className="mt-2">
+                                    <SettlementCountdown clearanceDate={selectedTransaction.metadata.clearanceDate} />
+                                </div>
+                            )}
                         </div>
 
                         {/* Details Grid */}

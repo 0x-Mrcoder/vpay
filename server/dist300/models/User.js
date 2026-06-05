@@ -123,6 +123,12 @@ const UserSchema = new mongoose_1.Schema({
     verificationToken: {
         type: String,
     },
+    resetPasswordOtp: {
+        type: String,
+    },
+    resetPasswordOtpExpires: {
+        type: Date,
+    },
     apiKey: {
         type: String,
         unique: true,

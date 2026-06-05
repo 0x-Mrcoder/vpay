@@ -352,6 +352,67 @@ class EmailService {
         await Promise.all(sendPromises);
         console.log(`[EmailService] Support ticket notification sent to admins for user ${user.email}`);
     }
+    /**
+     * Send OTP for password reset
+     */
+    async sendPasswordResetOtpEmail(email, otp, name) {
+        const settings = await SystemSetting_1.SystemSetting.findOne();
+        const companyName = settings?.general?.companyName || 'VTStack';
+        const html = `
+            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #4f46e5;">Password Reset Request</h2>
+                <p>Hello ${name},</p>
+                <p>We received a request to reset your password for your ${companyName} account.</p>
+                
+                <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: center;">
+                    <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">Your verification code is:</p>
+                    <h1 style="margin: 0; color: #111827; letter-spacing: 5px; font-size: 32px;">${otp}</h1>
+                </div>
+
+                <p style="color: #6b7280; font-size: 14px;">This code will expire in 15 minutes.</p>
+                <p>If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
+            </div>
+        `;
+        const subject = `Password Reset Verification Code - ${companyName}`;
+        await this.sendEmail(email, subject, html);
+        console.log(`[EmailService] Password reset OTP sent to ${email}`);
+    }
+    /**
+     * Send notification for admin email change
+     */
+    async sendAdminEmailChangeNotification(oldEmail, newEmail, name) {
+        const settings = await SystemSetting_1.SystemSetting.findOne();
+        const companyName = settings?.general?.companyName || 'VTStack';
+        const html = `
+            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #F9A81B;">Important Update: Your Email Has Changed</h2>
+                <p>Hello ${name},</p>
+                <p>This is a formal notification to inform you that your registered email address on ${companyName} has been successfully updated by an administrator.</p>
+                
+                <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>Old Email:</strong> ${oldEmail}</p>
+                    <p style="margin: 5px 0;"><strong>New Email:</strong> ${newEmail}</p>
+                    <p style="margin: 5px 0;"><strong>Updated On:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+
+                <p>If you requested this change, no further action is required. You can now log into your account using your new email address.</p>
+                <p style="color: #d9534f; font-weight: bold;">If you did NOT request or authorize this change, please contact support immediately.</p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
+            </div>
+        `;
+        const subject = `Notice: Email Address Updated - ${companyName}`;
+        // Notify both old and new email
+        await Promise.all([
+            this.sendEmail(oldEmail, subject, html),
+            this.sendEmail(newEmail, subject, html)
+        ]);
+        console.log(`[EmailService] Admin email change notification sent to ${oldEmail} and ${newEmail}`);
+    }
 }
 exports.emailService = new EmailService();
 exports.default = EmailService;

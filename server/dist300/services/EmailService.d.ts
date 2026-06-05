@@ -44,6 +44,14 @@ declare class EmailService {
      * Send notification to admins for NEW Support Ticket
      */
     sendSupportTicketAdminNotification(user: any, ticket: any): Promise<void>;
+    /**
+     * Send OTP for password reset
+     */
+    sendPasswordResetOtpEmail(email: string, otp: string, name: string): Promise<void>;
+    /**
+     * Send notification for admin email change
+     */
+    sendAdminEmailChangeNotification(oldEmail: string, newEmail: string, name: string): Promise<void>;
 }
 export declare const emailService: EmailService;
 export default EmailService;

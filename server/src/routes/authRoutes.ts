@@ -657,4 +657,118 @@ router.put('/change-password', authenticate, async (req: Request, res: Response)
     }
 });
 
+/**
+ * Request password reset OTP
+ * POST /api/auth/forgot-password
+ */
+router.post('/forgot-password', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            res.status(400).json({
+                success: false,
+                message: 'Email is required',
+            });
+            return;
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            // Return success even if user not found to prevent email enumeration
+            res.json({
+                success: true,
+                message: 'If an account with that email exists, a reset code has been sent.',
+            });
+            return;
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // Expires in 15 minutes
+        const expires = new Date();
+        expires.setMinutes(expires.getMinutes() + 15);
+
+        user.resetPasswordOtp = otp;
+        user.resetPasswordOtpExpires = expires;
+        await user.save();
+
+        // Send OTP email
+        await emailService.sendPasswordResetOtpEmail(user.email, otp, user.firstName);
+
+        res.json({
+            success: true,
+            message: 'If an account with that email exists, a reset code has been sent.',
+        });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to process forgot password request',
+        });
+    }
+});
+
+/**
+ * Reset password using OTP
+ * POST /api/auth/reset-password
+ */
+router.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            res.status(400).json({
+                success: false,
+                message: 'Email, OTP, and new password are required',
+            });
+            return;
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid or expired reset code',
+            });
+            return;
+        }
+
+        // Verify OTP matches and is not expired
+        if (
+            !user.resetPasswordOtp || 
+            user.resetPasswordOtp !== otp || 
+            !user.resetPasswordOtpExpires || 
+            user.resetPasswordOtpExpires < new Date()
+        ) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid or expired reset code',
+            });
+            return;
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        user.passwordHash = await bcrypt.hash(newPassword, salt);
+        
+        // Clear OTP fields
+        user.resetPasswordOtp = undefined;
+        user.resetPasswordOtpExpires = undefined;
+        
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Password reset successfully',
+        });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reset password',
+        });
+    }
+});
+
 export default router;

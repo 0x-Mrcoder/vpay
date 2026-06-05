@@ -21,6 +21,8 @@ export interface IUserDocument extends Document {
     rcNumber?: string;
     cacDocumentPath?: string;
     verificationToken?: string;
+    resetPasswordOtp?: string;
+    resetPasswordOtpExpires?: Date;
     isPayoutEnabled: boolean;
     payoutRequestStatus: 'none' | 'pending' | 'approved' | 'rejected';
     payoutRequestReason?: string;

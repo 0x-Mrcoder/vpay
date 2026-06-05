@@ -114,6 +114,10 @@ export const adminApi = {
         await api.patch(`/admin/tenants/${id}/status`, { status });
     },
 
+    updateTenantEmail: async (id: string, email: string): Promise<void> => {
+        await api.patch(`/admin/tenants/${id}/email`, { email });
+    },
+
     deleteTenant: async (id: string): Promise<void> => {
         await api.delete(`/admin/tenants/${id}`);
     },

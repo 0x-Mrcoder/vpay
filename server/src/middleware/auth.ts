@@ -91,6 +91,27 @@ export const authenticate = async (
 
             next();
         } catch (jwtError) {
+            // Fallback: Check if the "token" is actually an API key
+            // This allows users to use their API key in the Bearer slot
+            const userByApiKey = await User.findOne({ apiKey: token });
+            if (userByApiKey) {
+                if (userByApiKey.status !== 'active') {
+                    res.status(403).json({
+                        success: false,
+                        message: 'Account is not active',
+                    });
+                    return;
+                }
+
+                req.user = {
+                    id: userByApiKey._id.toString(),
+                    email: userByApiKey.email,
+                    role: userByApiKey.role,
+                };
+                next();
+                return;
+            }
+
             res.status(401).json({
                 success: false,
                 message: 'Invalid token',

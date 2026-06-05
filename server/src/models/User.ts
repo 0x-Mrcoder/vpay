@@ -25,6 +25,8 @@ export interface IUserDocument extends Document {
     cacDocumentPath?: string;
     // System Fields
     verificationToken?: string; // Added for email verification
+    resetPasswordOtp?: string;
+    resetPasswordOtpExpires?: Date;
     isPayoutEnabled: boolean;
     payoutRequestStatus: 'none' | 'pending' | 'approved' | 'rejected';
     payoutRequestReason?: string;
@@ -147,6 +149,12 @@ const UserSchema = new Schema<IUserDocument>(
         },
         verificationToken: {
             type: String,
+        },
+        resetPasswordOtp: {
+            type: String,
+        },
+        resetPasswordOtpExpires: {
+            type: Date,
         },
         apiKey: {
             type: String,

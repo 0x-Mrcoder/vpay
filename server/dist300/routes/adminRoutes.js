@@ -693,6 +693,62 @@ router.patch('/tenants/:id/status', async (req, res) => {
     }
 });
 /**
+ * Update tenant email (Admin only)
+ * PATCH /api/admin/tenants/:id/email
+ */
+router.patch('/tenants/:id/email', middleware_1.requireSuperAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email: newEmail } = req.body;
+        if (!newEmail || !/^\S+@\S+\.\S+$/.test(newEmail)) {
+            res.status(400).json({
+                success: false,
+                message: 'A valid new email address is required',
+            });
+            return;
+        }
+        const formattedEmail = newEmail.toLowerCase().trim();
+        // Check if the email is already in use by ANY user
+        const existingUser = await models_1.User.findOne({ email: formattedEmail });
+        if (existingUser) {
+            res.status(400).json({
+                success: false,
+                message: 'This email address is already in use by another account.',
+            });
+            return;
+        }
+        const user = await models_1.User.findById(id);
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'Tenant not found',
+            });
+            return;
+        }
+        const oldEmail = user.email;
+        user.email = formattedEmail;
+        await user.save();
+        // Send email notifications to both old and new email addresses
+        Promise.resolve().then(() => __importStar(require('../services/EmailService'))).then(({ emailService }) => {
+            emailService.sendAdminEmailChangeNotification(oldEmail, formattedEmail, user.fullName || (user.firstName + ' ' + user.lastName));
+        }).catch(err => {
+            console.error('Failed to send email change notification:', err);
+        });
+        res.json({
+            success: true,
+            message: 'Tenant email updated successfully',
+            data: { email: formattedEmail },
+        });
+    }
+    catch (error) {
+        console.error('Update tenant email error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update tenant email',
+        });
+    }
+});
+/**
  * Update tenant KYC status
  * PATCH /api/admin/tenants/:id/kyc
  */

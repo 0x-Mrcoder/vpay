@@ -3,7 +3,7 @@ import { type Tenant, adminApi } from '../../api/client';
 import Modal from '../common/Modal';
 import Badge from '../common/Badge';
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, FileText, User, CreditCard, Shield, Download, Zap } from 'lucide-react';
+import { RefreshCw, FileText, User, CreditCard, Shield, Download, Zap, Edit2, X, Check } from 'lucide-react';
 import { downloadFile } from '../../utils/exportUtils';
 import toast from 'react-hot-toast';
 
@@ -29,6 +29,11 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
     const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc' | 'payout' | 'virtual-accounts'>('overview');
     const [isAdjusting, setIsAdjusting] = useState(false);
     const [adjustmentData, setAdjustmentData] = useState({ amount: '', type: 'debit' as 'credit' | 'debit', narration: '' });
+    
+    // Email Edit State
+    const [isEditingEmail, setIsEditingEmail] = useState(false);
+    const [emailEditValue, setEmailEditValue] = useState('');
+    const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
 
     // Fetch full tenant details (including wallet and stats)
     const { data: detailData, isLoading: loadingDetail, refetch: refetchDetail } = useQuery({
@@ -123,6 +128,25 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
             toast.error(error.response?.data?.message || 'Failed to adjust wallet');
         } finally {
             setIsAdjusting(false);
+        }
+    };
+
+    const handleEmailUpdate = async () => {
+        if (!emailEditValue || !/^\S+@\S+\.\S+$/.test(emailEditValue)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+        
+        try {
+            setIsSubmittingEmail(true);
+            await adminApi.updateTenantEmail(fullTenant._id, emailEditValue);
+            toast.success('Email updated successfully');
+            setIsEditingEmail(false);
+            refetchDetail();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update email');
+        } finally {
+            setIsSubmittingEmail(false);
         }
     };
 
@@ -315,8 +339,48 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                         <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.phone}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 uppercase tracking-wide">Email</p>
-                                        <p className="text-sm font-medium text-slate-900 mt-1">{fullTenant.email}</p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs text-slate-500 uppercase tracking-wide">Email</p>
+                                            {!isEditingEmail && (
+                                                <button 
+                                                    onClick={() => {
+                                                        setEmailEditValue(fullTenant.email);
+                                                        setIsEditingEmail(true);
+                                                    }}
+                                                    className="text-primary-600 hover:text-primary-700 transition-colors"
+                                                    title="Edit Email"
+                                                >
+                                                    <Edit2 size={12} />
+                                                </button>
+                                            )}
+                                        </div>
+                                        {isEditingEmail ? (
+                                            <div className="mt-1 flex items-center gap-2">
+                                                <input 
+                                                    type="email"
+                                                    value={emailEditValue}
+                                                    onChange={(e) => setEmailEditValue(e.target.value)}
+                                                    disabled={isSubmittingEmail}
+                                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-primary-500 outline-none"
+                                                />
+                                                <button 
+                                                    onClick={handleEmailUpdate}
+                                                    disabled={isSubmittingEmail}
+                                                    className="p-1 bg-green-50 text-green-600 rounded hover:bg-green-100 disabled:opacity-50"
+                                                >
+                                                    {isSubmittingEmail ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
+                                                </button>
+                                                <button 
+                                                    onClick={() => setIsEditingEmail(false)}
+                                                    disabled={isSubmittingEmail}
+                                                    className="p-1 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm font-medium text-slate-900 mt-1 truncate">{fullTenant.email}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase tracking-wide">Joined Date</p>
