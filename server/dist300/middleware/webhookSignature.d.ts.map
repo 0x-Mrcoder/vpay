@@ -1,1 +1,0 @@
-{"version":3,"file":"webhookSignature.d.ts","sourceRoot":"","sources":["../../src/middleware/webhookSignature.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAG1D;;;GAGG;AACH,eAAO,MAAM,sBAAsB,GAC/B,KAAK,OAAO,EACZ,KAAK,QAAQ,EACb,MAAM,YAAY,KACnB,IAaF,CAAC;AAEF,eAAe,sBAAsB,CAAC"}
