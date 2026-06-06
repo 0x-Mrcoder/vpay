@@ -18,6 +18,44 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const SettlementCountdown: React.FC<{ clearanceDate?: string; createdAt: string }> = ({ clearanceDate, createdAt }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        // Use clearanceDate if provided, otherwise fallback to admin-style 24h 5m from createdAt
+        const target = clearanceDate 
+            ? new Date(clearanceDate).getTime() 
+            : new Date(createdAt).getTime() + (24 * 60 * 60 * 1000) + (5 * 60 * 1000);
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const difference = target - now;
+
+            if (difference <= 0) {
+                setTimeLeft('Processing...');
+                return;
+            }
+
+            const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((difference / 1000 / 60) % 60);
+            const seconds = Math.floor((difference / 1000) % 60);
+
+            setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, [clearanceDate, createdAt]);
+
+    return (
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 mt-1 w-fit shadow-sm">
+            <Clock size={10} className="animate-pulse" />
+            {timeLeft}
+        </div>
+    );
+};
+
 export const Overview: React.FC = () => {
     const { user } = useAuth();
     const [wallet, setWallet] = useState<any>(null);
@@ -249,7 +287,22 @@ export const Overview: React.FC = () => {
                                     </div>
                                     <div>
                                         <p className="font-bold text-gray-900 text-sm">{txn.type === 'credit' ? 'Deposit' : 'Withdrawal'}</p>
-                                        <p className="text-xs text-gray-500">{new Date(txn.createdAt).toLocaleDateString()}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-xs text-gray-500">{new Date(txn.createdAt).toLocaleDateString()}</p>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                                txn.status === 'success' ? 'bg-green-50 text-green-600' : 
+                                                txn.status === 'pending' ? 'bg-amber-50 text-amber-600' : 
+                                                'bg-red-50 text-red-600'
+                                            }`}>
+                                                {txn.status}
+                                            </span>
+                                        </div>
+                                        {txn.status === 'pending' && !txn.isCleared && (
+                                            <SettlementCountdown 
+                                                clearanceDate={txn.metadata?.clearanceDate} 
+                                                createdAt={txn.createdAt} 
+                                            />
+                                        )}
                                     </div>
                                 </div>
                                 <p className={`font-bold ${txn.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>

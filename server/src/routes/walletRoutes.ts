@@ -127,6 +127,7 @@ router.get('/transactions', async (req: AuthenticatedRequest, res: Response): Pr
                     isCleared: txn.isCleared,
                     clearedAt: txn.clearedAt,
                     createdAt: txn.createdAt,
+                    metadata: txn.metadata
                 })),
                 pagination: {
                     total,

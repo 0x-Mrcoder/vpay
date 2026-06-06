@@ -18,24 +18,27 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { VerificationAlert } from '../../components/dashboard/VerificationAlert';
 
-const SettlementCountdown: React.FC<{ clearanceDate: string }> = ({ clearanceDate }) => {
+const SettlementCountdown: React.FC<{ clearanceDate?: string; createdAt: string }> = ({ clearanceDate, createdAt }) => {
     const [timeLeft, setTimeLeft] = useState('');
 
     useEffect(() => {
-        const target = new Date(clearanceDate).getTime();
+        // Use clearanceDate if provided, otherwise fallback to admin-style 24h 5m from createdAt
+        const target = clearanceDate 
+            ? new Date(clearanceDate).getTime() 
+            : new Date(createdAt).getTime() + (24 * 60 * 60 * 1000) + (5 * 60 * 1000);
 
         const updateTimer = () => {
             const now = new Date().getTime();
             const difference = target - now;
 
             if (difference <= 0) {
-                setTimeLeft('Settling now...');
+                setTimeLeft('Processing...');
                 return;
             }
 
-            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+            const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((difference / 1000 / 60) % 60);
+            const seconds = Math.floor((difference / 1000) % 60);
 
             setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
         };
@@ -43,12 +46,12 @@ const SettlementCountdown: React.FC<{ clearanceDate: string }> = ({ clearanceDat
         updateTimer();
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
-    }, [clearanceDate]);
+    }, [clearanceDate, createdAt]);
 
     return (
         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 mt-1.5 w-fit shadow-sm">
             <Clock size={10} className="animate-pulse" />
-            Clearance in: {timeLeft}
+            {timeLeft}
         </div>
     );
 };
@@ -301,8 +304,11 @@ export const Transactions: React.FC = () => {
                                                                 {status.icon}
                                                                 {txn.status}
                                                             </div>
-                                                            {txn.status === 'pending' && txn.metadata?.clearanceDate && !txn.isCleared && (
-                                                                <SettlementCountdown clearanceDate={txn.metadata.clearanceDate} />
+                                                            {txn.status === 'pending' && !txn.isCleared && (
+                                                                <SettlementCountdown 
+                                                                    clearanceDate={txn.metadata?.clearanceDate} 
+                                                                    createdAt={txn.createdAt} 
+                                                                />
                                                             )}
                                                         </div>
                                                     </td>
@@ -387,7 +393,10 @@ export const Transactions: React.FC = () => {
                                                             {txn.status}
                                                         </div>
                                                         {txn.status === 'pending' && txn.metadata?.clearanceDate && !txn.isCleared && (
-                                                            <SettlementCountdown clearanceDate={txn.metadata.clearanceDate} />
+                                                            <SettlementCountdown 
+                                                                clearanceDate={txn.metadata.clearanceDate} 
+                                                                createdAt={txn.createdAt}
+                                                            />
                                                         )}
                                                     </div>
                                                 </div>
@@ -471,7 +480,10 @@ export const Transactions: React.FC = () => {
                             </div>
                             {selectedTransaction.status === 'pending' && selectedTransaction.metadata?.clearanceDate && !selectedTransaction.isCleared && (
                                 <div className="mt-2">
-                                    <SettlementCountdown clearanceDate={selectedTransaction.metadata.clearanceDate} />
+                                    <SettlementCountdown 
+                                        clearanceDate={selectedTransaction.metadata.clearanceDate} 
+                                        createdAt={selectedTransaction.createdAt}
+                                    />
                                 </div>
                             )}
                         </div>

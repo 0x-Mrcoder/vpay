@@ -593,17 +593,17 @@ router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response): Pro
         // Get total volume for each virtual account
         const accountsWithVolume = await Promise.all(virtualAccounts.map(async (acc) => {
             const stats = await Transaction.aggregate([
-                { 
-                    $match: { 
+                {
+                    $match: {
                         'metadata.virtualAccount': acc.accountNumber,
                         status: 'success'
-                    } 
+                    }
                 },
-                { 
-                    $group: { 
-                        _id: null, 
-                        totalVolume: { $sum: '$amount' } 
-                    } 
+                {
+                    $group: {
+                        _id: null,
+                        totalVolume: { $sum: '$amount' }
+                    }
                 }
             ]);
 
@@ -938,17 +938,17 @@ router.get('/virtual-accounts', async (req: AuthenticatedRequest, res: Response)
         // Get total volume for each virtual account from transactions metadata
         const accountsWithVolume = await Promise.all(virtualAccounts.map(async (acc) => {
             const stats = await Transaction.aggregate([
-                { 
-                    $match: { 
+                {
+                    $match: {
                         'metadata.virtualAccount': acc.accountNumber,
                         status: 'success'
-                    } 
+                    }
                 },
-                { 
-                    $group: { 
-                        _id: null, 
-                        totalVolume: { $sum: '$amount' } 
-                    } 
+                {
+                    $group: {
+                        _id: null,
+                        totalVolume: { $sum: '$amount' }
+                    }
                 }
             ]);
 

@@ -64,7 +64,12 @@ export class PayoutService {
         amount: number,
         details: { bankCode: string; accountNumber: string; accountName: string }
     ): Promise<any> {
-        // 1. Validation
+        // 1. Validation & sanitization
+        const safeAmount = Number(amount);
+        if (isNaN(safeAmount) || safeAmount <= 0) {
+            throw new Error('Invalid withdrawal amount');
+        }
+
         const user = await User.findById(userId);
         if (!user) {
             throw new Error('User not found');
@@ -78,35 +83,37 @@ export class PayoutService {
             throw new Error('Your account is pending verification.');
         }
 
-        // KYC Check (Level 1, 2 or 3 allowed for payouts as per user request for "any tier")
+        // KYC Check
         if (user.kycLevel < 1) {
             throw new Error('Please verify your email to enable withdrawals.');
         }
 
-        // 2. Minimum payout check (dynamic from system settings)
+        // 2. Minimum payout check
         const payoutSettings = await SystemSetting.findOne();
         const minPayout = payoutSettings?.payout?.minAmount || 1000;
-        if (amount < minPayout) {
-            throw new Error(`Minimum withdrawal amount is ₦${minPayout.toLocaleString()}`);
+        if (safeAmount < minPayout) {
+            throw new Error(`Minimum withdrawal amount is ₦${(minPayout / 100).toLocaleString()}`);
         }
 
         // 3. Fees & Internal Check
         const isInternal = await VirtualAccount.exists({ accountNumber: details.accountNumber });
-        const fees = await this.calculateFees(amount, !!isInternal);
-        const totalDeducted = amount;
+        const fees = await this.calculateFees(safeAmount, !!isInternal);
+        const totalDeducted = safeAmount;
 
-        // 3. Check Balance & Deduct
-        const wallet = await Wallet.findOne({ userId });
-        if (!wallet) throw new Error('Wallet not found');
+        // 4. Use Atomic findOneAndUpdate to lock funds
+        // We use availableBalance logic: clearedBalance - lockedBalance
+        const wallet = await Wallet.findOneAndUpdate(
+            { 
+                userId, 
+                $expr: { $gte: [{ $subtract: ["$clearedBalance", "$lockedBalance"] }, totalDeducted] } 
+            },
+            { $inc: { lockedBalance: totalDeducted } },
+            { new: true }
+        );
 
-        if (wallet.clearedBalance < totalDeducted) {
-            throw new Error('Insufficient cleared balance for this withdrawal');
+        if (!wallet) {
+            throw new Error('Insufficient available balance for this withdrawal');
         }
-
-        // Deduct from wallet
-        wallet.clearedBalance -= totalDeducted;
-        wallet.balance -= totalDeducted;
-        await wallet.save();
 
         try {
             // Create Payout Record
@@ -114,7 +121,7 @@ export class PayoutService {
                 userId,
                 amount: fees.netAmount,
                 fee: fees.fee,
-                payrantFee: fees.gatewayFee, // Keep field name for DB compatibility
+                payrantFee: fees.gatewayFee,
                 totalDebit: totalDeducted,
                 bankCode: details.bankCode,
                 accountNumber: details.accountNumber,
@@ -126,15 +133,6 @@ export class PayoutService {
             });
             await payout.save();
 
-            // Notify admins
-            emailService.sendPayoutRequestAdminNotification(user, payout).catch(err => 
-                logger.error('[PayoutService] Failed to send admin notification:', err)
-            );
-
-            AdminNotificationService.notifyNewPayout(user, totalDeducted).catch(err =>
-                logger.error('[PayoutService] Failed to create admin notification:', err)
-            );
-
             // Create Transaction Record (Pending)
             const transaction = new Transaction({
                 userId,
@@ -143,8 +141,8 @@ export class PayoutService {
                 category: 'withdrawal',
                 amount: totalDeducted,
                 fee: fees.fee + fees.gatewayFee,
-                balanceBefore: wallet.balance + totalDeducted,
-                balanceAfter: wallet.balance,
+                balanceBefore: wallet.balance,
+                balanceAfter: wallet.balance - totalDeducted, // Transaction represents the final intended state
                 reference: payout.reference,
                 narration: `Withdrawal to ${details.accountNumber} - ${details.bankCode}`,
                 status: 'pending',
@@ -156,15 +154,23 @@ export class PayoutService {
                         bankCode: details.bankCode
                     }
                 },
-                isCleared: true, // Balance is already deducted
-                clearedAt: new Date()
+                isCleared: false // Funds are only locked
             });
             await transaction.save();
+
+            // Notify admins
+            emailService.sendPayoutRequestAdminNotification(user, payout).catch(err => 
+                logger.error('[PayoutService] Failed to send admin notification:', err)
+            );
+
+            AdminNotificationService.notifyNewPayout(user, totalDeducted).catch(err =>
+                logger.error('[PayoutService] Failed to create admin notification:', err)
+            );
 
             // Process with PalmPay
             try {
                 const transferResponse = await palmPayService.initiateTransfer({
-                    amount: fees.netAmount, // PalmPay expects minor unit (kobo)
+                    amount: fees.netAmount,
                     currency: 'NGN',
                     transactionReference: payout.reference,
                     description: `Payout to ${details.accountNumber}`,
@@ -177,32 +183,24 @@ export class PayoutService {
 
                 logger.info(`PalmPay transfer initiated: ${JSON.stringify(transferResponse)}`);
 
-                // Update reference with PalmPay's orderNo if available
                 if (transferResponse.orderNo) {
                     const orderNo = transferResponse.orderNo;
-                    
-                    // Update payout reference
                     payout.reference = orderNo;
-                    payout.externalRef = orderNo; // Also store as externalRef
+                    payout.externalRef = orderNo;
                     await payout.save();
 
-                    // Update transaction reference using findOneAndUpdate to be safe
                     await Transaction.findOneAndUpdate(
                         { 'metadata.payoutId': payout._id },
                         { $set: { reference: orderNo, externalRef: orderNo } }
                     );
                 }
 
-                // Automatically mark as successful if transfer initiated successfully
-                // Note: Ideally we wait for webhook, but user requested automatic success
                 await this.handlePayoutSuccess(payout);
                 return payout;
 
             } catch (gatewayError: any) {
-                // If gateway call fails, fail the payout immediately
                 logger.error('PalmPay transfer failed:', gatewayError);
 
-                // Mark transaction as failed
                 await Transaction.findOneAndUpdate(
                     { 'metadata.payoutId': payout._id },
                     { $set: { status: 'failed', narration: `Withdrawal Failed: ${gatewayError.message || 'Gateway Error'}` } }
@@ -212,10 +210,11 @@ export class PayoutService {
             }
 
         } catch (error) {
-            // Rollback wallet
-            wallet.clearedBalance += totalDeducted;
-            wallet.balance += totalDeducted;
-            await wallet.save().catch(e => logger.error('CRITICAL: Failed to rollback wallet', e));
+            // Unlock funds on failure (Restore available balance)
+            await Wallet.findOneAndUpdate(
+                { userId },
+                { $inc: { lockedBalance: -totalDeducted } }
+            ).catch(e => logger.error('CRITICAL: Failed to unlock funds after error', e));
 
             throw error;
         }
@@ -231,10 +230,21 @@ export class PayoutService {
         payout.completedAt = new Date();
         await payout.save();
 
-        // Update Transaction Record
-        const wallet = await Wallet.findOne({ userId: payout.userId });
+        // 1. Deduct from balance and clearedBalance, and release lockedBalance
+        const wallet = await Wallet.findOneAndUpdate(
+            { userId: payout.userId },
+            { 
+                $inc: { 
+                    balance: -payout.totalDebit, 
+                    clearedBalance: -payout.totalDebit,
+                    lockedBalance: -payout.totalDebit 
+                } 
+            },
+            { new: true }
+        );
+
         if (wallet) {
-            // Try to find existing transaction
+            // Update Transaction Record
             let transaction = await Transaction.findOne({
                 $or: [
                     { reference: payout.reference },
@@ -244,6 +254,8 @@ export class PayoutService {
 
             if (transaction) {
                 transaction.status = 'success';
+                transaction.isCleared = true;
+                transaction.clearedAt = new Date();
                 await transaction.save();
             } else {
                 // Fallback: Create new if not found (for old payouts or race conditions)
@@ -254,7 +266,7 @@ export class PayoutService {
                     category: 'withdrawal',
                     amount: payout.totalDebit,
                     reference: payout.reference,
-                    narration: `Withdrawal of ₦${payout.amount / 100} (Fee: ₦${(payout.totalDebit - payout.amount) / 100})`,
+                    narration: `Withdrawal of ₦${(payout.amount / 100).toLocaleString()} (Fee: ₦${((payout.totalDebit - payout.amount) / 100).toLocaleString()})`,
                     status: 'success',
                     balanceBefore: wallet.balance + payout.totalDebit,
                     balanceAfter: wallet.balance,
@@ -271,12 +283,14 @@ export class PayoutService {
                             accountName: payout.accountName,
                             bankCode: payout.bankCode
                         }
-                    }
+                    },
+                    isCleared: true,
+                    clearedAt: new Date()
                 });
             }
         }
 
-        logger.info(`Payout ${payout.reference} marked as SUCCESS`);
+        logger.info(`Payout ${payout.reference} marked as SUCCESS. Funds deducted and unlocked.`);
     }
 
     /**
@@ -294,15 +308,15 @@ export class PayoutService {
             return;
         }
 
-        // Refund wallet
-        const wallet = await Wallet.findOne({ userId: payout.userId });
-        if (wallet) {
-            const refundAmount = payout.totalDebit;
-            wallet.clearedBalance += refundAmount;
-            wallet.balance += refundAmount;
-            await wallet.save();
+        // Refund wallet (Release locked funds)
+        const wallet = await Wallet.findOneAndUpdate(
+            { userId: payout.userId },
+            { $inc: { lockedBalance: -payout.totalDebit } },
+            { new: true }
+        );
 
-            logger.info(`Payout ${payout.reference} failed. Wallet refunded. Reason: ${reason}`);
+        if (wallet) {
+            logger.info(`Payout ${payout.reference} failed. Locked funds released. Reason: ${reason}`);
 
             // Mark transaction as failed
             const transaction = await Transaction.findOne({
