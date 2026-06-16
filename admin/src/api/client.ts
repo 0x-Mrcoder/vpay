@@ -47,6 +47,7 @@ export interface Tenant {
     lga?: string;
     webhookUrl?: string;
     isPayoutEnabled?: boolean;
+    settlementEnabled?: boolean;
     payoutRequestStatus?: 'none' | 'pending' | 'approved' | 'rejected';
     payoutRequestReason?: string;
     payoutIpWhitelist?: string[];
@@ -58,6 +59,7 @@ export interface Wallet {
     _id: string;
     userId: string;
     balance: number;
+    clearedBalance: number;
     lockedBalance: number;
     currency: string;
 }
@@ -137,6 +139,10 @@ export const adminApi = {
     impersonateTenant: async (id: string): Promise<any> => {
         const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/impersonate`);
         return response.data.data;
+    },
+
+    toggleTenantSettlement: async (id: string, enabled: boolean): Promise<void> => {
+        await api.patch(`/admin/tenants/${id}/settlement`, { enabled });
     },
     fundTenantWallet: async (id: string, amount: number, reason?: string): Promise<any> => {
         const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/fund`, { amount, reason });

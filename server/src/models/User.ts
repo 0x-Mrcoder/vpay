@@ -37,6 +37,7 @@ export interface IUserDocument extends Document {
     apiKey?: string;
     webhookUrl?: string; // Webhook URL for payment notifications
     webhookActive: boolean;
+    settlementEnabled: boolean;
     profilePicture?: string;
     kycLevel: number; // 0: Registered, 1: Verified, 2: Submitted, 3: Approved
     kyc_status: 'pending' | 'verified' | 'rejected';
@@ -189,6 +190,10 @@ const UserSchema = new Schema<IUserDocument>(
             default: 2000000,
         },
         webhookActive: {
+            type: Boolean,
+            default: true,
+        },
+        settlementEnabled: {
             type: Boolean,
             default: true,
         },

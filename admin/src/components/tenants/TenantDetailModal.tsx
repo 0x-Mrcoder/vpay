@@ -123,7 +123,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
             });
             toast.success(`Wallet ${adjustmentData.type}ed successfully`);
             setAdjustmentData({ amount: '', type: 'debit', narration: '' });
-            // Refresh detail data
+            refetchDetail();
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to adjust wallet');
         } finally {
@@ -202,22 +202,30 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                         <RefreshCw className="animate-spin text-slate-400" size={20} />
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
-                                            <div className="absolute -right-2 -bottom-2 opacity-5 text-green-600 group-hover:scale-110 transition-transform">
+                                            <div className="absolute -right-2 -bottom-2 opacity-5 text-slate-600 group-hover:scale-110 transition-transform">
                                                 <CreditCard size={64} />
                                             </div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Balance</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Balance</p>
                                             <p className="text-xl font-black text-slate-900 mt-1">{formatCurrency(wallet?.balance ?? 0)}</p>
-                                            <div className="mt-2 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full w-fit">ACTIVE FUNDS</div>
+                                            <div className="mt-2 text-[10px] text-slate-500 font-bold bg-slate-50 px-2 py-0.5 rounded-full w-fit">TOTAL ASSETS</div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                                            <div className="absolute -right-2 -bottom-2 opacity-5 text-green-600 group-hover:scale-110 transition-transform">
+                                                <Zap size={64} />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Settled (Available)</p>
+                                            <p className="text-xl font-black text-green-700 mt-1">{formatCurrency((wallet?.clearedBalance ?? 0) - (wallet?.lockedBalance ?? 0))}</p>
+                                            <div className="mt-2 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full w-fit">WITHDRAWABLE</div>
                                         </div>
                                         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
                                             <div className="absolute -right-2 -bottom-2 opacity-5 text-yellow-600 group-hover:scale-110 transition-transform">
                                                 <RefreshCw size={64} />
                                             </div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Balance</p>
-                                            <p className="text-xl font-black text-slate-900 mt-1">{formatCurrency(wallet?.lockedBalance ?? 0)}</p>
-                                            <div className="mt-2 text-[10px] text-yellow-600 font-bold bg-yellow-50 px-2 py-0.5 rounded-full w-fit">HELD IN ESCROW</div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Uncleared (Pending)</p>
+                                            <p className="text-xl font-black text-amber-600 mt-1">{formatCurrency((wallet?.balance ?? 0) - (wallet?.clearedBalance ?? 0) + (wallet?.lockedBalance ?? 0))}</p>
+                                            <div className="mt-2 text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full w-fit">INCOMING / HELD</div>
                                         </div>
                                         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
                                             <div className="absolute -right-2 -bottom-2 opacity-5 text-primary-600 group-hover:scale-110 transition-transform">
@@ -248,6 +256,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                                 className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                             >
                                                 <option value="debit">Debit Amount (-)</option>
+                                                <option value="credit">Credit Amount (+)</option>
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
@@ -460,7 +469,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                             const data = await adminApi.impersonateTenant(fullTenant._id);
                                             toast.dismiss(loadingToast);
                                             
-                                            const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:5173';
+                                            const appUrl = import.meta.env.VITE_APP_URL || 'https://vtstack.com.ng';
                                             const userJson = encodeURIComponent(JSON.stringify(data.user));
                                             const impersonateUrl = `${appUrl}/login?token=${data.token}&user=${userJson}`;
                                             
@@ -474,6 +483,25 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                     className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-bold shadow-md transform active:scale-95"
                                 >
                                     Login As User
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const newState = !fullTenant.settlementEnabled;
+                                            await adminApi.toggleTenantSettlement(fullTenant._id, newState);
+                                            toast.success(`Settlements ${newState ? 'enabled' : 'stopped'} for this tenant`);
+                                            refetchDetail();
+                                        } catch (error) {
+                                            toast.error('Failed to update settlement status');
+                                        }
+                                    }}
+                                    className={`px-4 py-2.5 rounded-xl transition-colors text-sm font-bold shadow-sm ${
+                                        fullTenant.settlementEnabled !== false
+                                        ? 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+                                        : 'bg-green-50 text-green-700 hover:bg-green-100'
+                                    }`}
+                                >
+                                    {fullTenant.settlementEnabled !== false ? 'Stop Settlement' : 'Start Settlement'}
                                 </button>
                                 <button
                                     onClick={() => onSendMessage(fullTenant)}
