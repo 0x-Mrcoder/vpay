@@ -144,7 +144,7 @@ export const VirtualAccounts: React.FC = () => {
                     </button>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        disabled={(user?.kycLevel ?? 0) < 3 || user?.status === 'suspended'}
+                        disabled={(user?.kycLevel ?? 0) < 1 || user?.status === 'suspended'}
                         className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-primary-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
                     >
                         <Plus size={20} />
@@ -168,20 +168,39 @@ export const VirtualAccounts: React.FC = () => {
                 </div>
             )}
 
-            {/* KYC Alert */}
-            {user?.status !== 'suspended' && (user?.kycLevel ?? 0) < 3 && (
+            {/* KYC Alert - Level 0 */}
+            {user?.status !== 'suspended' && (user?.kycLevel ?? 0) < 1 && (
+                <div className="p-4 md:p-5 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-4 shadow-sm animate-fade-in">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 flex-shrink-0">
+                        <ShieldAlert size={24} />
+                    </div>
+                    <div>
+                        <h4 className="text-base font-bold text-blue-900">KYC Verification Required</h4>
+                        <p className="text-sm text-blue-800 mt-1 leading-relaxed">
+                            Please complete your Tier 1 verification (Personal Disclosure) to unlock virtual accounts and start receiving payments.
+                        </p>
+                        <Link to="/dashboard/verification" className="inline-flex items-center gap-2 text-xs font-bold text-blue-900 hover:text-blue-700 mt-3 px-4 py-2 bg-white rounded-lg border border-blue-200 transition-colors shadow-sm">
+                            Complete KYC
+                            <CheckCircle2 size={14} />
+                        </Link>
+                    </div>
+                </div>
+            )}
+
+            {/* Tier Limits Alert - Level 1 or 2 */}
+            {user?.status !== 'suspended' && (user?.kycLevel ?? 0) >= 1 && (user?.kycLevel ?? 0) < 3 && (
                 <div className="p-4 md:p-5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-4 shadow-sm animate-fade-in">
                     <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 flex-shrink-0">
                         <ShieldAlert size={24} />
                     </div>
                     <div>
-                        <h4 className="text-base font-bold text-amber-900">Tier 1 Account Limit Warning</h4>
+                        <h4 className="text-base font-bold text-amber-900">Tier Limits Active</h4>
                         <p className="text-sm text-amber-800 mt-1 leading-relaxed">
-                            As a Tier 1 user, you cannot perform transactions (incoming or payout) over ₦299,999. 
-                            Please complete your Tier 3 verification to unlock higher limits and create new virtual accounts.
+                            As a Tier {(user?.kycLevel ?? 1) === 1 ? '1' : '2'} user, your transactions are limited to ₦299,999. 
+                            Complete Tier 3 verification to unlock corporate-scale limits.
                         </p>
                         <Link to="/dashboard/verification" className="inline-flex items-center gap-2 text-xs font-bold text-amber-900 hover:text-amber-700 mt-3 px-4 py-2 bg-white rounded-lg border border-amber-200 transition-colors shadow-sm">
-                            Complete Verification
+                            Upgrade Tier
                             <CheckCircle2 size={14} />
                         </Link>
                     </div>

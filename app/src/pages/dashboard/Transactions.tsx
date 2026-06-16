@@ -304,7 +304,7 @@ export const Transactions: React.FC = () => {
                                                                 {status.icon}
                                                                 {txn.status}
                                                             </div>
-                                                            {txn.status === 'pending' && !txn.isCleared && (
+                                                            {txn.status === 'pending' && txn.type === 'credit' && !txn.isCleared && (
                                                                 <SettlementCountdown 
                                                                     clearanceDate={txn.metadata?.clearanceDate} 
                                                                     createdAt={txn.createdAt} 
@@ -392,9 +392,9 @@ export const Transactions: React.FC = () => {
                                                         <div className={`${status.className} mt-1 !py-0.5 !px-2 !text-[10px] inline-flex`}>
                                                             {txn.status}
                                                         </div>
-                                                        {txn.status === 'pending' && txn.metadata?.clearanceDate && !txn.isCleared && (
+                                                        {txn.status === 'pending' && txn.type === 'credit' && !txn.isCleared && (
                                                             <SettlementCountdown 
-                                                                clearanceDate={txn.metadata.clearanceDate} 
+                                                                clearanceDate={txn.metadata?.clearanceDate} 
                                                                 createdAt={txn.createdAt}
                                                             />
                                                         )}
@@ -478,10 +478,10 @@ export const Transactions: React.FC = () => {
                                 {getStatusStyles(selectedTransaction.status).icon}
                                 <span className="uppercase tracking-wide">{selectedTransaction.status}</span>
                             </div>
-                            {selectedTransaction.status === 'pending' && selectedTransaction.metadata?.clearanceDate && !selectedTransaction.isCleared && (
+                            {selectedTransaction.status === 'pending' && selectedTransaction.type === 'credit' && !selectedTransaction.isCleared && (
                                 <div className="mt-2">
                                     <SettlementCountdown 
-                                        clearanceDate={selectedTransaction.metadata.clearanceDate} 
+                                        clearanceDate={selectedTransaction.metadata?.clearanceDate} 
                                         createdAt={selectedTransaction.createdAt}
                                     />
                                 </div>

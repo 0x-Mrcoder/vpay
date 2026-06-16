@@ -509,7 +509,7 @@ export const Verification: React.FC = () => {
                 <div className="absolute right-0 top-0 w-32 h-32 bg-primary-600/5 rounded-full -mr-16 -mt-16"></div>
                 <div>
                     <h1 className="text-3xl font-black text-gray-900 tracking-tight">Personal Verification</h1>
-                    <p className="text-sm text-gray-500 mt-1 font-medium italic">Complete Tier 2 verification to unlock Nigerian virtual accounts and higher limits.</p>
+                    <p className="text-sm text-gray-500 mt-1 font-medium italic">Complete Tier 2 or 3 verification to unlock higher transaction limits and Payout APIs.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {[1, 2, 3].map(i => (

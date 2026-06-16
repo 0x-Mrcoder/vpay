@@ -471,6 +471,29 @@ const TenantsPage: React.FC = () => {
                                                     View
                                                 </button>
                                                 <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            const loadingToast = toast.loading('Generating session...');
+                                                            const data = await adminApi.impersonateTenant(tenant._id);
+                                                            toast.dismiss(loadingToast);
+                                                            
+                                                            const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:5173';
+                                                            const userJson = encodeURIComponent(JSON.stringify(data.user));
+                                                            const impersonateUrl = `${appUrl}/login?token=${data.token}&user=${userJson}`;
+                                                            
+                                                            window.open(impersonateUrl, '_blank');
+                                                            toast.success('Session opened in new tab');
+                                                        } catch (error) {
+                                                            console.error('Failed to impersonate:', error);
+                                                            toast.error('Failed to generate impersonation session');
+                                                        }
+                                                    }}
+                                                    className="text-indigo-600 hover:text-indigo-900"
+                                                    title="Login as this user"
+                                                >
+                                                    Login
+                                                </button>
+                                                <button
                                                     onClick={() => handleDeleteTenant(tenant._id)}
                                                     className="text-red-600 hover:text-red-900"
                                                 >

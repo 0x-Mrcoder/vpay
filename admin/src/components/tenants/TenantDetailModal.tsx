@@ -48,7 +48,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
     const virtualAccounts = detailData?.virtualAccounts || [];
 
     // Fetch transactions for this tenant
-    const { data: transactions, isLoading: loadingTxns } = useQuery({
+    const { data: txnData, isLoading: loadingTxns } = useQuery({
         queryKey: ['tenant-transactions', tenant._id],
         queryFn: () => adminApi.getTransactions({ tenantId: tenant._id }),
         enabled: isOpen && activeTab === 'transactions',
@@ -454,6 +454,28 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                     </button>
                                 )}
                                 <button
+                                    onClick={async () => {
+                                        try {
+                                            const loadingToast = toast.loading('Generating session...');
+                                            const data = await adminApi.impersonateTenant(fullTenant._id);
+                                            toast.dismiss(loadingToast);
+                                            
+                                            const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:5173';
+                                            const userJson = encodeURIComponent(JSON.stringify(data.user));
+                                            const impersonateUrl = `${appUrl}/login?token=${data.token}&user=${userJson}`;
+                                            
+                                            window.open(impersonateUrl, '_blank');
+                                            toast.success('Session opened in new tab');
+                                        } catch (error) {
+                                            console.error('Failed to impersonate:', error);
+                                            toast.error('Failed to generate impersonation session');
+                                        }
+                                    }}
+                                    className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-bold shadow-md transform active:scale-95"
+                                >
+                                    Login As User
+                                </button>
+                                <button
                                     onClick={() => onSendMessage(fullTenant)}
                                     className="px-4 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors text-sm font-bold shadow-sm"
                                 >
@@ -478,7 +500,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                 <div className="flex items-center justify-center py-12">
                                     <RefreshCw className="animate-spin text-primary-600" size={24} />
                                 </div>
-                            ) : transactions && transactions.length > 0 ? (
+                            ) : txnData?.transactions && txnData.transactions.length > 0 ? (
                                 <div className="overflow-hidden rounded-xl border border-slate-200">
                                     <table className="w-full text-left text-sm">
                                         <thead className="bg-slate-50 border-b border-slate-200">
@@ -490,7 +512,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {transactions.slice(0, 10).map((txn: any) => (
+                                            {txnData.transactions.slice(0, 10).map((txn: any) => (
                                                 <tr key={txn._id} className="hover:bg-slate-50">
                                                     <td className="px-4 py-3 font-mono text-xs">{txn.reference}</td>
                                                     <td className="px-4 py-3 font-medium">₦{txn.amount.toLocaleString()}</td>
@@ -505,7 +527,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                                 </tr>
                                             ))}
                                         </tbody>
-                                        {transactions.length > 10 && (
+                                        {txnData.transactions.length > 10 && (
                                             <tfoot className="bg-slate-50 border-t border-slate-200">
                                                 <tr>
                                                     <td colSpan={4} className="px-4 py-3 text-center text-xs text-slate-500">
@@ -521,7 +543,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                     <FileText className="mx-auto text-slate-400 mb-2" size={32} />
                                     <p className="text-slate-500">No transactions found for this tenant.</p>
                                 </div>
-                            )}
+                            ) }
                         </div>
                     )}
 

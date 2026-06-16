@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { Loader2, AlertCircle, Mail, Lock, Check } from 'lucide-react';
@@ -14,6 +14,27 @@ export const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const location = useLocation();
+
+    React.useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const token = params.get('token');
+        const userData = params.get('user');
+
+        if (token && userData) {
+            try {
+                const user = JSON.parse(decodeURIComponent(userData));
+                setSuccess('Synchronizing admin session...');
+                setTimeout(() => {
+                    login(token, user);
+                    navigate('/dashboard');
+                }, 1000);
+            } catch (err) {
+                console.error('Failed to auto-login:', err);
+                setError('Invalid session data provided.');
+            }
+        }
+    }, [location.search, login, navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
