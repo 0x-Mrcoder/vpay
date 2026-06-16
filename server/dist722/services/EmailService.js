@@ -1,26 +1,30 @@
-import nodemailer from 'nodemailer';
-import { SystemSetting } from '../models/SystemSetting';
-import { User } from '../models/User';
-import config from '../config';
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.emailService = void 0;
+const nodemailer_1 = __importDefault(require("nodemailer"));
+const SystemSetting_1 = require("../models/SystemSetting");
+const User_1 = require("../models/User");
+const config_1 = __importDefault(require("../config"));
 class EmailService {
-    private async getTransporter() {
+    async getTransporter() {
         // Try to get settings from DB
-        const settings = await SystemSetting.findOne();
-
+        const settings = await SystemSetting_1.SystemSetting.findOne();
         if (settings && settings.emailConfig && settings.emailConfig.provider) {
             const { provider, gmail, smtp } = settings.emailConfig;
-
             if (provider === 'gmail') {
-                return nodemailer.createTransport({
+                return nodemailer_1.default.createTransport({
                     service: 'gmail',
                     auth: {
                         user: gmail.user,
                         pass: gmail.pass,
                     },
                 });
-            } else {
-                return nodemailer.createTransport({
+            }
+            else {
+                return nodemailer_1.default.createTransport({
                     host: smtp.host,
                     port: smtp.port,
                     secure: smtp.secure,
@@ -31,11 +35,10 @@ class EmailService {
                 });
             }
         }
-
         // Fallback to Environment Variables
         if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
             console.log('[EmailService] Using environment variables for email configuration');
-            return nodemailer.createTransport({
+            return nodemailer_1.default.createTransport({
                 host: process.env.SMTP_HOST,
                 port: parseInt(process.env.SMTP_PORT || '587'),
                 secure: process.env.SMTP_SECURE === 'true',
@@ -45,11 +48,10 @@ class EmailService {
                 },
             });
         }
-
         // Fallback for Gmail via Env
         if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
             console.log('[EmailService] Using GMAIL environment variables');
-            return nodemailer.createTransport({
+            return nodemailer_1.default.createTransport({
                 service: 'gmail',
                 auth: {
                     user: process.env.GMAIL_USER,
@@ -57,20 +59,17 @@ class EmailService {
                 },
             });
         }
-
         throw new Error('Email configuration not found in DB or Environment');
     }
-
     /**
      * Send a single email
      */
-    async sendEmail(to: string, subject: string, html: string): Promise<void> {
+    async sendEmail(to, subject, html) {
         try {
             const transporter = await this.getTransporter();
-            const settings = await SystemSetting.findOne();
+            const settings = await SystemSetting_1.SystemSetting.findOne();
             const from = settings?.general?.supportEmail || 'noreply@vtpay.com';
             const companyName = settings?.general?.companyName || 'VTStack';
-
             await transporter.sendMail({
                 from: `"${companyName}" <${from}>`,
                 to,
@@ -78,50 +77,45 @@ class EmailService {
                 html,
             });
             console.log(`[EmailService] Email sent to ${to}`);
-        } catch (error) {
+        }
+        catch (error) {
             console.error('[EmailService] Failed to send email:', error);
         }
     }
-
     /**
      * Send bulk emails
      */
-    async sendBulkEmail(emails: string[], subject: string, message: string): Promise<void> {
+    async sendBulkEmail(emails, subject, message) {
         try {
             const transporter = await this.getTransporter();
-            const settings = await SystemSetting.findOne();
+            const settings = await SystemSetting_1.SystemSetting.findOne();
             const from = settings?.general?.supportEmail || 'noreply@vtpay.com';
             const companyName = settings?.general?.companyName || 'VTStack';
-
             // Convert plain text message to simple HTML (replace newlines with <br>)
             const html = `
                 <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
                     ${message.replace(/\n/g, '<br>')}
                 </div>
             `;
-
             // Send emails in parallel or chunks
             // For simplicity, we'll send them in parallel here, but for large lists, chunks are better
-            const sendPromises = emails.map(email =>
-                transporter.sendMail({
-                    from: `"${companyName}" <${from}>`,
-                    to: email,
-                    subject,
-                    html,
-                }).catch(err => console.error(`[EmailService] Failed to send to ${email}:`, err))
-            );
-
+            const sendPromises = emails.map(email => transporter.sendMail({
+                from: `"${companyName}" <${from}>`,
+                to: email,
+                subject,
+                html,
+            }).catch(err => console.error(`[EmailService] Failed to send to ${email}:`, err)));
             await Promise.all(sendPromises);
             console.log(`[EmailService] Bulk email process completed for ${emails.length} recipients`);
-        } catch (error) {
+        }
+        catch (error) {
             console.error('[EmailService] Bulk email failed:', error);
         }
     }
-
     /**
      * Send verification OTP
      */
-    async sendOtpEmail(email: string, otp: string): Promise<void> {
+    async sendOtpEmail(email, otp) {
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                 <h2 style="color: #F9A81B;">Verify your VTStack Account</h2>
@@ -134,12 +128,11 @@ class EmailService {
         `;
         return this.sendEmail(email, 'Verify your VTStack Account', html);
     }
-
     /**
      * Send verification email (Legacy)
      */
-    async sendVerificationEmail(email: string, token: string): Promise<void> {
-        const verificationLink = `${config.app.url || 'http://localhost:5173'}/verify-email?token=${token}`;
+    async sendVerificationEmail(email, token) {
+        const verificationLink = `${config_1.default.app.url || 'http://localhost:5173'}/verify-email?token=${token}`;
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                 <h2 style="color: #F9A81B;">Verify your VTStack Account</h2>
@@ -153,12 +146,11 @@ class EmailService {
         `;
         return this.sendEmail(email, 'Verify your VTStack Account', html);
     }
-
     /**
      * Send account approval email
      */
-    async sendApprovalEmail(email: string, name: string): Promise<void> {
-        const dashboardLink = `${config.app.url || 'http://localhost:5173'}/dashboard`;
+    async sendApprovalEmail(email, name) {
+        const dashboardLink = `${config_1.default.app.url || 'http://localhost:5173'}/dashboard`;
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #F9A81B;">Account Approved!</h2>
@@ -184,11 +176,10 @@ class EmailService {
     /**
      * Send transaction notification email
      */
-    async sendTransactionNotification(email: string, name: string, transaction: any): Promise<void> {
+    async sendTransactionNotification(email, name, transaction) {
         const amount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(transaction.amount / 100);
         const date = new Date(transaction.createdAt).toLocaleString();
-        const dashboardLink = `${config.app.url || 'http://localhost:5173'}/dashboard`;
-
+        const dashboardLink = `${config_1.default.app.url || 'http://localhost:5173'}/dashboard`;
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #F9A81B;">Transaction Successful</h2>
@@ -212,15 +203,13 @@ class EmailService {
         `;
         return this.sendEmail(email, 'Transaction Notification - VTStack', html);
     }
-
     /**
      * Send payout success notification email
      */
-    async sendPayoutSuccessEmail(email: string, name: string, payout: any): Promise<void> {
+    async sendPayoutSuccessEmail(email, name, payout) {
         const amount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(payout.amount / 100);
         const date = new Date(payout.completedAt || payout.updatedAt).toLocaleString();
-        const dashboardLink = `${config.app.url || 'http://localhost:5173'}/dashboard/payout`;
-
+        const dashboardLink = `${config_1.default.app.url || 'http://localhost:5173'}/dashboard/payout`;
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #F9A81B;">Payout Successful</h2>
@@ -246,36 +235,32 @@ class EmailService {
         `;
         return this.sendEmail(email, 'Payout Successful - VTStack', html);
     }
-
     /**
      * Get all admin emails from database
      */
-    private async getAdminEmails(): Promise<string[]> {
+    async getAdminEmails() {
         try {
-            const admins = await User.find({ role: 'admin' }).select('email');
+            const admins = await User_1.User.find({ role: 'admin' }).select('email');
             const emails = admins.map(a => a.email);
-            
             // Hardcoded fallback/main admins
             const fallbackEmails = ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com', 'vtstackltd@gmail.com'];
-            
             // Merge and deduplicate
             const allEmails = Array.from(new Set([...emails, ...fallbackEmails]));
             console.log(`[EmailService] Found ${allEmails.length} admin recipients`);
             return allEmails;
-        } catch (error) {
+        }
+        catch (error) {
             console.error('[EmailService] Failed to fetch admin emails:', error);
             return ['aminumuhammad00015@gmail.com', 'vtpayltd@gmail.com', 'vtstackltd@gmail.com'];
         }
     }
-
     /**
      * Send notification to admins for KYC or Business Upgrade submission
      */
-    async sendKycSubmissionAdminNotification(user: any, submissionType: 'KYC' | 'Business Upgrade'): Promise<void> {
+    async sendKycSubmissionAdminNotification(user, submissionType) {
         const adminEmails = await this.getAdminEmails();
-        const settings = await SystemSetting.findOne();
+        const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
-
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #F9A81B;">New Document Submission</h2>
@@ -295,24 +280,20 @@ class EmailService {
                 <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
             </div>
         `;
-
         const subject = `New ${submissionType} Submission - ${user.fullName || user.email}`;
-
         // Send to each admin email
         const sendPromises = adminEmails.map(email => this.sendEmail(email, subject, html));
         await Promise.all(sendPromises);
         console.log(`[EmailService] KYC submission notification sent to admins for user ${user.email}`);
     }
-
     /**
      * Send notification to admins for NEW Payout Request
      */
-    async sendPayoutRequestAdminNotification(user: any, payout: any): Promise<void> {
+    async sendPayoutRequestAdminNotification(user, payout) {
         const adminEmails = await this.getAdminEmails();
-        const settings = await SystemSetting.findOne();
+        const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
         const amount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(payout.totalDebit / 100);
-
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #F9A81B;">New Payout Request</h2>
@@ -334,21 +315,18 @@ class EmailService {
                 <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
             </div>
         `;
-
         const subject = `New Payout Request: ${amount} - ${user.fullName || user.email}`;
         const sendPromises = adminEmails.map(email => this.sendEmail(email, subject, html));
         await Promise.all(sendPromises);
         console.log(`[EmailService] Payout request notification sent to admins for user ${user.email}`);
     }
-
     /**
      * Send notification to admins for NEW Support Ticket
      */
-    async sendSupportTicketAdminNotification(user: any, ticket: any): Promise<void> {
+    async sendSupportTicketAdminNotification(user, ticket) {
         const adminEmails = await this.getAdminEmails();
-        const settings = await SystemSetting.findOne();
+        const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
-
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #F9A81B;">New Support Ticket</h2>
@@ -369,20 +347,17 @@ class EmailService {
                 <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
             </div>
         `;
-
         const subject = `New Support Ticket: ${ticket.subject} - ${user.fullName || user.email}`;
         const sendPromises = adminEmails.map(email => this.sendEmail(email, subject, html));
         await Promise.all(sendPromises);
         console.log(`[EmailService] Support ticket notification sent to admins for user ${user.email}`);
     }
-
     /**
      * Send OTP for password reset
      */
-    async sendPasswordResetOtpEmail(email: string, otp: string, name: string): Promise<void> {
-        const settings = await SystemSetting.findOne();
+    async sendPasswordResetOtpEmail(email, otp, name) {
+        const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
-
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #4f46e5;">Password Reset Request</h2>
@@ -401,19 +376,16 @@ class EmailService {
                 <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
             </div>
         `;
-
         const subject = `Password Reset Verification Code - ${companyName}`;
         await this.sendEmail(email, subject, html);
         console.log(`[EmailService] Password reset OTP sent to ${email}`);
     }
-
     /**
      * Send notification for admin email change
      */
-    async sendAdminEmailChangeNotification(oldEmail: string, newEmail: string, name: string): Promise<void> {
-        const settings = await SystemSetting.findOne();
+    async sendAdminEmailChangeNotification(oldEmail, newEmail, name) {
+        const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
-
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #F9A81B;">Important Update: Your Email Has Changed</h2>
@@ -433,9 +405,7 @@ class EmailService {
                 <p style="color: #999; font-size: 12px; text-align: center;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
             </div>
         `;
-
         const subject = `Notice: Email Address Updated - ${companyName}`;
-        
         // Notify both old and new email
         await Promise.all([
             this.sendEmail(oldEmail, subject, html),
@@ -443,14 +413,12 @@ class EmailService {
         ]);
         console.log(`[EmailService] Admin email change notification sent to ${oldEmail} and ${newEmail}`);
     }
-
     /**
      * Send OTP for manual wallet adjustment
      */
-    async sendWalletAdjustmentOtp(otp: string): Promise<void> {
-        const settings = await SystemSetting.findOne();
+    async sendWalletAdjustmentOtp(otp) {
+        const settings = await SystemSetting_1.SystemSetting.findOne();
         const companyName = settings?.general?.companyName || 'VTStack';
-
         const html = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px; margin: 0 auto; border-top: 4px solid #ef4444;">
                 <h2 style="color: #ef4444;">Security Alert: Manual Wallet Correction</h2>
@@ -466,7 +434,6 @@ class EmailService {
         return this.sendEmail('vtfree2025@gmail.com', 'Wallet Adjustment Security Code', html);
     }
 }
-
-export const emailService = new EmailService();
-export default EmailService;
-
+exports.emailService = new EmailService();
+exports.default = EmailService;
+//# sourceMappingURL=EmailService.js.map

@@ -148,8 +148,12 @@ export const adminApi = {
         const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/fund`, { amount, reason });
         return response.data;
     },
-    adjustTenantWallet: async (id: string, data: { amount: number; type: 'credit' | 'debit'; narration: string }): Promise<any> => {
+    adjustTenantWallet: async (id: string, data: { amount: number; type: 'credit' | 'debit'; narration: string; securityPassword?: string; securityOtp?: string }): Promise<any> => {
         const response = await api.post<ApiResponse<any>>(`/admin/tenants/${id}/adjust-wallet`, data);
+        return response.data;
+    },
+    requestAdjustmentOtp: async (): Promise<any> => {
+        const response = await api.post<ApiResponse<any>>('/admin/tenants/request-adjustment-otp');
         return response.data;
     },
 

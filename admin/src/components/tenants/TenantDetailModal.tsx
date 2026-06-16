@@ -28,7 +28,14 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'wallet' | 'transactions' | 'kyc' | 'payout' | 'virtual-accounts'>('overview');
     const [isAdjusting, setIsAdjusting] = useState(false);
-    const [adjustmentData, setAdjustmentData] = useState({ amount: '', type: 'debit' as 'credit' | 'debit', narration: '' });
+    const [adjustmentData, setAdjustmentData] = useState({ 
+        amount: '', 
+        type: 'debit' as 'credit' | 'debit', 
+        narration: '',
+        securityPassword: '',
+        securityOtp: ''
+    });
+    const [isRequestingOtp, setIsRequestingOtp] = useState(false);
     
     // Email Edit State
     const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -101,10 +108,22 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
         }
     };
     
+    const handleRequestOtp = async () => {
+        try {
+            setIsRequestingOtp(true);
+            await adminApi.requestAdjustmentOtp();
+            toast.success('Security code sent to authorized email');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to send security code');
+        } finally {
+            setIsRequestingOtp(false);
+        }
+    };
+
     const handleManualAdjustment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!adjustmentData.amount || !adjustmentData.narration) {
-            toast.error('Please enter amount and narration');
+        if (!adjustmentData.amount || !adjustmentData.narration || !adjustmentData.securityPassword || !adjustmentData.securityOtp) {
+            toast.error('All fields including Security Password and OTP are required');
             return;
         }
 
@@ -119,10 +138,18 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
             await adminApi.adjustTenantWallet(fullTenant._id, {
                 amount: amountNum,
                 type: adjustmentData.type,
-                narration: adjustmentData.narration
+                narration: adjustmentData.narration,
+                securityPassword: adjustmentData.securityPassword,
+                securityOtp: adjustmentData.securityOtp
             });
             toast.success(`Wallet ${adjustmentData.type}ed successfully`);
-            setAdjustmentData({ amount: '', type: 'debit', narration: '' });
+            setAdjustmentData({ 
+                amount: '', 
+                type: 'debit', 
+                narration: '', 
+                securityPassword: '', 
+                securityOtp: '' 
+            });
             refetchDetail();
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to adjust wallet');
@@ -271,6 +298,40 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({
                                         </div>
                                     </div>
                                     
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Security Code (OTP)</label>
+                                                <button 
+                                                    type="button"
+                                                    onClick={handleRequestOtp}
+                                                    disabled={isRequestingOtp}
+                                                    className="text-[10px] text-primary-600 font-bold hover:underline disabled:opacity-50"
+                                                >
+                                                    {isRequestingOtp ? 'Sending...' : 'Request Code'}
+                                                </button>
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="6-digit code"
+                                                maxLength={6}
+                                                value={adjustmentData.securityOtp}
+                                                onChange={(e) => setAdjustmentData({...adjustmentData, securityOtp: e.target.value})}
+                                                className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm font-mono font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-400"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Security Password</label>
+                                            <input 
+                                                type="password" 
+                                                placeholder="••••••"
+                                                value={adjustmentData.securityPassword}
+                                                onChange={(e) => setAdjustmentData({...adjustmentData, securityPassword: e.target.value})}
+                                                className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-400"
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Adjustment Narration</label>
                                         <input 
