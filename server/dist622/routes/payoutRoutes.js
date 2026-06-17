@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const middleware_1 = require("../middleware");
 const PayoutService_1 = require("../services/PayoutService");
+const SecurePayoutService_1 = require("../services/SecurePayoutService");
 const PalmPayService_1 = require("../services/PalmPayService");
 const models_1 = require("../models");
 const logger_1 = require("../utils/logger");
@@ -34,12 +35,15 @@ router.post('/', async (req, res) => {
             });
             return;
         }
-        // 1. Initiate Payout via Service (handles locking funds and PalmPay call)
-        const payout = await PayoutService_1.payoutService.initiatePayout(userId, amount, {
+        // 1. Initiate Payout via Secure Service (handles BullMQ, Sessions, and Ledger)
+        const result = await SecurePayoutService_1.securePayoutService.requestPayout(userId, `REQ-${Date.now()}`, {
+            amount, // in kobo
             bankCode,
             accountNumber,
-            accountName
+            accountName,
+            narration: `Withdrawal to ${accountNumber}`
         });
+        const payout = await models_1.Payout.findById(result.payoutId);
         // 2. Optionally save bank details for future use
         if (saveAccount) {
             await models_1.User.findByIdAndUpdate(userId, {

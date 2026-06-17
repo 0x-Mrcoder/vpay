@@ -184,58 +184,79 @@ class PayoutService {
         payout.completedAt = new Date();
         await payout.save();
         // 1. Deduct from balance and clearedBalance, and release lockedBalance
-        const wallet = await models_1.Wallet.findOneAndUpdate({ userId: payout.userId }, {
+        // Guard: only proceed if lockedBalance is >= payout.totalDebit
+        const wallet = await models_1.Wallet.findOneAndUpdate({
+            userId: payout.userId,
+            lockedBalance: { $gte: payout.totalDebit }
+        }, {
             $inc: {
                 balance: -payout.totalDebit,
                 clearedBalance: -payout.totalDebit,
                 lockedBalance: -payout.totalDebit
             }
         }, { new: true });
-        if (wallet) {
-            // Update Transaction Record
-            let transaction = await models_1.Transaction.findOne({
+        if (!wallet) {
+            // This might happen if the wallet was already debited (idempotency) 
+            // or if the locked balance is insufficient (should not happen if initiatePayout worked)
+            logger_1.logger.warn(`[PayoutService] Wallet update failed for payout ${payout.reference}. Possibly already processed or insufficient locked balance.`);
+            // Check if transaction already exists as 'success' to confirm it was already processed
+            const existingTxn = await models_1.Transaction.findOne({
                 $or: [
                     { reference: payout.reference },
                     { 'metadata.payoutId': payout._id }
-                ]
+                ],
+                status: 'success'
             });
-            if (transaction) {
-                transaction.status = 'success';
-                transaction.isCleared = true;
-                transaction.clearedAt = new Date();
-                await transaction.save();
+            if (existingTxn) {
+                logger_1.logger.info(`[PayoutService] Payout ${payout.reference} already has a success transaction. Skipping.`);
+                return;
             }
-            else {
-                // Fallback: Create new if not found (for old payouts or race conditions)
-                await models_1.Transaction.create({
-                    userId: payout.userId,
-                    walletId: wallet._id,
-                    type: 'debit',
-                    category: 'withdrawal',
-                    amount: payout.totalDebit,
-                    reference: payout.reference,
-                    narration: `Withdrawal of ₦${(payout.amount / 100).toLocaleString()} (Fee: ₦${((payout.totalDebit - payout.amount) / 100).toLocaleString()})`,
-                    status: 'success',
-                    balanceBefore: wallet.balance + payout.totalDebit,
-                    balanceAfter: wallet.balance,
-                    payoutId: payout._id,
-                    metadata: {
-                        fees: {
-                            fee: payout.fee,
-                            gatewayFee: payout.payrantFee,
-                            totalDebit: payout.totalDebit,
-                            netAmount: payout.amount
-                        },
-                        beneficiary: {
-                            accountNumber: payout.accountNumber,
-                            accountName: payout.accountName,
-                            bankCode: payout.bankCode
-                        }
+            // If no success transaction exists and wallet update failed, something is wrong
+            throw new Error(`Failed to deduct funds from wallet for payout ${payout.reference}. Locked balance might be insufficient.`);
+        }
+        // Update Transaction Record
+        let transaction = await models_1.Transaction.findOne({
+            $or: [
+                { reference: payout.reference },
+                { 'metadata.payoutId': payout._id }
+            ]
+        });
+        if (transaction) {
+            transaction.status = 'success';
+            transaction.isCleared = true;
+            transaction.clearedAt = new Date();
+            await transaction.save();
+        }
+        else {
+            // Fallback: Create new if not found (for old payouts or race conditions)
+            await models_1.Transaction.create({
+                userId: payout.userId,
+                walletId: wallet._id,
+                type: 'debit',
+                category: 'withdrawal',
+                amount: payout.totalDebit,
+                reference: payout.reference,
+                narration: `Withdrawal of ₦${(payout.amount / 100).toLocaleString()} (Fee: ₦${((payout.totalDebit - payout.amount) / 100).toLocaleString()})`,
+                status: 'success',
+                balanceBefore: wallet.balance + payout.totalDebit,
+                balanceAfter: wallet.balance,
+                payoutId: payout._id,
+                metadata: {
+                    fees: {
+                        fee: payout.fee,
+                        gatewayFee: payout.payrantFee,
+                        totalDebit: payout.totalDebit,
+                        netAmount: payout.amount
                     },
-                    isCleared: true,
-                    clearedAt: new Date()
-                });
-            }
+                    beneficiary: {
+                        accountNumber: payout.accountNumber,
+                        accountName: payout.accountName,
+                        bankCode: payout.bankCode
+                    }
+                },
+                isCleared: true,
+                clearedAt: new Date()
+            });
         }
         logger_1.logger.info(`Payout ${payout.reference} marked as SUCCESS. Funds deducted and unlocked.`);
     }

@@ -1,12 +1,47 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cronService = exports.CronService = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const node_cron_1 = __importDefault(require("node-cron"));
 const Transaction_1 = require("../models/Transaction");
 const Wallet_1 = require("../models/Wallet");
+const Ledger_1 = require("../models/Ledger");
 const logger_1 = require("../utils/logger");
 const BackupService_1 = require("./BackupService");
 const WebhookService_1 = require("./WebhookService");
@@ -127,17 +162,50 @@ class CronService {
                                 logger_1.logger.info(`[CronService] Skipping settlement for ${txn.reference} (Tenant ${tenant._id} settlement disabled).`);
                                 continue;
                             }
-                            const updated = await Transaction_1.Transaction.findOneAndUpdate({ _id: txn._id, isCleared: false }, { $set: { isCleared: true } }, { new: true });
-                            if (!updated) {
-                                logger_1.logger.warn(`[CronService] Txn ${txn.reference} already cleared.`);
-                                continue;
+                            let session = null;
+                            const { isReplicaSet } = await Promise.resolve().then(() => __importStar(require('../config/database')));
+                            if (isReplicaSet) {
+                                session = await mongoose_1.default.startSession();
+                                session.startTransaction();
                             }
-                            const result = await Wallet_1.Wallet.findOneAndUpdate({ _id: txn.walletId }, { $inc: { clearedBalance: txn.amount } }, { new: true });
-                            if (result) {
-                                logger_1.logger.info(`[CronService] Cleared ${txn.reference} → ₦${txn.amount}`);
+                            try {
+                                const updated = await Transaction_1.Transaction.findOneAndUpdate({ _id: txn._id, isCleared: false }, { $set: { isCleared: true } }, { new: true, session });
+                                if (!updated) {
+                                    logger_1.logger.warn(`[CronService] Txn ${txn.reference} already cleared.`);
+                                    if (session)
+                                        await session.abortTransaction();
+                                    continue;
+                                }
+                                const result = await Wallet_1.Wallet.findOneAndUpdate({ _id: txn.walletId }, { $inc: { clearedBalance: txn.amount } }, { new: true, session });
+                                if (result) {
+                                    // Create Ledger record for the clearance
+                                    await new Ledger_1.Ledger({
+                                        walletId: txn.walletId,
+                                        userId: txn.userId,
+                                        transactionId: txn._id,
+                                        reference: `CLR-${txn.reference}`,
+                                        amount: txn.amount,
+                                        type: 'CREDIT',
+                                        purpose: 'SETTLEMENT',
+                                        balanceBefore: result.balance,
+                                        balanceAfter: result.balance, // Total balance doesn't change during clearance
+                                    }).save({ session });
+                                    if (session)
+                                        await session.commitTransaction();
+                                    logger_1.logger.info(`[CronService] Cleared ${txn.reference} → ₦${txn.amount}`);
+                                }
+                                else {
+                                    throw new Error(`Wallet not found for walletId: ${txn.walletId}`);
+                                }
                             }
-                            else {
-                                logger_1.logger.error(`[CronService] Wallet not found for ${txn.reference}`);
+                            catch (err) {
+                                if (session)
+                                    await session.abortTransaction();
+                                throw err;
+                            }
+                            finally {
+                                if (session)
+                                    session.endSession();
                             }
                         }
                         catch (err) {

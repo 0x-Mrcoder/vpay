@@ -82,14 +82,12 @@ router.post('/palmpay', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // ── 3️⃣  REPLAY PROTECTION ────────────────────────────────────────────
+        // ── 3️⃣  REPLAY PROTECTION (Logged but not necessarily processed) ─────────────────
+        // We still log/check but we don't return early here because 
+        // handleDeposit has its own Transaction-based idempotency check.
+        // This allows retries if the previous process crashed before creating a Transaction.
         const orderNo = body.orderNo || body.data?.orderNo;
-        if (orderNo && await webhookService.isReplayWebhook(orderNo)) {
-            logger.warn(`[WEBHOOK] ⚠️  Replay detected for orderNo=${orderNo} — returning 200 (idempotent)`);
-            res.status(200).json({ success: true, message: 'Already processed' });
-            return;
-        }
-
+        
         // ── Log the incoming webhook ──────────────────────────────────────────
         const webhookLog = await webhookService.logWebhook(
             'palmpay',
@@ -99,14 +97,7 @@ router.post('/palmpay', async (req: Request, res: Response): Promise<void> => {
             orderNo
         );
 
-        // Duplicate orderNo in log means race condition → already handled
-        if (!webhookLog && orderNo) {
-            logger.warn(`[WEBHOOK] ⚠️  Log creation failed (likely race condition on orderNo=${orderNo}) — returning 200`);
-            res.status(200).json({ success: true, message: 'Already processed' });
-            return;
-        }
-
-        // ── 4️⃣  PROCESS (Duplicate tx guard is inside handleDeposit) ─────────
+        // ── 4️⃣  PROCESS (Transaction-based guard is inside handleDeposit) ─────────
         const result = await webhookService.processWebhook(body);
 
         // Update log with outcome

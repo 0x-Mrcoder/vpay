@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { IWalletDocument, ITransactionDocument } from '../models';
 export declare class WalletService {
     /**
@@ -21,11 +22,11 @@ export declare class WalletService {
     /**
      * Credit wallet (add funds)
      */
-    creditWallet(userId: string, amount: number, category: 'deposit' | 'refund', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string, fee?: number, isCleared?: boolean, clearedAt?: Date): Promise<ITransactionDocument>;
+    creditWallet(userId: string, amount: number, category: 'deposit' | 'refund', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string, fee?: number, isCleared?: boolean, clearedAt?: Date, session?: mongoose.ClientSession): Promise<ITransactionDocument>;
     /**
      * Debit wallet (remove funds)
      */
-    debitWallet(userId: string, amount: number, fee: number, category: 'transfer' | 'withdrawal', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string): Promise<ITransactionDocument>;
+    debitWallet(userId: string, amount: number, fee: number, category: 'transfer' | 'withdrawal', narration: string, externalRef?: string, metadata?: Record<string, any>, customerReference?: string, session?: mongoose.ClientSession): Promise<ITransactionDocument>;
     /**
      * Lock funds in wallet
      */

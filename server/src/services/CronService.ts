@@ -1,6 +1,8 @@
+import mongoose from 'mongoose';
 import cron from 'node-cron';
 import { Transaction } from '../models/Transaction';
 import { Wallet } from '../models/Wallet';
+import { Ledger } from '../models/Ledger';
 import { SystemSetting } from '../models/SystemSetting';
 import { logger } from '../utils/logger';
 import { backupService } from './BackupService';
@@ -141,26 +143,55 @@ export class CronService {
                                 logger.info(`[CronService] Skipping settlement for ${txn.reference} (Tenant ${tenant._id} settlement disabled).`);
                                 continue;
                             }
-                            const updated = await Transaction.findOneAndUpdate(
-                                { _id: txn._id, isCleared: false },
-                                { $set: { isCleared: true } },
-                                { new: true }
-                            );
-                            if (!updated) {
-                                logger.warn(`[CronService] Txn ${txn.reference} already cleared.`);
-                                continue;
+                            let session: any = null;
+                            const { isReplicaSet } = await import('../config/database');
+                            if (isReplicaSet) {
+                                session = await mongoose.startSession();
+                                session.startTransaction();
                             }
 
-                            const result = await Wallet.findOneAndUpdate(
-                                { _id: txn.walletId },
-                                { $inc: { clearedBalance: txn.amount } },
-                                { new: true }
-                            );
+                            try {
+                                const updated = await Transaction.findOneAndUpdate(
+                                    { _id: txn._id, isCleared: false },
+                                    { $set: { isCleared: true } },
+                                    { new: true, session }
+                                );
+                                if (!updated) {
+                                    logger.warn(`[CronService] Txn ${txn.reference} already cleared.`);
+                                    if (session) await session.abortTransaction();
+                                    continue;
+                                }
 
-                            if (result) {
-                                logger.info(`[CronService] Cleared ${txn.reference} → ₦${txn.amount}`);
-                            } else {
-                                logger.error(`[CronService] Wallet not found for ${txn.reference}`);
+                                const result = await Wallet.findOneAndUpdate(
+                                    { _id: txn.walletId },
+                                    { $inc: { clearedBalance: txn.amount } },
+                                    { new: true, session }
+                                );
+
+                                if (result) {
+                                    // Create Ledger record for the clearance
+                                    await new Ledger({
+                                        walletId: txn.walletId,
+                                        userId: txn.userId,
+                                        transactionId: txn._id,
+                                        reference: `CLR-${txn.reference}`,
+                                        amount: txn.amount,
+                                        type: 'CREDIT',
+                                        purpose: 'SETTLEMENT',
+                                        balanceBefore: result.balance, 
+                                        balanceAfter: result.balance, // Total balance doesn't change during clearance
+                                    }).save({ session });
+
+                                    if (session) await session.commitTransaction();
+                                    logger.info(`[CronService] Cleared ${txn.reference} → ₦${txn.amount}`);
+                                } else {
+                                    throw new Error(`Wallet not found for walletId: ${txn.walletId}`);
+                                }
+                            } catch (err: any) {
+                                if (session) await session.abortTransaction();
+                                throw err;
+                            } finally {
+                                if (session) session.endSession();
                             }
                         } catch (err: any) {
                             logger.error(`[CronService] Failed to clear ${txn.reference}`, err);

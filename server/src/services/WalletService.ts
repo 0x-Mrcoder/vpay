@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { Wallet, Transaction, VirtualAccount, IWalletDocument, ITransactionDocument } from '../models';
+import { Wallet, Transaction, VirtualAccount, Ledger, IWalletDocument, ITransactionDocument } from '../models';
 
 export class WalletService {
     /**
@@ -55,10 +55,11 @@ export class WalletService {
         customerReference?: string,
         fee: number = 0,
         isCleared: boolean = true,
-        clearedAt?: Date
+        clearedAt?: Date,
+        session?: mongoose.ClientSession
     ): Promise<ITransactionDocument> {
         try {
-            const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+            const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) }).session(session || null);
             if (!wallet) {
                 throw new Error('Wallet not found');
             }
@@ -71,7 +72,7 @@ export class WalletService {
             if (isCleared) {
                 wallet.clearedBalance += amount;
             }
-            await wallet.save();
+            await wallet.save({ session });
 
             // Create transaction record
             const transaction = new Transaction({
@@ -92,7 +93,21 @@ export class WalletService {
                 isCleared,
                 clearedAt: isCleared ? new Date() : clearedAt
             });
-            await transaction.save();
+            await transaction.save({ session });
+
+            // Create Ledger record
+            const ledger = new Ledger({
+                walletId: wallet._id,
+                userId: new mongoose.Types.ObjectId(userId),
+                transactionId: transaction._id,
+                reference: transaction.reference,
+                amount,
+                type: 'CREDIT',
+                purpose: category.toUpperCase(),
+                balanceBefore,
+                balanceAfter: wallet.balance,
+            });
+            await ledger.save({ session });
 
             return transaction;
         } catch (error) {
@@ -111,29 +126,41 @@ export class WalletService {
         narration: string,
         externalRef?: string,
         metadata?: Record<string, any>,
-        customerReference?: string
+        customerReference?: string,
+        session?: mongoose.ClientSession
     ): Promise<ITransactionDocument> {
         try {
-            const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
-            if (!wallet) {
-                throw new Error('Wallet not found');
-            }
-
             const totalDebit = amount + fee;
-            // Only cleared balance can be withdrawn/transferred
-            const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
+            
+            // Atomic update with sufficient balance check
+            const wallet = await Wallet.findOneAndUpdate(
+                { 
+                    userId: new mongoose.Types.ObjectId(userId),
+                    $expr: { 
+                        $gte: [
+                            { $subtract: ["$clearedBalance", "$lockedBalance"] }, 
+                            totalDebit
+                        ] 
+                    }
+                },
+                { 
+                    $inc: { 
+                        balance: -totalDebit,
+                        clearedBalance: -totalDebit
+                    } 
+                },
+                { new: true, session }
+            );
 
-            if (availableBalance < totalDebit) {
-                throw new Error('Insufficient cleared balance');
+            if (!wallet) {
+                // Check if wallet exists at all
+                const exists = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) }).session(session || null);
+                if (!exists) throw new Error('Wallet not found');
+                throw new Error('Insufficient available (cleared) balance');
             }
 
-            const balanceBefore = wallet.balance;
-            const balanceAfter = balanceBefore - totalDebit;
-
-            // Update wallet balance
-            wallet.balance = balanceAfter;
-            wallet.clearedBalance -= totalDebit;
-            await wallet.save();
+            const balanceBefore = wallet.balance + totalDebit;
+            const balanceAfter = wallet.balance;
 
             // Create transaction record
             const transaction = new Transaction({
@@ -154,7 +181,21 @@ export class WalletService {
                 isCleared: true,
                 clearedAt: new Date()
             });
-            await transaction.save();
+            await transaction.save({ session });
+
+            // Create Ledger record
+            const ledger = new Ledger({
+                walletId: wallet._id,
+                userId: new mongoose.Types.ObjectId(userId),
+                transactionId: transaction._id,
+                reference: transaction.reference,
+                amount: totalDebit,
+                type: 'DEBIT',
+                purpose: category.toUpperCase(),
+                balanceBefore,
+                balanceAfter: wallet.balance,
+            });
+            await ledger.save({ session });
 
             return transaction;
         } catch (error) {
@@ -425,42 +466,64 @@ export class WalletService {
         narration: string,
         adminId: string
     ): Promise<ITransactionDocument> {
-        try {
-            const wallet = await Wallet.findOne({ userId: new mongoose.Types.ObjectId(userId) });
-            if (!wallet) {
-                throw new Error('Wallet not found');
-            }
+        let session: any = null;
+        const { isReplicaSet } = await import('../config/database');
+        if (isReplicaSet) {
+            session = await mongoose.startSession();
+            session.startTransaction();
+        }
 
+        try {
             const safeAmount = Number(amount);
             if (isNaN(safeAmount) || safeAmount <= 0) {
                 throw new Error('Invalid adjustment amount');
             }
 
-            const balanceBefore = wallet.balance;
-            let balanceAfter: number;
+            let wallet;
+            if (type === 'debit') {
+                // Atomic debit with guard
+                wallet = await Wallet.findOneAndUpdate(
+                    { 
+                        userId: new mongoose.Types.ObjectId(userId),
+                        $expr: { 
+                            $gte: [
+                                { $subtract: ["$clearedBalance", "$lockedBalance"] }, 
+                                safeAmount
+                            ] 
+                        }
+                    },
+                    { 
+                        $inc: { 
+                            balance: -safeAmount,
+                            clearedBalance: -safeAmount
+                        } 
+                    },
+                    { new: true, session }
+                );
 
-            if (type === 'credit') {
-                balanceAfter = balanceBefore + safeAmount;
-                wallet.balance = balanceAfter;
-                wallet.clearedBalance += safeAmount;
+                if (!wallet) {
+                    throw new Error('Insufficient available balance for manual debit');
+                }
             } else {
-                // Check if user has enough available (cleared) balance for this debit
-                const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
-                if (availableBalance < safeAmount) {
-                    throw new Error(`Insufficient available (cleared) balance. Available: ₦${(availableBalance / 100).toLocaleString()}`);
-                }
+                // Atomic credit
+                wallet = await Wallet.findOneAndUpdate(
+                    { userId: new mongoose.Types.ObjectId(userId) },
+                    { 
+                        $inc: { 
+                            balance: safeAmount,
+                            clearedBalance: safeAmount
+                        } 
+                    },
+                    { new: true, session }
+                );
 
-                // Double check total balance to prevent Mongoose min: 0 error
-                if (wallet.balance < safeAmount) {
-                    throw new Error('Total wallet balance is insufficient for this deduction.');
+                if (!wallet) {
+                    throw new Error('Wallet not found for adjustment');
                 }
-
-                balanceAfter = balanceBefore - safeAmount;
-                wallet.balance = balanceAfter;
-                wallet.clearedBalance -= safeAmount;
             }
 
-            await wallet.save();
+            const balanceBefore = type === 'credit' ? wallet.balance - safeAmount : wallet.balance + safeAmount;
+            const balanceAfter = wallet.balance;
 
             // Create transaction record
             const transaction = new Transaction({
@@ -468,7 +531,7 @@ export class WalletService {
                 userId: new mongoose.Types.ObjectId(userId),
                 type,
                 category: 'adjustment',
-                amount,
+                amount: safeAmount,
                 fee: 0,
                 balanceBefore,
                 balanceAfter,
@@ -482,11 +545,29 @@ export class WalletService {
                 isCleared: true,
                 clearedAt: new Date()
             });
-            await transaction.save();
+            await transaction.save({ session });
 
+            // Create Ledger record
+            const ledger = new Ledger({
+                walletId: wallet._id,
+                userId: new mongoose.Types.ObjectId(userId),
+                transactionId: transaction._id,
+                reference: transaction.reference,
+                amount: safeAmount,
+                type: type === 'credit' ? 'CREDIT' : 'DEBIT',
+                purpose: 'MANUAL_ADJUSTMENT',
+                balanceBefore,
+                balanceAfter,
+            });
+            await ledger.save({ session });
+
+            if (session) await session.commitTransaction();
             return transaction;
         } catch (error) {
+            if (session) await session.abortTransaction();
             throw error;
+        } finally {
+            if (session) session.endSession();
         }
     }
 }

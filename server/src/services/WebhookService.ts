@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import crypto from 'crypto';
 import axios from 'axios';
 import { logger } from '../utils/logger';
@@ -269,11 +270,11 @@ export class WebhookService {
     ): Promise<{ success: boolean; message: string; userId?: string }> {
         logger.info('[DEPOSIT] Handling PalmPay deposit event:', data);
 
-        const orderNo       = data.orderNo || data.paymentReference || data.transId;
-        const amount        = Number(data.amount || data.transAmount || data.orderAmount);
-        const status        = data.status || data.transStatus || data.orderStatus;
-        const payerName     = data.payerName || data.customerName || data.payerAccountName;
-        const payerAccount  = data.payerAccount || data.customerAccount || data.payerAccountNo;
+        const orderNo = data.orderNo || data.paymentReference || data.transId;
+        const amount = Number(data.amount || data.transAmount || data.orderAmount);
+        const status = data.status || data.transStatus || data.orderStatus;
+        const payerName = data.payerName || data.customerName || data.payerAccountName;
+        const payerAccount = data.payerAccount || data.customerAccount || data.payerAccountNo;
         const payerBankName = data.payerBankName || data.bankName;
         const virtualAccountNo =
             data.virtualAccount || data.virtualAccountNo || data.accountNumber;
@@ -314,10 +315,10 @@ export class WebhookService {
         }
 
         // Fetch system fee settings
-        const settings    = await SystemSetting.findOne();
-        const feePercent  = settings?.deposit?.virtualAccountChargePercent ?? 1.0;
-        const fee         = (amount * feePercent) / 100;
-        const netAmount   = amount - fee;
+        const settings = await SystemSetting.findOne();
+        const feePercent = settings?.deposit?.virtualAccountChargePercent ?? 1.0;
+        const fee = (amount * feePercent) / 100;
+        const netAmount = amount - fee;
 
         // Clearance date: 24h + 5m
         const clearanceDate = new Date(Date.now() + 24 * 60 * 60 * 1000 + 5 * 60 * 1000);
@@ -325,6 +326,14 @@ export class WebhookService {
         logger.info(
             `[DEPOSIT] Amount=₦${amount / 100}, Fee=₦${fee / 100} (${feePercent}%), Net=₦${netAmount / 100}, Clears=${clearanceDate.toISOString()}`
         );
+
+        let session: any = null;
+        const { isReplicaSet } = await import('../config/database');
+
+        if (isReplicaSet) {
+            session = await mongoose.startSession();
+            session.startTransaction();
+        }
 
         try {
             const transaction = await walletService.creditWallet(
@@ -346,25 +355,29 @@ export class WebhookService {
                 undefined,
                 fee,
                 false,          // isCleared = false → pending settlement
-                clearanceDate
+                clearanceDate,
+                session
             );
+
+            if (session) await session.commitTransaction();
 
             logger.info(
                 `[DEPOSIT] 💰 Wallet credited for user ${virtualAccount.userId} | ref=${transaction.reference}`
             );
 
             // 5️⃣  SECURE USER WEBHOOK
+            // We do this after commit to ensure DB is updated
             await this.sendUserWebhook(virtualAccount.userId.toString(), 'transaction.deposit', {
-                reference:      transaction.reference,
-                amount:         transaction.amount,
-                currency:       'NGN',
-                status:         'success',
+                reference: transaction.reference,
+                amount: transaction.amount,
+                currency: 'NGN',
+                status: 'success',
                 customer: {
-                    name:          payerName,
+                    name: payerName,
                     accountNumber: payerAccount,
                 },
                 virtualAccount: virtualAccount.accountNumber,
-                timestamp:      transaction.createdAt,
+                timestamp: transaction.createdAt,
             });
 
             return {
@@ -373,6 +386,7 @@ export class WebhookService {
                 userId: virtualAccount.userId.toString(),
             };
         } catch (error: any) {
+            if (session) await session.abortTransaction();
             logger.error(`[DEPOSIT] Failed to credit wallet: ${error.message}`, error);
             if (
                 error.message?.includes('duplicate') ||
@@ -385,6 +399,8 @@ export class WebhookService {
                 };
             }
             throw error;
+        } finally {
+            if (session) session.endSession();
         }
     }
 
@@ -404,9 +420,9 @@ export class WebhookService {
             // Find any Transaction records that are deposits still pending/uncleared
             // where the source was palmpay (stored in metadata)
             const pendingDeposits = await Transaction.find({
-                type:     'credit',
+                type: 'credit',
                 category: 'deposit',
-                status:   'pending',
+                status: 'pending',
                 'metadata.source': 'palmpay',
             }).limit(50);
 
@@ -524,9 +540,9 @@ export class WebhookService {
             try {
                 await axios.post(user.webhookUrl, payload, {
                     headers: {
-                        'Content-Type':        'application/json',
+                        'Content-Type': 'application/json',
                         'X-VTStack-Signature': hmacSignature,
-                        'X-VTStack-Secret':    userWebhookSecret,
+                        'X-VTStack-Secret': userWebhookSecret,
                     },
                     timeout: 10000,
                 });

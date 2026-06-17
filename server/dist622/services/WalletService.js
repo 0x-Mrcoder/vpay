@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -47,9 +80,9 @@ class WalletService {
     /**
      * Credit wallet (add funds)
      */
-    async creditWallet(userId, amount, category, narration, externalRef, metadata, customerReference, fee = 0, isCleared = true, clearedAt) {
+    async creditWallet(userId, amount, category, narration, externalRef, metadata, customerReference, fee = 0, isCleared = true, clearedAt, session) {
         try {
-            const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
+            const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) }).session(session || null);
             if (!wallet) {
                 throw new Error('Wallet not found');
             }
@@ -60,7 +93,7 @@ class WalletService {
             if (isCleared) {
                 wallet.clearedBalance += amount;
             }
-            await wallet.save();
+            await wallet.save({ session });
             // Create transaction record
             const transaction = new models_1.Transaction({
                 walletId: wallet._id,
@@ -80,7 +113,20 @@ class WalletService {
                 isCleared,
                 clearedAt: isCleared ? new Date() : clearedAt
             });
-            await transaction.save();
+            await transaction.save({ session });
+            // Create Ledger record
+            const ledger = new models_1.Ledger({
+                walletId: wallet._id,
+                userId: new mongoose_1.default.Types.ObjectId(userId),
+                transactionId: transaction._id,
+                reference: transaction.reference,
+                amount,
+                type: 'CREDIT',
+                purpose: category.toUpperCase(),
+                balanceBefore,
+                balanceAfter: wallet.balance,
+            });
+            await ledger.save({ session });
             return transaction;
         }
         catch (error) {
@@ -90,24 +136,33 @@ class WalletService {
     /**
      * Debit wallet (remove funds)
      */
-    async debitWallet(userId, amount, fee, category, narration, externalRef, metadata, customerReference) {
+    async debitWallet(userId, amount, fee, category, narration, externalRef, metadata, customerReference, session) {
         try {
-            const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
-            if (!wallet) {
-                throw new Error('Wallet not found');
-            }
             const totalDebit = amount + fee;
-            // Only cleared balance can be withdrawn/transferred
-            const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
-            if (availableBalance < totalDebit) {
-                throw new Error('Insufficient cleared balance');
+            // Atomic update with sufficient balance check
+            const wallet = await models_1.Wallet.findOneAndUpdate({
+                userId: new mongoose_1.default.Types.ObjectId(userId),
+                $expr: {
+                    $gte: [
+                        { $subtract: ["$clearedBalance", "$lockedBalance"] },
+                        totalDebit
+                    ]
+                }
+            }, {
+                $inc: {
+                    balance: -totalDebit,
+                    clearedBalance: -totalDebit
+                }
+            }, { new: true, session });
+            if (!wallet) {
+                // Check if wallet exists at all
+                const exists = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) }).session(session || null);
+                if (!exists)
+                    throw new Error('Wallet not found');
+                throw new Error('Insufficient available (cleared) balance');
             }
-            const balanceBefore = wallet.balance;
-            const balanceAfter = balanceBefore - totalDebit;
-            // Update wallet balance
-            wallet.balance = balanceAfter;
-            wallet.clearedBalance -= totalDebit;
-            await wallet.save();
+            const balanceBefore = wallet.balance + totalDebit;
+            const balanceAfter = wallet.balance;
             // Create transaction record
             const transaction = new models_1.Transaction({
                 walletId: wallet._id,
@@ -127,7 +182,20 @@ class WalletService {
                 isCleared: true,
                 clearedAt: new Date()
             });
-            await transaction.save();
+            await transaction.save({ session });
+            // Create Ledger record
+            const ledger = new models_1.Ledger({
+                walletId: wallet._id,
+                userId: new mongoose_1.default.Types.ObjectId(userId),
+                transactionId: transaction._id,
+                reference: transaction.reference,
+                amount: totalDebit,
+                type: 'DEBIT',
+                purpose: category.toUpperCase(),
+                balanceBefore,
+                balanceAfter: wallet.balance,
+            });
+            await ledger.save({ session });
             return transaction;
         }
         catch (error) {
@@ -341,44 +409,59 @@ class WalletService {
      * Manual adjustment of wallet balance (Admin only)
      */
     async manualAdjustment(userId, amount, type, narration, adminId) {
+        let session = null;
+        const { isReplicaSet } = await Promise.resolve().then(() => __importStar(require('../config/database')));
+        if (isReplicaSet) {
+            session = await mongoose_1.default.startSession();
+            session.startTransaction();
+        }
         try {
-            const wallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) });
-            if (!wallet) {
-                throw new Error('Wallet not found');
-            }
             const safeAmount = Number(amount);
             if (isNaN(safeAmount) || safeAmount <= 0) {
                 throw new Error('Invalid adjustment amount');
             }
-            const balanceBefore = wallet.balance;
-            let balanceAfter;
-            if (type === 'credit') {
-                balanceAfter = balanceBefore + safeAmount;
-                wallet.balance = balanceAfter;
-                wallet.clearedBalance += safeAmount;
+            let wallet;
+            if (type === 'debit') {
+                // Atomic debit with guard
+                wallet = await models_1.Wallet.findOneAndUpdate({
+                    userId: new mongoose_1.default.Types.ObjectId(userId),
+                    $expr: {
+                        $gte: [
+                            { $subtract: ["$clearedBalance", "$lockedBalance"] },
+                            safeAmount
+                        ]
+                    }
+                }, {
+                    $inc: {
+                        balance: -safeAmount,
+                        clearedBalance: -safeAmount
+                    }
+                }, { new: true, session });
+                if (!wallet) {
+                    throw new Error('Insufficient available balance for manual debit');
+                }
             }
             else {
-                // Check if user has enough available (cleared) balance for this debit
-                const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
-                if (availableBalance < safeAmount) {
-                    throw new Error(`Insufficient available (cleared) balance. Available: ₦${(availableBalance / 100).toLocaleString()}`);
+                // Atomic credit
+                wallet = await models_1.Wallet.findOneAndUpdate({ userId: new mongoose_1.default.Types.ObjectId(userId) }, {
+                    $inc: {
+                        balance: safeAmount,
+                        clearedBalance: safeAmount
+                    }
+                }, { new: true, session });
+                if (!wallet) {
+                    throw new Error('Wallet not found for adjustment');
                 }
-                // Double check total balance to prevent Mongoose min: 0 error
-                if (wallet.balance < safeAmount) {
-                    throw new Error('Total wallet balance is insufficient for this deduction.');
-                }
-                balanceAfter = balanceBefore - safeAmount;
-                wallet.balance = balanceAfter;
-                wallet.clearedBalance -= safeAmount;
             }
-            await wallet.save();
+            const balanceBefore = type === 'credit' ? wallet.balance - safeAmount : wallet.balance + safeAmount;
+            const balanceAfter = wallet.balance;
             // Create transaction record
             const transaction = new models_1.Transaction({
                 walletId: wallet._id,
                 userId: new mongoose_1.default.Types.ObjectId(userId),
                 type,
                 category: 'adjustment',
-                amount,
+                amount: safeAmount,
                 fee: 0,
                 balanceBefore,
                 balanceAfter,
@@ -392,11 +475,32 @@ class WalletService {
                 isCleared: true,
                 clearedAt: new Date()
             });
-            await transaction.save();
+            await transaction.save({ session });
+            // Create Ledger record
+            const ledger = new models_1.Ledger({
+                walletId: wallet._id,
+                userId: new mongoose_1.default.Types.ObjectId(userId),
+                transactionId: transaction._id,
+                reference: transaction.reference,
+                amount: safeAmount,
+                type: type === 'credit' ? 'CREDIT' : 'DEBIT',
+                purpose: 'MANUAL_ADJUSTMENT',
+                balanceBefore,
+                balanceAfter,
+            });
+            await ledger.save({ session });
+            if (session)
+                await session.commitTransaction();
             return transaction;
         }
         catch (error) {
+            if (session)
+                await session.abortTransaction();
             throw error;
+        }
+        finally {
+            if (session)
+                session.endSession();
         }
     }
 }

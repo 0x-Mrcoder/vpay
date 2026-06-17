@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthenticatedRequest } from '../middleware';
 import { payoutService } from '../services/PayoutService';
+import { securePayoutService } from '../services/SecurePayoutService';
 import { walletService } from '../services/WalletService';
 import { palmPayService } from '../services/PalmPayService';
 
@@ -45,12 +46,16 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
             return;
         }
 
-        // 1. Initiate Payout via Service (handles locking funds and PalmPay call)
-        const payout = await payoutService.initiatePayout(userId, amount, {
+        // 1. Initiate Payout via Secure Service (handles BullMQ, Sessions, and Ledger)
+        const result = await securePayoutService.requestPayout(userId, `REQ-${Date.now()}`, {
+            amount, // in kobo
             bankCode,
             accountNumber,
-            accountName
+            accountName,
+            narration: `Withdrawal to ${accountNumber}`
         });
+
+        const payout = await Payout.findById(result.payoutId);
 
         // 2. Optionally save bank details for future use
         if (saveAccount) {

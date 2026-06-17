@@ -1,9 +1,43 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.webhookService = exports.WebhookService = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const crypto_1 = __importDefault(require("crypto"));
 const axios_1 = __importDefault(require("axios"));
 const logger_1 = require("../utils/logger");
@@ -269,6 +303,12 @@ class WebhookService {
         // Clearance date: 24h + 5m
         const clearanceDate = new Date(Date.now() + 24 * 60 * 60 * 1000 + 5 * 60 * 1000);
         logger_1.logger.info(`[DEPOSIT] Amount=₦${amount / 100}, Fee=₦${fee / 100} (${feePercent}%), Net=₦${netAmount / 100}, Clears=${clearanceDate.toISOString()}`);
+        let session = null;
+        const { isReplicaSet } = await Promise.resolve().then(() => __importStar(require('../config/database')));
+        if (isReplicaSet) {
+            session = await mongoose_1.default.startSession();
+            session.startTransaction();
+        }
         try {
             const transaction = await WalletService_1.walletService.creditWallet(virtualAccount.userId.toString(), netAmount, 'deposit', `Deposit from ${payerName || 'Unknown'} (${payerAccount || '****'})`, orderNo, {
                 source: 'palmpay',
@@ -280,9 +320,12 @@ class WebhookService {
                 originalAmount: amount,
                 appliedFee: fee,
             }, undefined, fee, false, // isCleared = false → pending settlement
-            clearanceDate);
+            clearanceDate, session);
+            if (session)
+                await session.commitTransaction();
             logger_1.logger.info(`[DEPOSIT] 💰 Wallet credited for user ${virtualAccount.userId} | ref=${transaction.reference}`);
             // 5️⃣  SECURE USER WEBHOOK
+            // We do this after commit to ensure DB is updated
             await this.sendUserWebhook(virtualAccount.userId.toString(), 'transaction.deposit', {
                 reference: transaction.reference,
                 amount: transaction.amount,
@@ -302,6 +345,8 @@ class WebhookService {
             };
         }
         catch (error) {
+            if (session)
+                await session.abortTransaction();
             logger_1.logger.error(`[DEPOSIT] Failed to credit wallet: ${error.message}`, error);
             if (error.message?.includes('duplicate') ||
                 error.message?.includes('already processed')) {
@@ -312,6 +357,10 @@ class WebhookService {
                 };
             }
             throw error;
+        }
+        finally {
+            if (session)
+                session.endSession();
         }
     }
     // ─────────────────────────────────────────────────────────────────────────

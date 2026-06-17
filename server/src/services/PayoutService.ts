@@ -231,8 +231,12 @@ export class PayoutService {
         await payout.save();
 
         // 1. Deduct from balance and clearedBalance, and release lockedBalance
+        // Guard: only proceed if lockedBalance is >= payout.totalDebit
         const wallet = await Wallet.findOneAndUpdate(
-            { userId: payout.userId },
+            { 
+                userId: payout.userId,
+                lockedBalance: { $gte: payout.totalDebit }
+            },
             { 
                 $inc: { 
                     balance: -payout.totalDebit, 
@@ -243,7 +247,28 @@ export class PayoutService {
             { new: true }
         );
 
-        if (wallet) {
+        if (!wallet) {
+            // This might happen if the wallet was already debited (idempotency) 
+            // or if the locked balance is insufficient (should not happen if initiatePayout worked)
+            logger.warn(`[PayoutService] Wallet update failed for payout ${payout.reference}. Possibly already processed or insufficient locked balance.`);
+            
+            // Check if transaction already exists as 'success' to confirm it was already processed
+            const existingTxn = await Transaction.findOne({
+                $or: [
+                    { reference: payout.reference },
+                    { 'metadata.payoutId': payout._id }
+                ],
+                status: 'success'
+            });
+
+            if (existingTxn) {
+                logger.info(`[PayoutService] Payout ${payout.reference} already has a success transaction. Skipping.`);
+                return;
+            }
+
+            // If no success transaction exists and wallet update failed, something is wrong
+            throw new Error(`Failed to deduct funds from wallet for payout ${payout.reference}. Locked balance might be insufficient.`);
+        }
             // Update Transaction Record
             let transaction = await Transaction.findOne({
                 $or: [
@@ -288,8 +313,7 @@ export class PayoutService {
                     clearedAt: new Date()
                 });
             }
-        }
-
+        
         logger.info(`Payout ${payout.reference} marked as SUCCESS. Funds deducted and unlocked.`);
     }
 
