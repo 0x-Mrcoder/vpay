@@ -749,6 +749,24 @@ router.post('/set-pin', auth_1.authenticate, async (req, res) => {
         res.json({
             success: true,
             message: 'Transaction PIN set successfully',
+            data: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                fullName: user.fullName,
+                phone: user.phone,
+                kycLevel: user.kycLevel,
+                kyc_status: user.kyc_status,
+                kyc_tier: user.kyc_tier,
+                payoutRequestStatus: user.payoutRequestStatus,
+                isPayoutEnabled: user.isPayoutEnabled,
+                status: user.status,
+                role: user.role,
+                webhookActive: user.webhookActive,
+                profilePicture: user.profilePicture,
+                transactionPinSet: true
+            }
         });
     }
     catch (error) {
@@ -803,6 +821,24 @@ router.post('/change-pin', auth_1.authenticate, async (req, res) => {
         res.json({
             success: true,
             message: 'Transaction PIN updated successfully',
+            data: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                fullName: user.fullName,
+                phone: user.phone,
+                kycLevel: user.kycLevel,
+                kyc_status: user.kyc_status,
+                kyc_tier: user.kyc_tier,
+                payoutRequestStatus: user.payoutRequestStatus,
+                isPayoutEnabled: user.isPayoutEnabled,
+                status: user.status,
+                role: user.role,
+                webhookActive: user.webhookActive,
+                profilePicture: user.profilePicture,
+                transactionPinSet: true
+            }
         });
     }
     catch (error) {
@@ -890,6 +926,24 @@ router.post('/reset-pin', auth_1.authenticate, async (req, res) => {
         res.json({
             success: true,
             message: 'Transaction PIN reset successfully',
+            data: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                fullName: user.fullName,
+                phone: user.phone,
+                kycLevel: user.kycLevel,
+                kyc_status: user.kyc_status,
+                kyc_tier: user.kyc_tier,
+                payoutRequestStatus: user.payoutRequestStatus,
+                isPayoutEnabled: user.isPayoutEnabled,
+                status: user.status,
+                role: user.role,
+                webhookActive: user.webhookActive,
+                profilePicture: user.profilePicture,
+                transactionPinSet: true
+            }
         });
     }
     catch (error) {

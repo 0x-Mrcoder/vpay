@@ -91,7 +91,7 @@ export const Settings: React.FC = () => {
             setIsSaving(false);
         }
     };
-    const { refreshUser } = useAuth();
+    const { updateUser } = useAuth();
 
     const handlePinAction = async () => {
         setIsSaving(true);
@@ -106,7 +106,7 @@ export const Settings: React.FC = () => {
                 payload = { pin: pinData.pin };
             } else if (pinStep === 'change') {
                 endpoint = '/auth/change-pin';
-                payload = { oldPin: pinData.oldPin, newPin: pinData.newPin };
+                payload = { currentPin: pinData.oldPin, newPin: pinData.newPin };
             } else if (pinStep === 'forgot') {
                 endpoint = '/auth/forgot-pin';
                 payload = {};
@@ -118,15 +118,17 @@ export const Settings: React.FC = () => {
             const response = await api.post(endpoint, payload);
             
             if (pinStep === 'forgot') {
-                setPinStep('reset');
+                                setPinStep('reset');
                 setSuccessMessage('OTP sent to your email');
             } else {
+                if (response.data.data) {
+                    updateUser(response.data.data);
+                }
                 setSuccessMessage(response.data.message || 'Action successful');
                 setTimeout(() => {
                     setShowPinModal(false);
                     setPinStep('options');
                     setPinData({ pin: '', oldPin: '', newPin: '', otp: '' });
-                    refreshUser().catch(console.error);
                 }, 1500);
             }
         } catch (error: any) {

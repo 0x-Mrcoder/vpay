@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../services/api';
 
 interface User {
     id: string;
@@ -91,19 +92,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const refreshUser = async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-
-            const apiUrl = (window as any)._env_?.REACT_APP_API_URL || 'http://localhost:5000';
-            const response = await fetch(`${apiUrl}/api/auth/profile`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                updateUser(data.data);
+            const response = await api.get('/auth/profile');
+            if (response.data.success) {
+                updateUser(response.data.data);
             }
         } catch (error) {
             console.error('Failed to refresh user profile:', error);
