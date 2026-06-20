@@ -156,10 +156,18 @@ class WalletService {
             }, { new: true, session });
             if (!wallet) {
                 // Check if wallet exists at all
-                const exists = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) }).session(session || null);
-                if (!exists)
+                const currentWallet = await models_1.Wallet.findOne({ userId: new mongoose_1.default.Types.ObjectId(userId) }).session(session || null);
+                if (!currentWallet)
                     throw new Error('Wallet not found');
-                throw new Error('Insufficient available balance (funds must be cleared/settled first)');
+                // Check if it's a clearing issue or a total balance issue
+                if (currentWallet.balance < totalDebit) {
+                    throw new Error(`Insufficient wallet balance. Total required: ₦${(totalDebit / 100).toLocaleString()}`);
+                }
+                const available = currentWallet.clearedBalance - currentWallet.lockedBalance;
+                if (available < totalDebit) {
+                    throw new Error('Insufficient available balance (funds must be cleared/settled first). Check your wallet for pending settlements.');
+                }
+                throw new Error('Transaction failed due to insufficient available funds');
             }
             const balanceBefore = wallet.balance + totalDebit;
             const balanceAfter = wallet.balance;

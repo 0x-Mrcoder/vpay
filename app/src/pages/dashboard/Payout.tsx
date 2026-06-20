@@ -327,7 +327,7 @@ export const Payout: React.FC = () => {
         // Better to wait for fees?
         const totalDeducted = fees ? (fees.totalDebit / 100) : amount;
 
-        if (wallet && totalDeducted > wallet.clearedBalanceNaira) {
+        if (wallet && totalDeducted > wallet.availableBalanceNaira) {
             setTransferError(`Insufficient balance. Total required: ₦${totalDeducted.toLocaleString()}`);
             return;
         }
@@ -493,7 +493,7 @@ export const Payout: React.FC = () => {
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Balance</p>
-                                            <p className="text-lg font-bold text-gray-900">{isWalletLoading ? '...' : formatCurrency(wallet?.clearedBalanceNaira || 0)}</p>
+                                            <p className="text-lg font-bold text-gray-900">{isWalletLoading ? '...' : formatCurrency(wallet?.availableBalanceNaira || 0)}</p>
                                         </div>
                                     </div>
                                     <Link to="/dashboard/wallet" className="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors">

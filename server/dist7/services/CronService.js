@@ -134,13 +134,6 @@ class CronService {
             }
             try {
                 this.clearanceLastRun = new Date();
-                // Automatic Weekend Stop: Settlements are automatically paused on weekends (Saturday & Sunday)
-                const day = new Date().getDay();
-                if (day === 0 || day === 6) {
-                    logger_1.logger.info('[CronService] Weekend reached — system automatically pausing settlements until Monday.');
-                    return;
-                }
-                logger_1.logger.info('[CronService] Running Deposit Clearance Job...');
                 const now = new Date();
                 const transactionsToClear = await Transaction_1.Transaction.find({
                     type: 'credit',
