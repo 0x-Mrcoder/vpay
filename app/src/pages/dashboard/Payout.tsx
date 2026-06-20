@@ -45,6 +45,8 @@ export const Payout: React.FC = () => {
     const [isSavingAccount, setIsSavingAccount] = useState(false);
 
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [pin, setPin] = useState('');
+    const [isPinVisible, setIsPinVisible] = useState(false);
 
     // Search State
     const [bankSearch, setBankSearch] = useState('');
@@ -360,6 +362,7 @@ export const Payout: React.FC = () => {
                 accountName: recipientName,
                 amount: amountInKobo,
                 narration: transferData.narration,
+                pin,
                 bankName // Optional, for saving if backend supports 'saveAccount' flag?
                 // Backend supports 'saveAccount' but we handle saving separately in UI via 'Save as beneficiary' button
             });
@@ -807,15 +810,57 @@ export const Payout: React.FC = () => {
                             <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-500">To</span>
-                                    <span className="font-medium text-gray-900 text-right">{savedAccount?.accountName}<br /><span className="text-xs text-gray-500 font-normal">{savedAccount?.bankName}</span></span>
+                                    <span className="font-medium text-gray-900 text-right">{savedAccount?.accountName || recipientName}<br /><span className="text-xs text-gray-500 font-normal">{savedAccount?.bankName}</span></span>
                                 </div>
                             </div>
+
+                            {user?.transactionPinSet ? (
+                                <div className="space-y-2 text-left">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Enter Transaction PIN</label>
+                                    <div className="relative">
+                                        <input
+                                            type={isPinVisible ? "text" : "password"}
+                                            value={pin}
+                                            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                            placeholder="••••"
+                                            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-primary-500 outline-none text-center text-2xl tracking-[1em] font-bold"
+                                            maxLength={4}
+                                            autoFocus
+                                        />
+                                        <button 
+                                            type="button"
+                                            onClick={() => setIsPinVisible(!isPinVisible)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-primary-600"
+                                        >
+                                            {isPinVisible ? 'HIDE' : 'SHOW'}
+                                        </button>
+                                    </div>
+                                    <div className="flex justify-between items-center px-1">
+                                        <p className="text-[10px] text-gray-500 italic">Required for security</p>
+                                        <Link to="/dashboard/settings" className="text-[10px] font-bold text-primary-600 hover:underline">Forgot PIN?</Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-left">
+                                    <p className="text-xs font-bold text-red-900">Transaction PIN Not Set</p>
+                                    <p className="text-[10px] text-red-700 mt-1">Please set a transaction PIN in your settings before making withdrawals.</p>
+                                    <Link to="/dashboard/settings" className="inline-block mt-2 text-xs font-bold text-red-900 underline">Set PIN Now</Link>
+                                </div>
+                            )}
+
                             <button
                                 onClick={processTransfer}
-                                disabled={isTransferLoading}
-                                className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                                disabled={isTransferLoading || (user?.transactionPinSet && pin.length < 4) || !user?.transactionPinSet}
+                                className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                {isTransferLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Payment'}
+                                {isTransferLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Payment'}
+                            </button>
+                            <button
+                                onClick={() => setShowConfirmation(false)}
+                                disabled={isTransferLoading}
+                                className="w-full py-2 text-sm font-semibold text-gray-500 hover:text-gray-700"
+                            >
+                                Cancel
                             </button>
                         </div>
                     </div>

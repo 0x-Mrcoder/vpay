@@ -37,6 +37,7 @@ interface User {
     payoutRequestReason?: string;
     payoutIpWhitelist?: string[];
     webhookUrl?: string;
+    transactionPinSet?: boolean;
 }
 
 interface AuthContextType {

@@ -58,6 +58,9 @@ export interface IUserDocument extends Document {
         accountName: string;
         isPrimary?: boolean;
     }>;
+    transactionPinHash?: string;
+    transactionPinResetOtp?: string;
+    transactionPinResetExpires?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -245,6 +248,15 @@ const UserSchema = new Schema<IUserDocument>(
                 isPrimary: { type: Boolean, default: false },
             },
         ],
+        transactionPinHash: {
+            type: String,
+        },
+        transactionPinResetOtp: {
+            type: String,
+        },
+        transactionPinResetExpires: {
+            type: Date,
+        },
     },
     {
         timestamps: true,

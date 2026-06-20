@@ -1,34 +1,31 @@
-import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import { User, Wallet } from '../models';
-import { generateToken, authenticate } from '../middleware/auth';
-import { walletService, emailService } from '../services';
-import { uploadToCloudinary } from '../services/cloudinary';
-
-import config from '../config';
-
-const router = Router();
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const models_1 = require("../models");
+const auth_1 = require("../middleware/auth");
+const services_1 = require("../services");
+const cloudinary_1 = require("../services/cloudinary");
+const router = (0, express_1.Router)();
 /**
  * Register a new user
  * POST /api/auth/register
  */
-router.post('/register', async (req: Request, res: Response): Promise<void> => {
+router.post('/register', async (req, res) => {
     try {
         const { email, password, firstName, lastName, fullName, phone, businessName } = req.body;
-
         // Validate required fields
         // If fullName is provided, we can derive firstName and lastName if they are missing
         let finalFirstName = firstName;
         let finalLastName = lastName;
-
         if (fullName && (!firstName || !lastName)) {
             const names = fullName.trim().split(' ');
             finalFirstName = names[0];
             finalLastName = names.slice(1).join(' ') || '';
         }
-
         if (!email || !password || !finalFirstName || !phone) {
             res.status(400).json({
                 success: false,
@@ -36,9 +33,8 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Check if user already exists
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        const existingUser = await models_1.User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             res.status(409).json({
                 success: false,
@@ -46,16 +42,13 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
-
+        const salt = await bcryptjs_1.default.genSalt(10);
+        const passwordHash = await bcryptjs_1.default.hash(password, salt);
         // Generate verification OTP (6 digits)
         const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-
         // Create user
-        const user = new User({
+        const user = new models_1.User({
             email: email.toLowerCase(),
             passwordHash,
             firstName: finalFirstName,
@@ -68,16 +61,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
             verificationToken,
         });
         await user.save();
-
         // Create wallet for user
-        await walletService.createWallet(user._id.toString());
-
+        await services_1.walletService.createWallet(user._id.toString());
         // Send verification OTP
-        await emailService.sendOtpEmail(user.email, verificationToken);
-
+        await services_1.emailService.sendOtpEmail(user.email, verificationToken);
         // Generate token (can login immediately but with limited access)
-        const token = generateToken(user._id.toString(), user.email);
-
+        const token = (0, auth_1.generateToken)(user._id.toString(), user.email);
         res.status(201).json({
             success: true,
             message: 'User registered successfully. Please check your email for the verification OTP.',
@@ -101,7 +90,8 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
                 token,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({
             success: false,
@@ -109,15 +99,13 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
         });
     }
 });
-
 /**
  * Verify OTP
  * POST /api/auth/verify-otp
  */
-router.post('/verify-otp', async (req: Request, res: Response): Promise<void> => {
+router.post('/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
-
         if (!email || !otp) {
             res.status(400).json({
                 success: false,
@@ -125,9 +113,7 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
             });
             return;
         }
-
-        const user = await User.findOne({ email: email.toLowerCase() });
-
+        const user = await models_1.User.findOne({ email: email.toLowerCase() });
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -135,7 +121,6 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
             });
             return;
         }
-
         if (user.kycLevel >= 1) {
             res.status(400).json({
                 success: false,
@@ -143,7 +128,6 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
             });
             return;
         }
-
         if (user.verificationToken !== otp) {
             res.status(400).json({
                 success: false,
@@ -151,18 +135,17 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
             });
             return;
         }
-
         // Update user status
         user.kycLevel = 1; // 1: Email Verified
         user.kyc_tier = 't1';
         user.verificationToken = undefined;
         await user.save();
-
         res.json({
             success: true,
             message: 'Email verified successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('OTP verification error:', error);
         res.status(500).json({
             success: false,
@@ -170,15 +153,13 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
         });
     }
 });
-
 /**
  * Resend OTP
  * POST /api/auth/resend-otp
  */
-router.post('/resend-otp', async (req: Request, res: Response): Promise<void> => {
+router.post('/resend-otp', async (req, res) => {
     try {
         const { email } = req.body;
-
         if (!email) {
             res.status(400).json({
                 success: false,
@@ -186,9 +167,7 @@ router.post('/resend-otp', async (req: Request, res: Response): Promise<void> =>
             });
             return;
         }
-
-        const user = await User.findOne({ email: email.toLowerCase() });
-
+        const user = await models_1.User.findOne({ email: email.toLowerCase() });
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -196,7 +175,6 @@ router.post('/resend-otp', async (req: Request, res: Response): Promise<void> =>
             });
             return;
         }
-
         if (user.kycLevel >= 1) {
             res.status(400).json({
                 success: false,
@@ -204,20 +182,18 @@ router.post('/resend-otp', async (req: Request, res: Response): Promise<void> =>
             });
             return;
         }
-
         // Generate new OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         user.verificationToken = otp;
         await user.save();
-
         // Send OTP
-        await emailService.sendOtpEmail(user.email, otp);
-
+        await services_1.emailService.sendOtpEmail(user.email, otp);
         res.json({
             success: true,
             message: 'OTP resent successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Resend OTP error:', error);
         res.status(500).json({
             success: false,
@@ -225,15 +201,13 @@ router.post('/resend-otp', async (req: Request, res: Response): Promise<void> =>
         });
     }
 });
-
 /**
  * Verify email (Legacy - kept for backward compatibility if needed, but redirects to OTP flow logically)
  * GET /api/auth/verify-email
  */
-router.get('/verify-email', async (req: Request, res: Response): Promise<void> => {
+router.get('/verify-email', async (req, res) => {
     try {
         const { token } = req.query;
-
         if (!token) {
             res.status(400).json({
                 success: false,
@@ -241,9 +215,7 @@ router.get('/verify-email', async (req: Request, res: Response): Promise<void> =
             });
             return;
         }
-
-        const user = await User.findOne({ verificationToken: token });
-
+        const user = await models_1.User.findOne({ verificationToken: token });
         if (!user) {
             res.status(400).json({
                 success: false,
@@ -251,17 +223,16 @@ router.get('/verify-email', async (req: Request, res: Response): Promise<void> =
             });
             return;
         }
-
         // Update user status
         user.kycLevel = 1; // 1: Email Verified
         user.verificationToken = undefined;
         await user.save();
-
         res.json({
             success: true,
             message: 'Email verified successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Email verification error:', error);
         res.status(500).json({
             success: false,
@@ -269,15 +240,13 @@ router.get('/verify-email', async (req: Request, res: Response): Promise<void> =
         });
     }
 });
-
 /**
  * Login user
  * POST /api/auth/login
  */
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
+router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
         if (!email || !password) {
             res.status(400).json({
                 success: false,
@@ -285,9 +254,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Find user
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await models_1.User.findOne({ email: email.toLowerCase() });
         if (!user) {
             res.status(401).json({
                 success: false,
@@ -295,9 +263,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Check password
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
+        const isMatch = await bcryptjs_1.default.compare(password, user.passwordHash);
         if (!isMatch) {
             res.status(401).json({
                 success: false,
@@ -305,7 +272,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Check if user is active
         if (user.status !== 'active') {
             res.status(403).json({
@@ -314,7 +280,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Check if email is verified
         if (user.kycLevel < 1) {
             res.status(403).json({
@@ -323,13 +288,10 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
             });
             return;
         }
-
         // Generate token
-        const token = generateToken(user._id.toString(), user.email);
-
+        const token = (0, auth_1.generateToken)(user._id.toString(), user.email);
         // Get wallet
-        const wallet = await Wallet.findOne({ userId: user._id });
-
+        const wallet = await models_1.Wallet.findOne({ userId: user._id });
         res.json({
             success: true,
             message: 'Login successful',
@@ -378,7 +340,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
                 token,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Login error:', error);
         res.status(500).json({
             success: false,
@@ -386,14 +349,13 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         });
     }
 });
-
 /**
  * Get current user profile
  * GET /api/auth/profile
  */
-router.get('/profile', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.get('/profile', auth_1.authenticate, async (req, res) => {
     try {
-        const userId = (req as any).user?.id;
+        const userId = req.user?.id;
         if (!userId) {
             res.status(401).json({
                 success: false,
@@ -401,8 +363,7 @@ router.get('/profile', authenticate, async (req: Request, res: Response): Promis
             });
             return;
         }
-
-        const user = await User.findById(userId);
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -410,7 +371,6 @@ router.get('/profile', authenticate, async (req: Request, res: Response): Promis
             });
             return;
         }
-
         res.json({
             success: true,
             message: 'Profile retrieved',
@@ -451,7 +411,8 @@ router.get('/profile', authenticate, async (req: Request, res: Response): Promis
                 transactionPinSet: !!user.transactionPinHash,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Profile error:', error);
         res.status(500).json({
             success: false,
@@ -459,19 +420,19 @@ router.get('/profile', authenticate, async (req: Request, res: Response): Promis
         });
     }
 });
-
 /**
  * Get current user profile (Legacy alias)
  * GET /api/auth/me
  */
-router.get('/me', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.get('/me', auth_1.authenticate, async (req, res) => {
     try {
         res.json({
             success: true,
             message: 'Profile retrieved',
-            data: { user: (req as any).user },
+            data: { user: req.user },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Profile error:', error);
         res.status(500).json({
             success: false,
@@ -479,12 +440,11 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
         });
     }
 });
-
 /**
  * Update user profile
  * PUT /api/auth/profile
  */
-router.put('/profile', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.put('/profile', auth_1.authenticate, async (req, res) => {
     try {
         // This route requires authentication middleware to be applied
         const authHeader = req.headers.authorization;
@@ -495,7 +455,6 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
             });
             return;
         }
-
         // Get user ID from token (assuming middleware attached it to req.user)
         // Since we don't have the middleware applied here explicitly in this file,
         // we rely on the router usage in index.ts or app.ts where it might be applied.
@@ -506,8 +465,7 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
         // But let's look at how /me is implemented. It just checks header but doesn't decode?
         // Ah, line 292: `data: { user: (req as any).user }`.
         // This implies `authenticate` middleware IS running before this.
-
-        const userId = (req as any).user?.id;
+        const userId = req.user?.id;
         if (!userId) {
             res.status(401).json({
                 success: false,
@@ -515,10 +473,8 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
             });
             return;
         }
-
         const { firstName, lastName, businessName, phone, webhookActive, profilePicture } = req.body;
-
-        const user = await User.findById(userId);
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -526,19 +482,24 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
             });
             return;
         }
-
         // Update fields
-        if (firstName) user.firstName = firstName;
-        if (lastName) user.lastName = lastName;
-        if (businessName) user.businessName = businessName;
-        if (phone) user.phone = phone;
-        if (webhookActive !== undefined) user.webhookActive = webhookActive;
+        if (firstName)
+            user.firstName = firstName;
+        if (lastName)
+            user.lastName = lastName;
+        if (businessName)
+            user.businessName = businessName;
+        if (phone)
+            user.phone = phone;
+        if (webhookActive !== undefined)
+            user.webhookActive = webhookActive;
         if (profilePicture) {
             if (profilePicture.startsWith('data:image')) {
                 try {
-                    const uploadedUrl = await uploadToCloudinary(profilePicture, `users/${user._id}/profile`);
+                    const uploadedUrl = await (0, cloudinary_1.uploadToCloudinary)(profilePicture, `users/${user._id}/profile`);
                     user.profilePicture = uploadedUrl;
-                } catch (error) {
+                }
+                catch (error) {
                     console.error('Failed to upload profile picture to cloudinary:', error);
                     res.status(500).json({
                         success: false,
@@ -546,18 +507,16 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
                     });
                     return;
                 }
-            } else {
+            }
+            else {
                 user.profilePicture = profilePicture;
             }
         }
-
         // Update fullName if names changed
         if (firstName || lastName) {
             user.fullName = `${user.firstName} ${user.lastName}`;
         }
-
         await user.save();
-
         res.json({
             success: true,
             message: 'Profile updated successfully',
@@ -597,7 +556,8 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
                 transactionPinSet: !!user.transactionPinHash,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({
             success: false,
@@ -605,16 +565,14 @@ router.put('/profile', authenticate, async (req: Request, res: Response): Promis
         });
     }
 });
-
 /**
  * Change password
  * PUT /api/auth/change-password
  */
-router.put('/change-password', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.put('/change-password', auth_1.authenticate, async (req, res) => {
     try {
-        const userId = (req as any).user?.id;
+        const userId = req.user?.id;
         const { currentPassword, newPassword } = req.body;
-
         if (!currentPassword || !newPassword) {
             res.status(400).json({
                 success: false,
@@ -622,8 +580,7 @@ router.put('/change-password', authenticate, async (req: Request, res: Response)
             });
             return;
         }
-
-        const user = await User.findById(userId);
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -631,9 +588,8 @@ router.put('/change-password', authenticate, async (req: Request, res: Response)
             });
             return;
         }
-
         // Check current password
-        const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+        const isMatch = await bcryptjs_1.default.compare(currentPassword, user.passwordHash);
         if (!isMatch) {
             res.status(400).json({
                 success: false,
@@ -641,17 +597,16 @@ router.put('/change-password', authenticate, async (req: Request, res: Response)
             });
             return;
         }
-
         // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        user.passwordHash = await bcrypt.hash(newPassword, salt);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.passwordHash = await bcryptjs_1.default.hash(newPassword, salt);
         await user.save();
-
         res.json({
             success: true,
             message: 'Password updated successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Change password error:', error);
         res.status(500).json({
             success: false,
@@ -659,15 +614,13 @@ router.put('/change-password', authenticate, async (req: Request, res: Response)
         });
     }
 });
-
 /**
  * Request password reset OTP
  * POST /api/auth/forgot-password
  */
-router.post('/forgot-password', async (req: Request, res: Response): Promise<void> => {
+router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-
         if (!email) {
             res.status(400).json({
                 success: false,
@@ -675,8 +628,7 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
             });
             return;
         }
-
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await models_1.User.findOne({ email: email.toLowerCase() });
         if (!user) {
             // Return success even if user not found to prevent email enumeration
             res.json({
@@ -685,25 +637,22 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
             });
             return;
         }
-
         // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         // Expires in 15 minutes
         const expires = new Date();
         expires.setMinutes(expires.getMinutes() + 15);
-
         user.resetPasswordOtp = otp;
         user.resetPasswordOtpExpires = expires;
         await user.save();
-
         // Send OTP email
-        await emailService.sendPasswordResetOtpEmail(user.email, otp, user.firstName);
-
+        await services_1.emailService.sendPasswordResetOtpEmail(user.email, otp, user.firstName);
         res.json({
             success: true,
             message: 'If an account with that email exists, a reset code has been sent.',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Forgot password error:', error);
         res.status(500).json({
             success: false,
@@ -711,15 +660,13 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
         });
     }
 });
-
 /**
  * Reset password using OTP
  * POST /api/auth/reset-password
  */
-router.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+router.post('/reset-password', async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
-
         if (!email || !otp || !newPassword) {
             res.status(400).json({
                 success: false,
@@ -727,8 +674,7 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
             });
             return;
         }
-
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await models_1.User.findOne({ email: email.toLowerCase() });
         if (!user) {
             res.status(400).json({
                 success: false,
@@ -736,36 +682,30 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
             });
             return;
         }
-
         // Verify OTP matches and is not expired
-        if (
-            !user.resetPasswordOtp || 
-            user.resetPasswordOtp !== otp || 
-            !user.resetPasswordOtpExpires || 
-            user.resetPasswordOtpExpires < new Date()
-        ) {
+        if (!user.resetPasswordOtp ||
+            user.resetPasswordOtp !== otp ||
+            !user.resetPasswordOtpExpires ||
+            user.resetPasswordOtpExpires < new Date()) {
             res.status(400).json({
                 success: false,
                 message: 'Invalid or expired reset code',
             });
             return;
         }
-
         // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        user.passwordHash = await bcrypt.hash(newPassword, salt);
-        
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.passwordHash = await bcryptjs_1.default.hash(newPassword, salt);
         // Clear OTP fields
         user.resetPasswordOtp = undefined;
         user.resetPasswordOtpExpires = undefined;
-        
         await user.save();
-
         res.json({
             success: true,
             message: 'Password reset successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Reset password error:', error);
         res.status(500).json({
             success: false,
@@ -773,16 +713,14 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
         });
     }
 });
-
 /**
  * Set transaction PIN (Initial setup)
  * POST /api/auth/set-pin
  */
-router.post('/set-pin', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.post('/set-pin', auth_1.authenticate, async (req, res) => {
     try {
-        const userId = (req as any).user?.id;
+        const userId = req.user?.id;
         const { pin } = req.body;
-
         if (!pin || pin.length !== 4 || isNaN(Number(pin))) {
             res.status(400).json({
                 success: false,
@@ -790,8 +728,7 @@ router.post('/set-pin', authenticate, async (req: Request, res: Response): Promi
             });
             return;
         }
-
-        const user = await User.findById(userId);
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -799,7 +736,6 @@ router.post('/set-pin', authenticate, async (req: Request, res: Response): Promi
             });
             return;
         }
-
         if (user.transactionPinHash) {
             res.status(400).json({
                 success: false,
@@ -807,16 +743,15 @@ router.post('/set-pin', authenticate, async (req: Request, res: Response): Promi
             });
             return;
         }
-
-        const salt = await bcrypt.genSalt(10);
-        user.transactionPinHash = await bcrypt.hash(pin, salt);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.transactionPinHash = await bcryptjs_1.default.hash(pin, salt);
         await user.save();
-
         res.json({
             success: true,
             message: 'Transaction PIN set successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Set PIN error:', error);
         res.status(500).json({
             success: false,
@@ -824,16 +759,14 @@ router.post('/set-pin', authenticate, async (req: Request, res: Response): Promi
         });
     }
 });
-
 /**
  * Change transaction PIN
  * POST /api/auth/change-pin
  */
-router.post('/change-pin', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.post('/change-pin', auth_1.authenticate, async (req, res) => {
     try {
-        const userId = (req as any).user?.id;
+        const userId = req.user?.id;
         const { currentPin, newPin } = req.body;
-
         if (!currentPin || !newPin || newPin.length !== 4 || isNaN(Number(newPin))) {
             res.status(400).json({
                 success: false,
@@ -841,8 +774,7 @@ router.post('/change-pin', authenticate, async (req: Request, res: Response): Pr
             });
             return;
         }
-
-        const user = await User.findById(userId);
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -850,7 +782,6 @@ router.post('/change-pin', authenticate, async (req: Request, res: Response): Pr
             });
             return;
         }
-
         if (!user.transactionPinHash) {
             res.status(400).json({
                 success: false,
@@ -858,8 +789,7 @@ router.post('/change-pin', authenticate, async (req: Request, res: Response): Pr
             });
             return;
         }
-
-        const isMatch = await bcrypt.compare(currentPin, user.transactionPinHash);
+        const isMatch = await bcryptjs_1.default.compare(currentPin, user.transactionPinHash);
         if (!isMatch) {
             res.status(400).json({
                 success: false,
@@ -867,16 +797,15 @@ router.post('/change-pin', authenticate, async (req: Request, res: Response): Pr
             });
             return;
         }
-
-        const salt = await bcrypt.genSalt(10);
-        user.transactionPinHash = await bcrypt.hash(newPin, salt);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.transactionPinHash = await bcryptjs_1.default.hash(newPin, salt);
         await user.save();
-
         res.json({
             success: true,
             message: 'Transaction PIN updated successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Change PIN error:', error);
         res.status(500).json({
             success: false,
@@ -884,16 +813,14 @@ router.post('/change-pin', authenticate, async (req: Request, res: Response): Pr
         });
     }
 });
-
 /**
  * Request transaction PIN reset OTP
  * POST /api/auth/forgot-pin
  */
-router.post('/forgot-pin', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.post('/forgot-pin', auth_1.authenticate, async (req, res) => {
     try {
-        const userId = (req as any).user?.id;
-        const user = await User.findById(userId);
-
+        const userId = req.user?.id;
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -901,23 +828,20 @@ router.post('/forgot-pin', authenticate, async (req: Request, res: Response): Pr
             });
             return;
         }
-
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expires = new Date();
         expires.setMinutes(expires.getMinutes() + 15);
-
         user.transactionPinResetOtp = otp;
         user.transactionPinResetExpires = expires;
         await user.save();
-
         // Use existing email service to send OTP
-        await emailService.sendOtpEmail(user.email, otp);
-
+        await services_1.emailService.sendOtpEmail(user.email, otp);
         res.json({
             success: true,
             message: 'A reset code has been sent to your email.',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Forgot PIN error:', error);
         res.status(500).json({
             success: false,
@@ -925,16 +849,14 @@ router.post('/forgot-pin', authenticate, async (req: Request, res: Response): Pr
         });
     }
 });
-
 /**
  * Reset transaction PIN using OTP
  * POST /api/auth/reset-pin
  */
-router.post('/reset-pin', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.post('/reset-pin', auth_1.authenticate, async (req, res) => {
     try {
-        const userId = (req as any).user?.id;
+        const userId = req.user?.id;
         const { otp, newPin } = req.body;
-
         if (!otp || !newPin || newPin.length !== 4 || isNaN(Number(newPin))) {
             res.status(400).json({
                 success: false,
@@ -942,8 +864,7 @@ router.post('/reset-pin', authenticate, async (req: Request, res: Response): Pro
             });
             return;
         }
-
-        const user = await User.findById(userId);
+        const user = await models_1.User.findById(userId);
         if (!user) {
             res.status(404).json({
                 success: false,
@@ -951,31 +872,27 @@ router.post('/reset-pin', authenticate, async (req: Request, res: Response): Pro
             });
             return;
         }
-
-        if (
-            !user.transactionPinResetOtp ||
+        if (!user.transactionPinResetOtp ||
             user.transactionPinResetOtp !== otp ||
             !user.transactionPinResetExpires ||
-            user.transactionPinResetExpires < new Date()
-        ) {
+            user.transactionPinResetExpires < new Date()) {
             res.status(400).json({
                 success: false,
                 message: 'Invalid or expired reset code',
             });
             return;
         }
-
-        const salt = await bcrypt.genSalt(10);
-        user.transactionPinHash = await bcrypt.hash(newPin, salt);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.transactionPinHash = await bcryptjs_1.default.hash(newPin, salt);
         user.transactionPinResetOtp = undefined;
         user.transactionPinResetExpires = undefined;
         await user.save();
-
         res.json({
             success: true,
             message: 'Transaction PIN reset successfully',
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Reset PIN error:', error);
         res.status(500).json({
             success: false,
@@ -983,5 +900,5 @@ router.post('/reset-pin', authenticate, async (req: Request, res: Response): Pro
         });
     }
 });
-
-export default router;
+exports.default = router;
+//# sourceMappingURL=authRoutes.js.map

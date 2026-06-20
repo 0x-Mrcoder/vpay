@@ -70,6 +70,10 @@ export class PayoutService {
             throw new Error('Invalid withdrawal amount');
         }
 
+        // Tier Limits Check
+        const { limitService } = await import('./LimitService');
+        await limitService.checkTierLimits(userId, 'withdrawal', safeAmount);
+
         const user = await User.findById(userId);
         if (!user) {
             throw new Error('User not found');
@@ -112,7 +116,7 @@ export class PayoutService {
         );
 
         if (!wallet) {
-            throw new Error('Insufficient available balance for this withdrawal');
+            throw new Error('Insufficient available balance (funds must be cleared/settled first)');
         }
 
         try {

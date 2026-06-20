@@ -26,6 +26,14 @@ export const Settings: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [pinStep, setPinStep] = useState<'options' | 'set' | 'change' | 'forgot' | 'reset'>('options');
+    const [pinData, setPinData] = useState({
+        pin: '',
+        oldPin: '',
+        newPin: '',
+        otp: ''
+    });
 
     const isVerified = (user?.kycLevel ?? 0) >= 3;
 
@@ -79,6 +87,50 @@ export const Settings: React.FC = () => {
         } catch (error: any) {
             console.error('Error saving settings:', error);
             setErrorMessage(error.response?.data?.message || 'Failed to update settings');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+    const { refreshUser } = useAuth();
+
+    const handlePinAction = async () => {
+        setIsSaving(true);
+        setSuccessMessage('');
+        setErrorMessage('');
+        try {
+            let endpoint = '';
+            let payload: any = {};
+
+            if (pinStep === 'set') {
+                endpoint = '/auth/set-pin';
+                payload = { pin: pinData.pin };
+            } else if (pinStep === 'change') {
+                endpoint = '/auth/change-pin';
+                payload = { oldPin: pinData.oldPin, newPin: pinData.newPin };
+            } else if (pinStep === 'forgot') {
+                endpoint = '/auth/forgot-pin';
+                payload = {};
+            } else if (pinStep === 'reset') {
+                endpoint = '/auth/reset-pin';
+                payload = { otp: pinData.otp, newPin: pinData.newPin };
+            }
+
+            const response = await api.post(endpoint, payload);
+            
+            if (pinStep === 'forgot') {
+                setPinStep('reset');
+                setSuccessMessage('OTP sent to your email');
+            } else {
+                setSuccessMessage(response.data.message || 'Action successful');
+                setTimeout(() => {
+                    setShowPinModal(false);
+                    setPinStep('options');
+                    setPinData({ pin: '', oldPin: '', newPin: '', otp: '' });
+                    refreshUser().catch(console.error);
+                }, 1500);
+            }
+        } catch (error: any) {
+            setErrorMessage(error.response?.data?.message || 'Action failed');
         } finally {
             setIsSaving(false);
         }
@@ -189,6 +241,24 @@ export const Settings: React.FC = () => {
                                         <div className="text-left">
                                             <p className="text-sm font-bold text-gray-900">Change Password</p>
                                             <p className="text-xs text-gray-500 mt-0.5 font-medium">Last updated 3 months ago</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={18} className="text-gray-400 group-hover:translate-x-1 group-hover:text-gray-900 transition-all" />
+                                </button>
+
+                                <button 
+                                    onClick={() => setShowPinModal(true)}
+                                    className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 transition-all duration-200 group border border-transparent hover:border-gray-200"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-primary-50 transition-colors">
+                                            <Shield size={20} className="text-gray-500 group-hover:text-primary-600" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-sm font-bold text-gray-900">Transaction PIN</p>
+                                            <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${user?.transactionPinSet ? 'text-green-600' : 'text-amber-600'}`}>
+                                                {user?.transactionPinSet ? 'Enabled' : 'Not Set'}
+                                            </p>
                                         </div>
                                     </div>
                                     <ChevronRight size={18} className="text-gray-400 group-hover:translate-x-1 group-hover:text-gray-900 transition-all" />
@@ -318,8 +388,194 @@ export const Settings: React.FC = () => {
                             </div>
                         </div>
                     )}
-                </div>
             </div>
+        </div>
+
+            {/* PIN Management Modal */}
+            {showPinModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
+                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-gray-900">
+                                {pinStep === 'options' && 'Transaction PIN'}
+                                {pinStep === 'set' && 'Set New PIN'}
+                                {pinStep === 'change' && 'Change PIN'}
+                                {pinStep === 'forgot' && 'Forgot PIN'}
+                                {pinStep === 'reset' && 'Reset PIN'}
+                            </h3>
+                            <button 
+                                onClick={() => {
+                                    setShowPinModal(false);
+                                    setPinStep('options');
+                                    setErrorMessage('');
+                                }} 
+                                className="p-1 hover:bg-gray-100 rounded-full"
+                            >
+                                <AlertCircle size={20} className="text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {errorMessage && (
+                                <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-100">
+                                    {errorMessage}
+                                </div>
+                            )}
+                            {successMessage && (
+                                <div className="p-3 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-100">
+                                    {successMessage}
+                                </div>
+                            )}
+
+                            {pinStep === 'options' && (
+                                <div className="space-y-2">
+                                    {!user?.transactionPinSet ? (
+                                        <button 
+                                            onClick={() => setPinStep('set')}
+                                            className="w-full p-4 bg-primary-600 text-white rounded-xl font-bold flex items-center justify-between group"
+                                        >
+                                            Set Transaction PIN
+                                            <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button 
+                                                onClick={() => setPinStep('change')}
+                                                className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-bold text-gray-900 flex items-center justify-between group border border-gray-200"
+                                            >
+                                                Change Transaction PIN
+                                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                            </button>
+                                            <button 
+                                                onClick={() => setPinStep('forgot')}
+                                                className="w-full p-4 bg-white hover:bg-gray-50 rounded-xl font-bold text-primary-600 flex items-center justify-between group border border-transparent"
+                                            >
+                                                Forgot Transaction PIN?
+                                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {pinStep === 'set' && (
+                                <div className="space-y-4">
+                                    <p className="text-xs text-gray-500">Create a 4-digit PIN for your transactions.</p>
+                                    <input
+                                        type="password"
+                                        value={pinData.pin}
+                                        onChange={(e) => setPinData({...pinData, pin: e.target.value.replace(/\D/g, '').slice(0, 4)})}
+                                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-center text-2xl tracking-[1em] font-bold outline-none focus:border-primary-500"
+                                        maxLength={4}
+                                        placeholder="••••"
+                                        autoFocus
+                                    />
+                                    <button 
+                                        onClick={handlePinAction}
+                                        disabled={isSaving || pinData.pin.length < 4}
+                                        className="w-full py-4 bg-primary-600 text-white rounded-xl font-bold shadow-md disabled:opacity-50"
+                                    >
+                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Set PIN'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {pinStep === 'change' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Old PIN</label>
+                                        <input
+                                            type="password"
+                                            value={pinData.oldPin}
+                                            onChange={(e) => setPinData({...pinData, oldPin: e.target.value.replace(/\D/g, '').slice(0, 4)})}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl tracking-[0.5em] font-bold outline-none focus:border-primary-500"
+                                            maxLength={4}
+                                            placeholder="••••"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">New PIN</label>
+                                        <input
+                                            type="password"
+                                            value={pinData.newPin}
+                                            onChange={(e) => setPinData({...pinData, newPin: e.target.value.replace(/\D/g, '').slice(0, 4)})}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl tracking-[0.5em] font-bold outline-none focus:border-primary-500"
+                                            maxLength={4}
+                                            placeholder="••••"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={handlePinAction}
+                                        disabled={isSaving || pinData.oldPin.length < 4 || pinData.newPin.length < 4}
+                                        className="w-full py-4 bg-primary-600 text-white rounded-xl font-bold shadow-md disabled:opacity-50"
+                                    >
+                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Update PIN'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {pinStep === 'forgot' && (
+                                <div className="space-y-4">
+                                    <p className="text-xs text-gray-500">We will send a reset OTP to your email ({user?.email}).</p>
+                                    <button 
+                                        onClick={handlePinAction}
+                                        disabled={isSaving}
+                                        className="w-full py-4 bg-primary-600 text-white rounded-xl font-bold shadow-md disabled:opacity-50"
+                                    >
+                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Send OTP'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {pinStep === 'reset' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Enter OTP</label>
+                                        <input
+                                            type="text"
+                                            value={pinData.otp}
+                                            onChange={(e) => setPinData({...pinData, otp: e.target.value.replace(/\D/g, '').slice(0, 6)})}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl tracking-[0.5em] font-bold outline-none focus:border-primary-500"
+                                            maxLength={6}
+                                            placeholder="••••••"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">New PIN</label>
+                                        <input
+                                            type="password"
+                                            value={pinData.newPin}
+                                            onChange={(e) => setPinData({...pinData, newPin: e.target.value.replace(/\D/g, '').slice(0, 4)})}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl tracking-[0.5em] font-bold outline-none focus:border-primary-500"
+                                            maxLength={4}
+                                            placeholder="••••"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={handlePinAction}
+                                        disabled={isSaving || pinData.otp.length < 6 || pinData.newPin.length < 4}
+                                        className="w-full py-4 bg-primary-600 text-white rounded-xl font-bold shadow-md disabled:opacity-50"
+                                    >
+                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Reset PIN'}
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {pinStep !== 'options' && (
+                                <button 
+                                    onClick={() => {
+                                        setPinStep('options');
+                                        setErrorMessage('');
+                                        setSuccessMessage('');
+                                    }}
+                                    className="w-full text-xs font-bold text-gray-500 hover:text-gray-700 mt-2"
+                                >
+                                    Back
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

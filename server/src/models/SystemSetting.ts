@@ -68,6 +68,26 @@ export interface ISystemSettingDocument extends Document {
         vtpayFeePercent: number;
         virtualAccountChargePercent: number;
     };
+    kycTierLimits: {
+        t1: {
+            dailyWithdrawalLimit: number;
+            monthlyWithdrawalLimit: number;
+            dailyDepositLimit: number;
+            monthlyDepositLimit: number;
+        };
+        t2: {
+            dailyWithdrawalLimit: number;
+            monthlyWithdrawalLimit: number;
+            dailyDepositLimit: number;
+            monthlyDepositLimit: number;
+        };
+        t3: {
+            dailyWithdrawalLimit: number;
+            monthlyWithdrawalLimit: number;
+            dailyDepositLimit: number;
+            monthlyDepositLimit: number;
+        };
+    };
     updatedAt: Date;
 }
 
@@ -141,6 +161,26 @@ const SystemSettingSchema = new Schema<ISystemSettingDocument>(
         deposit: {
             vtpayFeePercent: { type: Number, default: 2.0 }, // Default 2% total fee
             virtualAccountChargePercent: { type: Number, default: 1.0 }, // Default 1% for virtual account deposits
+        },
+        kycTierLimits: {
+            t1: {
+                dailyWithdrawalLimit: { type: Number, default: 5000000 }, // 50k
+                monthlyWithdrawalLimit: { type: Number, default: 20000000 }, // 200k
+                dailyDepositLimit: { type: Number, default: 10000000 }, // 100k
+                monthlyDepositLimit: { type: Number, default: 50000000 }, // 500k
+            },
+            t2: {
+                dailyWithdrawalLimit: { type: Number, default: 20000000 }, // 200k
+                monthlyWithdrawalLimit: { type: Number, default: 100000000 }, // 1M
+                dailyDepositLimit: { type: Number, default: 50000000 }, // 500k
+                monthlyDepositLimit: { type: Number, default: 200000000 }, // 2M
+            },
+            t3: {
+                dailyWithdrawalLimit: { type: Number, default: 100000000 }, // 1M
+                monthlyWithdrawalLimit: { type: Number, default: 500000000 }, // 5M
+                dailyDepositLimit: { type: Number, default: 500000000 }, // 5M
+                monthlyDepositLimit: { type: Number, default: 2000000000 }, // 20M
+            },
         },
     },
     {

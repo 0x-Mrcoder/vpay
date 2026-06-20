@@ -1,10 +1,48 @@
-import mongoose from 'mongoose';
-import { Queue, Worker, Job } from 'bullmq';
-import { Wallet, Payout, Transaction, Ledger, SystemSetting } from '../models';
-import { palmPayService } from './PalmPayService';
-import { logger } from '../utils/logger';
-import { isReplicaSet } from '../config/database';
-
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.securePayoutService = exports.SecurePayoutService = exports.payoutWorker = exports.payoutQueue = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
+const bullmq_1 = require("bullmq");
+const models_1 = require("../models");
+const PalmPayService_1 = require("./PalmPayService");
+const logger_1 = require("../utils/logger");
+const database_1 = require("../config/database");
 // ============================================
 // Lazy BullMQ Setup — only connects if Redis is available
 // ============================================
@@ -12,18 +50,18 @@ const connection = {
     host: process.env.REDIS_HOST || '127.0.0.1',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
 };
-
-let payoutQueue: Queue | null = null;
-let payoutWorker: Worker | null = null;
+let payoutQueue = null;
+exports.payoutQueue = payoutQueue;
+let payoutWorker = null;
+exports.payoutWorker = payoutWorker;
 let redisAvailable = false;
 let redisChecked = false;
-
-async function checkRedisAvailability(): Promise<boolean> {
-    if (redisChecked) return redisAvailable;
+async function checkRedisAvailability() {
+    if (redisChecked)
+        return redisAvailable;
     redisChecked = true;
-
     try {
-        const { default: IORedis } = await import('ioredis');
+        const { default: IORedis } = await Promise.resolve().then(() => __importStar(require('ioredis')));
         const testClient = new IORedis({
             host: connection.host,
             port: connection.port,
@@ -32,66 +70,65 @@ async function checkRedisAvailability(): Promise<boolean> {
             lazyConnect: true,
             retryStrategy: () => null,
         });
-
         // Handle the error event to prevent "Unhandled error event" notice
-        testClient.on('error', () => {});
-
+        testClient.on('error', () => { });
         try {
             await testClient.connect();
             await testClient.ping();
             await testClient.quit();
             redisAvailable = true;
-            logger.info('[SecurePayoutService] ✅ Redis is available — BullMQ queue enabled');
-        } catch (err) {
-            redisAvailable = false;
-            logger.warn('[SecurePayoutService] ⚠️  Redis not available — Secure payout queue DISABLED. Payouts will use direct processing.');
-            // Ensure client is closed
-            try { testClient.disconnect(); } catch {}
+            logger_1.logger.info('[SecurePayoutService] ✅ Redis is available — BullMQ queue enabled');
         }
-    } catch (err) {
-        redisAvailable = false;
-        logger.warn('[SecurePayoutService] ⚠️  Failed to initialize Redis client.');
+        catch (err) {
+            redisAvailable = false;
+            logger_1.logger.warn('[SecurePayoutService] ⚠️  Redis not available — Secure payout queue DISABLED. Payouts will use direct processing.');
+            // Ensure client is closed
+            try {
+                testClient.disconnect();
+            }
+            catch { }
+        }
     }
-
+    catch (err) {
+        redisAvailable = false;
+        logger_1.logger.warn('[SecurePayoutService] ⚠️  Failed to initialize Redis client.');
+    }
     return redisAvailable;
 }
-
-async function getQueue(): Promise<Queue | null> {
-    if (payoutQueue) return payoutQueue;
+async function getQueue() {
+    if (payoutQueue)
+        return payoutQueue;
     const available = await checkRedisAvailability();
-    if (!available) return null;
-
-    payoutQueue = new Queue('secure-payouts', {
+    if (!available)
+        return null;
+    exports.payoutQueue = payoutQueue = new bullmq_1.Queue('secure-payouts', {
         connection,
         defaultJobOptions: { removeOnComplete: true, attempts: 3 },
     });
     payoutQueue.on('error', (err) => {
-        logger.error('[BullMQ] Queue Error:', err.message);
+        logger_1.logger.error('[BullMQ] Queue Error:', err.message);
     });
     return payoutQueue;
 }
-
-async function ensureWorker(): Promise<void> {
-    if (payoutWorker) return;
+async function ensureWorker() {
+    if (payoutWorker)
+        return;
     const available = await checkRedisAvailability();
-    if (!available) return;
-
-    payoutWorker = new Worker('secure-payouts', async (job: Job) => {
+    if (!available)
+        return;
+    exports.payoutWorker = payoutWorker = new bullmq_1.Worker('secure-payouts', async (job) => {
         const { payoutId } = job.data;
-
-        const payout = await Payout.findById(payoutId);
+        const payout = await models_1.Payout.findById(payoutId);
         if (!payout || payout.status !== 'LOCKED') {
-            logger.warn(`Job skipped, payout not found or not in LOCKED state: ${payoutId}`);
+            logger_1.logger.warn(`Job skipped, payout not found or not in LOCKED state: ${payoutId}`);
             return;
         }
-
         // 1. Update status to PROCESSING
         payout.status = 'PROCESSING';
         await payout.save();
-
         // 2. Call Payment Gateway
         try {
-            const transferResponse = await palmPayService.initiateTransfer({
+            const transferResponse = await PalmPayService_1.palmPayService.initiateTransfer({
                 amount: payout.amount,
                 currency: 'NGN',
                 transactionReference: payout.reference,
@@ -102,116 +139,94 @@ async function ensureWorker(): Promise<void> {
                     accountName: payout.accountName
                 }
             });
-
             // SUCCESS Path
             payout.status = 'SUCCESS';
             payout.externalRef = transferResponse.orderNo || payout.externalRef;
             await payout.save();
-
             await finalizePayoutSuccess(payout);
-        } catch (error: any) {
+        }
+        catch (error) {
             // FAILED Path
-            logger.error(`Payout ${payout.reference} failed via Gateway:`, error);
+            logger_1.logger.error(`Payout ${payout.reference} failed via Gateway:`, error);
             payout.status = 'FAILED';
             payout.failureReason = error.message;
             await payout.save();
-
             await finalizePayoutReversal(payout);
         }
     }, { connection });
-
     payoutWorker.on('error', (err) => {
-        logger.error('[BullMQ] Worker Error:', err.message);
+        logger_1.logger.error('[BullMQ] Worker Error:', err.message);
     });
-
-    logger.info('[SecurePayoutService] ✅ BullMQ Worker started');
+    logger_1.logger.info('[SecurePayoutService] ✅ BullMQ Worker started');
 }
-
 // Boot the worker lazily on first import (non-blocking)
-setImmediate(() => ensureWorker().catch(() => {}));
-
-export { payoutQueue, payoutWorker };
-
-export class SecurePayoutService {
-
+setImmediate(() => ensureWorker().catch(() => { }));
+class SecurePayoutService {
     /**
      * POST /payouts/request logic
      */
-    async requestPayout(
-        userId: string,
-        idempotencyKey: string,
-        payload: { amount: number; bankCode: string; accountNumber: string; accountName: string; narration?: string }
-    ) {
+    async requestPayout(userId, idempotencyKey, payload) {
         const { bankCode, accountNumber, accountName, narration } = payload;
         const amountNaira = Number(payload.amount);
         const amountKobo = Math.round(amountNaira * 100);
-
         // 0. Check Tier Limits
-        const { limitService } = await import('./LimitService');
+        const { limitService } = await Promise.resolve().then(() => __importStar(require('./LimitService')));
         await limitService.checkTierLimits(userId, 'withdrawal', amountKobo);
-
         // 1. Check Idempotency Key first
-        const existingPayout = await Payout.findOne({ idempotencyKey, userId });
+        const existingPayout = await models_1.Payout.findOne({ idempotencyKey, userId });
         if (existingPayout) {
             return { status: 'IDEMPOTENT_HIT', payout: existingPayout };
         }
-
         // Calculate fees matching PayoutService (Tiered flat fee)
-        const settings = await SystemSetting.findOne();
+        const settings = await models_1.SystemSetting.findOne();
         const payoutSettings = settings?.payout || {
             payoutTierStep: 2500,
             payoutTierFeeStep: 25,
         };
-
         const tierStepKobo = (Number(payoutSettings.payoutTierStep) || 2500) * 100;
         const tierFeeStepKobo = (Number(payoutSettings.payoutTierFeeStep) || 25) * 100;
-        
         // Fee calculation logic matched with PayoutService.ts
         const feeKobo = Math.ceil(amountKobo / tierStepKobo) * tierFeeStepKobo;
         const totalDebitKobo = amountKobo + feeKobo;
-
         // Validation for Minimum Payout (matching normal payout)
         const minPayoutKobo = payoutSettings.minAmount || 100000; // 1,000 Naira default
         if (amountKobo < minPayoutKobo) {
             throw new Error(`Minimum withdrawal amount is ₦${(minPayoutKobo / 100).toLocaleString()}`);
         }
-
-        let payoutId: string;
-
+        let payoutId;
         // 2. Atomic Database Transaction (Handles standalone MongoDB fallback)
-        let session: any = null;
-        if (isReplicaSet) {
+        let session = null;
+        if (database_1.isReplicaSet) {
             try {
-                session = await mongoose.startSession();
+                session = await mongoose_1.default.startSession();
                 session.startTransaction();
-                logger.info('[SecurePayoutService] ✅ Transaction started');
-            } catch (e: any) {
-                logger.warn(`[SecurePayoutService] Failed to start transaction: ${e.message}`);
+                logger_1.logger.info('[SecurePayoutService] ✅ Transaction started');
+            }
+            catch (e) {
+                logger_1.logger.warn(`[SecurePayoutService] Failed to start transaction: ${e.message}`);
                 session = null;
             }
-        } else {
-            logger.warn('[SecurePayoutService] ⚠️ Standalone MongoDB detected. Proceeding WITHOUT transaction.');
         }
-
+        else {
+            logger_1.logger.warn('[SecurePayoutService] ⚠️ Standalone MongoDB detected. Proceeding WITHOUT transaction.');
+        }
         try {
-            const wallet = await Wallet.findOne({ userId }).session(session);
-            if (!wallet) throw new Error('Wallet not found');
-
+            const wallet = await models_1.Wallet.findOne({ userId }).session(session);
+            if (!wallet)
+                throw new Error('Wallet not found');
             // Available balance check MUST use clearedBalance (settled funds)
             const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
             if (availableBalance < totalDebitKobo) {
                 throw new Error('Insufficient available balance (funds must be cleared/settled first)');
             }
-
             // Deduct available, move to locked
             wallet.lockedBalance += totalDebitKobo;
             await wallet.save({ session });
-
             // Create Payout Record
-            const payout = new Payout({
+            const payout = new models_1.Payout({
                 userId,
                 amount: amountKobo, // Store in kobo
-                fee: feeKobo,      // Store in kobo
+                fee: feeKobo, // Store in kobo
                 totalDebit: totalDebitKobo,
                 bankCode,
                 accountNumber,
@@ -224,9 +239,8 @@ export class SecurePayoutService {
             });
             await payout.save({ session });
             payoutId = payout._id.toString();
-
             // Create Transaction Record (LOCKED)
-            const transaction = new Transaction({
+            const transaction = new models_1.Transaction({
                 userId,
                 walletId: wallet._id,
                 type: 'debit',
@@ -239,8 +253,8 @@ export class SecurePayoutService {
                 narration: narration || `Payout to ${accountNumber}`,
                 status: 'pending',
                 isCleared: false,
-                metadata: { 
-                    payoutId: payout._id, 
+                metadata: {
+                    payoutId: payout._id,
                     idempotencyKey,
                     accountName,
                     accountNumber,
@@ -248,9 +262,8 @@ export class SecurePayoutService {
                 }
             });
             await transaction.save({ session });
-
             // Create Immutable Ledger entry representing the hold/lock
-            const ledger = new Ledger({
+            const ledger = new models_1.Ledger({
                 walletId: wallet._id,
                 userId,
                 transactionId: transaction._id,
@@ -262,50 +275,47 @@ export class SecurePayoutService {
                 balanceAfter: wallet.balance - totalDebitKobo,
             });
             await ledger.save({ session });
-
-            if (session) await session.commitTransaction();
-
-        } catch (error) {
-            if (session) await session.abortTransaction();
-            throw error;
-        } finally {
-            if (session) session.endSession();
+            if (session)
+                await session.commitTransaction();
         }
-
+        catch (error) {
+            if (session)
+                await session.abortTransaction();
+            throw error;
+        }
+        finally {
+            if (session)
+                session.endSession();
+        }
         // 3. Push job to queue if Redis is available, otherwise process directly
         const queue = await getQueue();
         if (queue) {
             await queue.add('process-payout', { payoutId }, { removeOnComplete: true, attempts: 3 });
-        } else {
-            // Fallback: process directly without queue (development / no-Redis mode)
-            logger.warn('[SecurePayoutService] Redis unavailable — processing payout directly (no queue)');
-            setImmediate(() => this.processPayoutDirectly(payoutId).catch(err =>
-                logger.error('[SecurePayoutService] Direct payout processing failed:', err)
-            ));
         }
-
+        else {
+            // Fallback: process directly without queue (development / no-Redis mode)
+            logger_1.logger.warn('[SecurePayoutService] Redis unavailable — processing payout directly (no queue)');
+            setImmediate(() => this.processPayoutDirectly(payoutId).catch(err => logger_1.logger.error('[SecurePayoutService] Direct payout processing failed:', err)));
+        }
         return {
             status: 'ACCEPTED',
             message: 'Payout is safely locked and queued for processing.',
             payoutId
         };
     }
-
     /**
      * Direct payout processing fallback (when Redis/BullMQ is unavailable)
      */
-    async processPayoutDirectly(payoutId: string) {
-        const payout = await Payout.findById(payoutId);
+    async processPayoutDirectly(payoutId) {
+        const payout = await models_1.Payout.findById(payoutId);
         if (!payout || payout.status !== 'LOCKED') {
-            logger.warn(`Direct processing skipped, payout not found or not LOCKED: ${payoutId}`);
+            logger_1.logger.warn(`Direct processing skipped, payout not found or not LOCKED: ${payoutId}`);
             return;
         }
-
         payout.status = 'PROCESSING';
         await payout.save();
-
         try {
-            const transferResponse = await palmPayService.initiateTransfer({
+            const transferResponse = await PalmPayService_1.palmPayService.initiateTransfer({
                 amount: payout.amount,
                 currency: 'NGN',
                 transactionReference: payout.reference,
@@ -316,56 +326,46 @@ export class SecurePayoutService {
                     accountName: payout.accountName
                 }
             });
-
             payout.status = 'SUCCESS';
             payout.externalRef = transferResponse.orderNo || payout.externalRef;
             await payout.save();
-
             await finalizePayoutSuccess(payout);
-        } catch (error: any) {
-            logger.error(`Payout ${payout.reference} failed via Gateway:`, error);
+        }
+        catch (error) {
+            logger_1.logger.error(`Payout ${payout.reference} failed via Gateway:`, error);
             payout.status = 'FAILED';
             payout.failureReason = error.message;
             await payout.save();
-
             await finalizePayoutReversal(payout);
         }
     }
 }
-
-export const securePayoutService = new SecurePayoutService();
-
+exports.SecurePayoutService = SecurePayoutService;
+exports.securePayoutService = new SecurePayoutService();
 // ============================================
 // Finalization Helpers
 // ============================================
-
-async function finalizePayoutSuccess(payout: any) {
-    let session: any = null;
-    if (isReplicaSet) {
+async function finalizePayoutSuccess(payout) {
+    let session = null;
+    if (database_1.isReplicaSet) {
         try {
-            session = await mongoose.startSession();
+            session = await mongoose_1.default.startSession();
             session.startTransaction();
-        } catch (e) {
+        }
+        catch (e) {
             session = null;
         }
     }
-
     try {
-        const wallet = await Wallet.findOne({ userId: payout.userId }).session(session);
-        if (!wallet) throw new Error('Wallet not found');
-
+        const wallet = await models_1.Wallet.findOne({ userId: payout.userId }).session(session);
+        if (!wallet)
+            throw new Error('Wallet not found');
         wallet.lockedBalance -= payout.totalDebit;
         wallet.balance -= payout.totalDebit;
         wallet.clearedBalance -= payout.totalDebit;
         await wallet.save({ session });
-
-        await Transaction.findOneAndUpdate(
-            { 'metadata.payoutId': payout._id },
-            { $set: { status: 'success', isCleared: true, clearedAt: new Date() } },
-            { session }
-        );
-
-        await new Ledger({
+        await models_1.Transaction.findOneAndUpdate({ 'metadata.payoutId': payout._id }, { $set: { status: 'success', isCleared: true, clearedAt: new Date() } }, { session });
+        await new models_1.Ledger({
             walletId: wallet._id,
             userId: payout.userId,
             transactionId: payout._id,
@@ -376,41 +376,38 @@ async function finalizePayoutSuccess(payout: any) {
             balanceBefore: wallet.balance + payout.totalDebit,
             balanceAfter: wallet.balance,
         }).save({ session });
-
-        if (session) await session.commitTransaction();
-    } catch (err) {
-        if (session) await session.abortTransaction();
-        logger.error('CRITICAL: Failed to finalize payout success DB sync:', err);
-    } finally {
-        if (session) session.endSession();
+        if (session)
+            await session.commitTransaction();
+    }
+    catch (err) {
+        if (session)
+            await session.abortTransaction();
+        logger_1.logger.error('CRITICAL: Failed to finalize payout success DB sync:', err);
+    }
+    finally {
+        if (session)
+            session.endSession();
     }
 }
-
-async function finalizePayoutReversal(payout: any) {
-    let session: any = null;
-    if (isReplicaSet) {
+async function finalizePayoutReversal(payout) {
+    let session = null;
+    if (database_1.isReplicaSet) {
         try {
-            session = await mongoose.startSession();
+            session = await mongoose_1.default.startSession();
             session.startTransaction();
-        } catch (e) {
+        }
+        catch (e) {
             session = null;
         }
     }
-
     try {
-        const wallet = await Wallet.findOne({ userId: payout.userId }).session(session);
-        if (!wallet) throw new Error('Wallet not found for reversal');
-
+        const wallet = await models_1.Wallet.findOne({ userId: payout.userId }).session(session);
+        if (!wallet)
+            throw new Error('Wallet not found for reversal');
         wallet.lockedBalance -= payout.totalDebit;
         await wallet.save({ session });
-
-        await Transaction.findOneAndUpdate(
-            { 'metadata.payoutId': payout._id },
-            { $set: { status: 'failed' } },
-            { session }
-        );
-
-        await new Ledger({
+        await models_1.Transaction.findOneAndUpdate({ 'metadata.payoutId': payout._id }, { $set: { status: 'failed' } }, { session });
+        await new models_1.Ledger({
             walletId: wallet._id,
             userId: payout.userId,
             transactionId: payout._id,
@@ -421,12 +418,17 @@ async function finalizePayoutReversal(payout: any) {
             balanceBefore: wallet.balance - payout.totalDebit,
             balanceAfter: wallet.balance,
         }).save({ session });
-
-        if (session) await session.commitTransaction();
-    } catch (err) {
-        if (session) await session.abortTransaction();
-        logger.error('CRITICAL: Failed to reverse payout DB sync:', err);
-    } finally {
-        if (session) session.endSession();
+        if (session)
+            await session.commitTransaction();
+    }
+    catch (err) {
+        if (session)
+            await session.abortTransaction();
+        logger_1.logger.error('CRITICAL: Failed to reverse payout DB sync:', err);
+    }
+    finally {
+        if (session)
+            session.endSession();
     }
 }
+//# sourceMappingURL=SecurePayoutService.js.map
