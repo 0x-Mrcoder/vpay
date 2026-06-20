@@ -91,7 +91,7 @@ export const Settings: React.FC = () => {
             setIsSaving(false);
         }
     };
-    const { updateUser } = useAuth();
+    const { refreshUser, updateUser } = useAuth();
 
     const handlePinAction = async () => {
         setIsSaving(true);
@@ -132,7 +132,23 @@ export const Settings: React.FC = () => {
                 }, 1500);
             }
         } catch (error: any) {
-            setErrorMessage(error.response?.data?.message || 'Action failed');
+            console.error('PIN Action Error:', error);
+            const errorMessage = error.response?.data?.message || 'Action failed';
+            
+            // Critical Sync Fix: If backend says it's already set, synchronize state and go back to options
+            if (errorMessage.includes('already set') || errorMessage.includes('use change-pin')) {
+                setErrorMessage('Security Sync: Your PIN is already set. Switching to "Change" mode.');
+                // Update user state to reflect Reality
+                if (user) {
+                    updateUser({ ...user, transactionPinSet: true });
+                }
+                setTimeout(() => {
+                    setPinStep('options');
+                    setErrorMessage('');
+                }, 2000);
+            } else {
+                setErrorMessage(errorMessage);
+            }
         } finally {
             setIsSaving(false);
         }
@@ -484,33 +500,52 @@ export const Settings: React.FC = () => {
                             )}
 
                             {pinStep === 'options' && (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
+                                    <div className={`p-4 rounded-xl border flex items-center gap-3 ${user?.transactionPinSet ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${user?.transactionPinSet ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                                            <Shield size={16} />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Status</p>
+                                            <p className={`text-xs font-bold ${user?.transactionPinSet ? 'text-green-700' : 'text-amber-700'}`}>
+                                                {user?.transactionPinSet ? 'PIN is configured and active' : 'No transaction PIN set'}
+                                            </p>
+                                        </div>
+                                    </div>
+
                                     {!user?.transactionPinSet ? (
                                         <button 
                                             onClick={() => setPinStep('set')}
-                                            className="w-full p-4 bg-primary-600 text-white rounded-xl font-bold flex items-center justify-between group"
+                                            className="w-full p-4 bg-primary-600 text-white rounded-xl font-bold flex items-center justify-between group shadow-md hover:bg-primary-700 transition-all"
                                         >
-                                            Set Transaction PIN
+                                            Create New PIN
                                             <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                         </button>
                                     ) : (
-                                        <>
+                                        <div className="space-y-2">
                                             <button 
                                                 onClick={() => setPinStep('change')}
-                                                className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-bold text-gray-900 flex items-center justify-between group border border-gray-200"
+                                                className="w-full p-4 bg-gray-900 text-white rounded-xl font-bold flex items-center justify-between group shadow-sm hover:bg-black transition-all"
                                             >
                                                 Change Transaction PIN
                                                 <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                             </button>
                                             <button 
                                                 onClick={() => setPinStep('forgot')}
-                                                className="w-full p-4 bg-white hover:bg-gray-50 rounded-xl font-bold text-primary-600 flex items-center justify-between group border border-transparent"
+                                                className="w-full p-3 bg-white hover:bg-gray-50 rounded-xl font-bold text-primary-600 flex items-center justify-center group border border-transparent text-xs"
                                             >
-                                                Forgot Transaction PIN?
-                                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                                Forgot PIN? Reset with Email
                                             </button>
-                                        </>
+                                        </div>
                                     )}
+                                    
+                                    <button 
+                                        onClick={() => refreshUser()}
+                                        className="w-full py-2 text-[10px] font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest flex items-center justify-center gap-1"
+                                    >
+                                        <Loader2 size={10} />
+                                        Sync Security Status
+                                    </button>
                                 </div>
                             )}
 
