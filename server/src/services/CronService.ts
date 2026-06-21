@@ -156,7 +156,7 @@ export class CronService {
 
                                 const result = await Wallet.findOneAndUpdate(
                                     { _id: txn.walletId },
-                                    { $inc: { clearedBalance: txn.amount } },
+                                    { $inc: { clearedBalance: txn.amount, lockedBalance: -txn.amount } },
                                     { new: true, session }
                                 );
 

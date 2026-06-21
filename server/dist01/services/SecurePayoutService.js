@@ -164,11 +164,11 @@ setImmediate(() => ensureWorker().catch(() => { }));
 class SecurePayoutService {
     /**
      * POST /payouts/request logic
+     * @param amountKobo Amount in Kobo
      */
     async requestPayout(userId, idempotencyKey, payload) {
         const { bankCode, accountNumber, accountName, narration } = payload;
-        const amountNaira = Number(payload.amount);
-        const amountKobo = Math.round(amountNaira * 100);
+        const amountKobo = Math.round(Number(payload.amount));
         // 0. Check Tier Limits
         const { limitService } = await Promise.resolve().then(() => __importStar(require('./LimitService')));
         await limitService.checkTierLimits(userId, 'withdrawal', amountKobo);
@@ -215,7 +215,7 @@ class SecurePayoutService {
             if (!wallet)
                 throw new Error('Wallet not found');
             // Available balance check MUST use clearedBalance (settled funds)
-            const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
+            const availableBalance = wallet.balance - wallet.lockedBalance;
             if (availableBalance < totalDebitKobo) {
                 throw new Error('Insufficient available balance (funds must be cleared/settled first)');
             }

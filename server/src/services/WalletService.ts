@@ -37,7 +37,7 @@ export class WalletService {
             balance: wallet.balance,
             clearedBalance: wallet.clearedBalance,
             lockedBalance: wallet.lockedBalance,
-            availableBalance: wallet.clearedBalance - wallet.lockedBalance,
+            availableBalance: wallet.balance - wallet.lockedBalance,
             pendingBalance: wallet.balance - wallet.clearedBalance,
         };
     }
@@ -71,6 +71,8 @@ export class WalletService {
             wallet.balance = balanceAfter;
             if (isCleared) {
                 wallet.clearedBalance += amount;
+            } else {
+                wallet.lockedBalance += amount;
             }
             await wallet.save({ session });
 
@@ -131,23 +133,23 @@ export class WalletService {
     ): Promise<ITransactionDocument> {
         try {
             const totalDebit = amount + fee;
-            
+
             // Atomic update with sufficient balance check
             const wallet = await Wallet.findOneAndUpdate(
-                { 
+                {
                     userId: new mongoose.Types.ObjectId(userId),
-                    $expr: { 
+                    $expr: {
                         $gte: [
-                            { $subtract: ["$clearedBalance", "$lockedBalance"] }, 
+                            { $subtract: ["$balance", "$lockedBalance"] },
                             totalDebit
-                        ] 
+                        ]
                     }
                 },
-                { 
-                    $inc: { 
+                {
+                    $inc: {
                         balance: -totalDebit,
                         clearedBalance: -totalDebit
-                    } 
+                    }
                 },
                 { new: true, session }
             );
@@ -161,8 +163,8 @@ export class WalletService {
                 if (currentWallet.balance < totalDebit) {
                     throw new Error(`Insufficient wallet balance. Total required: ₦${(totalDebit / 100).toLocaleString()}`);
                 }
-                
-                const available = currentWallet.clearedBalance - currentWallet.lockedBalance;
+
+                const available = currentWallet.balance - currentWallet.lockedBalance;
                 if (available < totalDebit) {
                     throw new Error('Insufficient available balance (funds must be cleared/settled first). Check your wallet for pending settlements.');
                 }
@@ -223,9 +225,9 @@ export class WalletService {
             throw new Error('Wallet not found');
         }
 
-        const availableBalance = wallet.clearedBalance - wallet.lockedBalance;
+        const availableBalance = wallet.balance - wallet.lockedBalance;
         if (availableBalance < amount) {
-            throw new Error('Insufficient cleared balance to lock');
+            throw new Error('Insufficient available balance to lock');
         }
 
         wallet.lockedBalance += amount;
@@ -265,7 +267,7 @@ export class WalletService {
     ): Promise<{ transactions: ITransactionDocument[]; total: number }> {
         const { limit = 20, offset = 0, type, category, startDate, endDate } = options;
 
-        const query: any = { 
+        const query: any = {
             userId: new mongoose.Types.ObjectId(userId),
             category: { $ne: 'adjustment' } // Hide manual adjustments from tenants
         };
@@ -494,20 +496,20 @@ export class WalletService {
             if (type === 'debit') {
                 // Atomic debit with guard
                 wallet = await Wallet.findOneAndUpdate(
-                    { 
+                    {
                         userId: new mongoose.Types.ObjectId(userId),
-                        $expr: { 
+                        $expr: {
                             $gte: [
-                                { $subtract: ["$clearedBalance", "$lockedBalance"] }, 
+                                { $subtract: ["$balance", "$lockedBalance"] },
                                 safeAmount
-                            ] 
+                            ]
                         }
                     },
-                    { 
-                        $inc: { 
+                    {
+                        $inc: {
                             balance: -safeAmount,
                             clearedBalance: -safeAmount
-                        } 
+                        }
                     },
                     { new: true, session }
                 );
@@ -519,11 +521,11 @@ export class WalletService {
                 // Atomic credit
                 wallet = await Wallet.findOneAndUpdate(
                     { userId: new mongoose.Types.ObjectId(userId) },
-                    { 
-                        $inc: { 
+                    {
+                        $inc: {
                             balance: safeAmount,
                             clearedBalance: safeAmount
-                        } 
+                        }
                     },
                     { new: true, session }
                 );

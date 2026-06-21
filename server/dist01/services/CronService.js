@@ -169,7 +169,7 @@ class CronService {
                                         await session.abortTransaction();
                                     continue;
                                 }
-                                const result = await Wallet_1.Wallet.findOneAndUpdate({ _id: txn.walletId }, { $inc: { clearedBalance: txn.amount } }, { new: true, session });
+                                const result = await Wallet_1.Wallet.findOneAndUpdate({ _id: txn.walletId }, { $inc: { clearedBalance: txn.amount, lockedBalance: -txn.amount } }, { new: true, session });
                                 if (result) {
                                     // Create Ledger record for the clearance
                                     await new Ledger_1.Ledger({

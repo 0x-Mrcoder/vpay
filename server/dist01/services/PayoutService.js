@@ -125,7 +125,7 @@ class PayoutService {
         // We use availableBalance logic: clearedBalance - lockedBalance
         const wallet = await models_1.Wallet.findOneAndUpdate({
             userId,
-            $expr: { $gte: [{ $subtract: ["$clearedBalance", "$lockedBalance"] }, totalDeducted] }
+            $expr: { $gte: [{ $subtract: ["$balance", "$lockedBalance"] }, totalDeducted] }
         }, { $inc: { lockedBalance: totalDeducted } }, { new: true });
         if (!wallet) {
             throw new Error('Insufficient available balance (funds must be cleared/settled first)');

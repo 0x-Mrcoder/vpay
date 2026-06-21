@@ -31,13 +31,13 @@ router.get('/', async (req: AuthenticatedRequest, res: Response): Promise<void> 
                 balance: wallet.balance,
                 clearedBalance: wallet.clearedBalance,
                 lockedBalance: wallet.lockedBalance,
-                availableBalance: wallet.clearedBalance - wallet.lockedBalance,
+                availableBalance: wallet.balance - wallet.lockedBalance,
                 currency: wallet.currency,
                 // Convert kobo to naira for display
                 balanceNaira: wallet.balance / 100,
                 clearedBalanceNaira: wallet.clearedBalance / 100,
                 lockedBalanceNaira: wallet.lockedBalance / 100,
-                availableBalanceNaira: (wallet.clearedBalance - wallet.lockedBalance) / 100,
+                availableBalanceNaira: (wallet.balance - wallet.lockedBalance) / 100,
             },
         });
     } catch (error) {

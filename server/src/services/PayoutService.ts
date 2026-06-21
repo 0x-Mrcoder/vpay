@@ -109,7 +109,7 @@ export class PayoutService {
         const wallet = await Wallet.findOneAndUpdate(
             { 
                 userId, 
-                $expr: { $gte: [{ $subtract: ["$clearedBalance", "$lockedBalance"] }, totalDeducted] } 
+                $expr: { $gte: [{ $subtract: ["$balance", "$lockedBalance"] }, totalDeducted] } 
             },
             { $inc: { lockedBalance: totalDeducted } },
             { new: true }

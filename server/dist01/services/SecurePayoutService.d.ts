@@ -6,6 +6,7 @@ export { payoutQueue, payoutWorker };
 export declare class SecurePayoutService {
     /**
      * POST /payouts/request logic
+     * @param amountKobo Amount in Kobo
      */
     requestPayout(userId: string, idempotencyKey: string, payload: {
         amount: number;

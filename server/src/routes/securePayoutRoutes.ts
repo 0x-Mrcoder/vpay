@@ -11,14 +11,14 @@ router.post('/request', requirePayoutAuth, async (req: Request, res: Response) =
         const idempotencyKey = (req as any).idempotencyKey;
         
         const payload = {
-            amount: req.body.amount,
+            amount: Math.round(Number(req.body.amount) * 100),
             bankCode: req.body.bankCode,
             accountNumber: req.body.accountNumber,
             accountName: req.body.accountName,
             narration: req.body.narration
         };
 
-        if (!payload.amount || !payload.bankCode || !payload.accountNumber || !payload.accountName) {
+        if (!req.body.amount || !payload.bankCode || !payload.accountNumber || !payload.accountName) {
             // Note: Use 'return' explicitly to ensure function terminates
             res.status(400).json({ success: false, message: 'Missing required payout parameters.' });
             return;
@@ -29,9 +29,9 @@ router.post('/request', requirePayoutAuth, async (req: Request, res: Response) =
             return;
         }
 
-        // Enforce maximum payout limit of 299,999
-        if (payload.amount > 299999) {
-            res.status(400).json({ success: false, message: 'Maximum payout limit is 299,999. Transaction rejected.' });
+        // Enforce maximum payout limit of 299,999 Naira (29,999,900 Kobo)
+        if (payload.amount > 29999900) {
+            res.status(400).json({ success: false, message: 'Maximum payout limit is ₦299,999. Transaction rejected.' });
             return;
         }
 
